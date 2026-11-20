@@ -177,6 +177,57 @@ Registers a private endpoint (SEC-37), or with replaces and If-Match a new versi
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-EGRESS-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `POST /v1/installation/sandbox-organisations`
+
+**Make a sandbox organisation** (`createSandboxOrganisation`)
+
+Makes a sandbox organisation (FR-INT-18): a new organisation of this installation, labelled "Sandbox: ", flagged for good, holding only the synthetic sample company, where an integrator tests the API with clients of its own. It sends nothing outside Fyniq: no email, payment provider, bank, InvoiceNow, AI model or webhook to a host the deployment's operator has not allowed. The caller becomes its Owner. Only when the deployment enables sandboxes (otherwise API-SANDBOX-01); no organisation becomes a sandbox or stops being one. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it is made at once. Side effects: the organisation, its membership and Owner role, the sample company's accounts, periods and journals, audit events in both trails and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and makes nothing.
+
+- **Permission:** Create on (Super admins). Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). With two Super admins a sandbox organisation waits for the other's approval; the deployment must enable sandboxes (FR-INT-18).
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`NewSandboxOrganisation`](../../contracts/schemas/NewSandboxOrganisation.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SandboxOrganisation`](../../contracts/schemas/SandboxOrganisation.schema.json)
+  - `201` Created [`SandboxOrganisation`](../../contracts/schemas/SandboxOrganisation.schema.json)
+  - `202` Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. [`InstallationChange`](../../contracts/schemas/InstallationChange.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-01` Sandbox organisations are not enabled here; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SANDBOX-01` A sandbox organisation is made new and stays a sandbox.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-SANDBOX-03` The sandbox organisation's sample company is not loaded; `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-01`, `API-SANDBOX-03`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-SANDBOX-01`
+
+### `POST /v1/installation/sandbox-organisations/{organisation_id}/sample-company`
+
+**Load the sample company into a sandbox organisation** (`loadSandboxSampleCompany`)
+
+Loads the synthetic sample company (FR-UX-10, DEV-04) through the posting engine into a sandbox organisation that has no chart yet: for one made while the load failed. Refused (API-SANDBOX-02) for an organisation that is not a sandbox one or already has books. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Side effects: the accounts, periods and journals and their audit events. Repeating it is refused once the books are there.
+
+- **Permission:** Create on (Super admins). Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
+- **Parameters:**
+  - `organisation_id` (path, required): The sandbox organisation's ID.
+- **Responses:**
+  - `200` OK [`SandboxSampleCompany`](../../contracts/schemas/SandboxSampleCompany.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-SANDBOX-03` The sandbox organisation's sample company is not loaded; `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-06`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-SANDBOX-02`, `API-SANDBOX-03`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/installation/super-admins`
 
 **List the Super admins** (`listSuperAdmins`)
@@ -676,14 +727,14 @@ Asks to install a connector of the catalogue whose scope is the organisation, co
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
   - `404` Not Found: `CONNECTOR-01` No such connector in this release; `CONNECTOR-07` No such installed connector.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `CONNECTOR-04` A secret the connector needs is not set; `CONNECTOR-06` The connector cannot take that step now; `CONNECTOR-08` The change cannot be decided or applied now; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CONNECTOR-01` A connector moves only along its lifecycle; `STORAGE-LOCK-01` Another change is in progress.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `APR-06` A change to it is waiting for approval already; `CONNECTOR-04` A secret the connector needs is not set; `CONNECTOR-06` The connector cannot take that step now; `CONNECTOR-08` The change cannot be decided or applied now; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CONNECTOR-01` A connector moves only along its lifecycle; `STORAGE-LOCK-01` Another change is in progress.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CONNECTOR-02` The connector is installed at the other scope; `CONNECTOR-03` The configuration does not match the connector; `CONNECTOR-05` Not one of the connector's secrets; `CONNECTOR-09` A model provider is connected, not installed.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `CONNECTOR-01`, `CONNECTOR-02`, `CONNECTOR-03`, `CONNECTOR-04`, `CONNECTOR-05`, `CONNECTOR-06`, `CONNECTOR-07`, `CONNECTOR-08`, `CONNECTOR-09`, `STORAGE-APPROVAL-01`, `STORAGE-CONNECTOR-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `API-UNAVAILABLE-01`, `APR-06`, `CONNECTOR-01`, `CONNECTOR-02`, `CONNECTOR-03`, `CONNECTOR-04`, `CONNECTOR-05`, `CONNECTOR-06`, `CONNECTOR-07`, `CONNECTOR-08`, `CONNECTOR-09`, `STORAGE-APPROVAL-01`, `STORAGE-CONNECTOR-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/organisation/connectors/{connector_id}`
 
@@ -1777,14 +1828,14 @@ Puts a dead delivery back for another try at once (FR-INT-12), with the same web
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
   - `404` Not Found: `API-NOT-FOUND-01` Not found; `WEBHOOK-06` No such webhook endpoint or delivery.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-SANDBOX-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
 
 ### `GET /v1/webhook-endpoints`
 
@@ -1821,14 +1872,14 @@ Adds an endpoint events are sent to (FR-INT-12): an https address on a public ho
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
   - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
-  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `409` Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `WEBHOOK-02` Not an address Fyniq may send to; `WEBHOOK-03` Not an event type an endpoint can ask for; `WEBHOOK-04` The endpoint did not echo the challenge.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
 
 ### `GET /v1/webhook-endpoints/{endpoint_id}`
 
@@ -1870,7 +1921,7 @@ Changes an endpoint's name, address, event types or state over the version you r
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
   - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -1879,7 +1930,7 @@ Changes an endpoint's name, address, event types or state over the version you r
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
 
 ### `GET /v1/webhook-endpoints/{endpoint_id}/deliveries`
 
@@ -1921,7 +1972,7 @@ Makes a new signing secret for the endpoint (FR-INT-12) and returns it once; the
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
   - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
-  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `409` Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -1930,7 +1981,7 @@ Makes a new signing secret for the endpoint (FR-INT-12) and returns it once; the
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
 
 ### `POST /v1/webhook-endpoints/{endpoint_id}/verify`
 
@@ -1948,7 +1999,7 @@ Proves an endpoint is the organisation's before any event is sent (FR-INT-12): F
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `WEBHOOK-01` Webhooks and events are off for this organisation.
   - `404` Not Found: `WEBHOOK-06` No such webhook endpoint or delivery.
-  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
+  - `409` Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step.
   - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
@@ -1957,7 +2008,7 @@ Proves an endpoint is the organisation's before any event is sent (FR-INT-12): F
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`, `WEBHOOK-01`, `WEBHOOK-02`, `WEBHOOK-03`, `WEBHOOK-04`, `WEBHOOK-05`, `WEBHOOK-06`
 
 ## Session
 
@@ -3285,14 +3336,14 @@ Opens a separate organisation, labelled "Practice: …", where the caller can tr
   - `400` Bad Request: `API-INPUT-01` The request cannot be read.
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `STORAGE-PRACTICE-01` A practice organisation is not yours to open.
-  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PRACTICE-02` You hold a practice organisation already.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PRACTICE-02` You hold a practice organisation already.
   - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
   - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
   - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
-- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-PRACTICE-01`, `STORAGE-PRACTICE-02`, `STORAGE-RETRY-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-SANDBOX-02`, `STORAGE-LOCK-01`, `STORAGE-PRACTICE-01`, `STORAGE-PRACTICE-02`, `STORAGE-RETRY-01`
 
 ### `GET /v1/organisation/profile`
 
@@ -18815,6 +18866,24 @@ Records that the caller read and accepts the published version (CMP-07): each me
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `COMPLIANCE-03`, `STORAGE-LOCK-01`, `STORAGE-POLICY-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/compliance/readiness`
+
+**Get the readiness of each framework** (`getReadiness`)
+
+For each framework of the registry (CMP-08), its stage, how many mapped controls pass, fail, are overdue, are not assessed or do not apply, how many have a check still to arrive, and the controls that are not passing in plain words; and for ISO/IEC 27001:2022 Annex A the control numbers no control maps to. Readiness, never a certificate. Read-only; no side effects.
+
+- **Permission:** View on Compliance Center
+- **Responses:**
+  - `200` OK [`Readiness`](../../contracts/schemas/Readiness.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/restore-drills`
 
 **List the restore drills** (`listRestoreDrills`)
@@ -19064,6 +19133,103 @@ One run of the company secretary assistant as its report shows it (AI-64, AI-65,
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/security-assessments`
+
+**List the security assessments** (`listSecurityAssessments`)
+
+The register of security assessments (SEC-25, CTL-CHG-12): each penetration test or other assessment of the platform with its tester, whether they are independent, the scope, dates, the report's SHA-256 and where it is kept, and each finding with its severity, due day, state, fix and retest; the day the last independent test ended and the next is due, and how many Critical or High findings are overdue. Read-only; no side effects.
+
+- **Permission:** View on Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617)
+- **Responses:**
+  - `200` OK [`SecurityAssessmentRegister`](../../contracts/schemas/SecurityAssessmentRegister.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/security-assessments`
+
+**Record a security assessment** (`createSecurityAssessment`)
+
+Records a penetration test or other assessment (SEC-25), with its findings: each is due by its severity (7 days Critical, 30 High, 90 Medium, 180 Low, from the day found). The report itself stays outside Fyniq: record its SHA-256 and where it is kept. Side effects: the assessment and its findings, the audit events security_assessment.recorded and security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SecurityAssessmentInput`](../../contracts/schemas/SecurityAssessmentInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SecurityAssessmentView`](../../contracts/schemas/SecurityAssessmentView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-ASSESSMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/security-assessments/{assessment_id}/findings`
+
+**Add a finding to a security assessment** (`addSecurityFinding`)
+
+Adds a finding the assessment's tester reported later, such as at a retest (SEC-25): it is due by its severity from the day found. Side effects: the finding, the audit event security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617)
+- **Parameters:**
+  - `assessment_id` (path, required): The assessment.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SecurityFindingInput`](../../contracts/schemas/SecurityFindingInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`SecurityFindingView`](../../contracts/schemas/SecurityFindingView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-ASSESSMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/security-findings/{finding_id}/steps`
+
+**Record the next step of a finding** (`stepSecurityFinding`)
+
+Records that a finding was fixed, then retested; or that an Owner accepts it, with a reason, before it is retested (SEC-25). A step follows the finding's last, and is dated no earlier than the finding or the step before it. Side effects: the step, the audit event security_finding.stepped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+
+- **Permission:** Create on Security assessments: record a penetration test, its findings, their fixes and retests, and an Owner's acceptance of a finding (rev 0.617)
+- **Parameters:**
+  - `finding_id` (path, required): The finding.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`SecurityFindingStepInput`](../../contracts/schemas/SecurityFindingStepInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`FindingStepView`](../../contracts/schemas/FindingStepView.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-ASSESSMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/compliance/shredding-runs`
 
@@ -24474,6 +24640,84 @@ Changes the fields sent and keeps the rest; "" clears a text, and prices, when s
 
 Changes that wait for a second approver (FM-1): the envelope each approver signs, their decisions, and the policies that say who approves (FR-APR-01…05, FR-APR-09, FR-APR-10).
 
+### `GET /v1/approval-delegations`
+
+**List delegations of approval authority** (`listApprovalDelegations`)
+
+The delegations you made or hold (FR-APR-06), oldest first, a page at a time; with scope=all an Owner sees every delegation of the organisation. Each says whether it is in force today. Read-only; no side effects.
+
+- **Permission:** View on (approvals). Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). Lists the delegations the caller made or holds; an Owner may list them all.
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `scope` (query): mine: those you delegated or hold; all: every delegation of the organisation, for an Owner.
+- **Responses:**
+  - `200` OK [`ApprovalDelegationPage`](../../contracts/schemas/ApprovalDelegationPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/approval-delegations`
+
+**Delegate your approval authority** (`createApprovalDelegation`)
+
+Lets another member sign for you for up to 90 days (FR-APR-06), for example while you are on leave. It lends no right: the delegate must hold an approval right themselves, signs as themselves with their own step-up or passkey, and each signature records on whose behalf it was made. It makes them eligible for a step you could sign, and for none other; you and your delegate never both count towards one step's quorum. You delegate only your own authority. Needs a person signed in who passed step-up in the last 5 minutes and holds an approval right. Side effects: the delegation and its audit event, and a notice to you and your delegate. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Approve on (approvals). Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). A person delegates only their own authority, with step-up.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ApprovalDelegationInput`](../../contracts/schemas/ApprovalDelegationInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ApprovalDelegation`](../../contracts/schemas/ApprovalDelegation.schema.json)
+  - `201` Created [`ApprovalDelegation`](../../contracts/schemas/ApprovalDelegation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-17` The delegation cannot be made that way.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-17`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/approval-delegations/{delegation_id}/end`
+
+**End a delegation of approval authority** (`endApprovalDelegation`)
+
+Ends a delegation at once (FR-APR-06): its delegate can sign for nobody under it from now on, and what they signed stays. The delegator ends their own; an Owner may end any. Over the version you read (If-Match). Needs a person signed in who passed step-up in the last 5 minutes. Side effects: the end and its audit event, and a notice to both. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** View on (approvals). Each approval's own policy decides: the Appendix D row of the object it changes. Never the AI (§9.6). The delegator, the delegate or an Owner ends a delegation, with step-up.
+- **Parameters:**
+  - `delegation_id` (path, required): The delegation's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`ApprovalDelegation`](../../contracts/schemas/ApprovalDelegation.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-18` That delegation cannot be ended by you, or has ended; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-18`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ### `GET /v1/approval-policies`
 
 **List the approval policies** (`listApprovalPolicies`)
@@ -28542,6 +28786,88 @@ Marks one of the caller's notifications unread again (FR-NTF-01). Side effects: 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EML-08`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+## Automation
+
+Workflow rules without code (FR-AUT-03): a fixed trigger, typed conditions and one fixed action, to tell members when a document of a kind is posted. A rule never posts, approves, pays or files anything, and never reaches the AI or MCP.
+
+### `GET /v1/automation-rules`
+
+**List the organisation's workflow rules** (`listAutomationRules`)
+
+The rules that tell members when a document of a kind is posted (FR-AUT-03), oldest first, a page at a time, each with its conditions, recipients and state. Read-only; no side effects.
+
+- **Permission:** View on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`AutomationRulePage`](../../contracts/schemas/AutomationRulePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/automation-rules`
+
+**Make a workflow rule** (`createAutomationRule`)
+
+Makes a rule that tells members when a document of a kind, above an amount, is posted (FR-AUT-03): `{ "name": "Large bills", "document_type": "bill", "amount_at_least": "5000.00", "recipients": [...] }`. The trigger and the one action (notify) are fixed: a rule never posts, approves, pays, files or sends outside Fyniq, and has no expressions. Each recipient must be an active member, and holds the right to view the document each time the rule fires; the person who posted it is never told. Refused (AUT-02) while "Workflow rules" is off, as it is until an Owner turns it on with a second approver; at most 50 rules (AUT-01). Needs a person signed in to Fyniq. Side effects: the rule and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AutomationRuleInput`](../../contracts/schemas/AutomationRuleInput.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AutomationRule`](../../contracts/schemas/AutomationRule.schema.json)
+  - `201` Created [`AutomationRule`](../../contracts/schemas/AutomationRule.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `AUT-03` No such workflow rule.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AUT-02` Workflow rules are off; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AUT-01` The workflow rule cannot be saved that way.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AUT-01`, `AUT-02`, `AUT-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `PATCH /v1/automation-rules/{rule_id}`
+
+**Change, pause or archive a workflow rule** (`changeAutomationRule`)
+
+Changes a rule's name, kind of document, amount or recipients, or pauses, resumes or archives it, over the version you read (If-Match; FR-AUT-03). What you leave out stays. The trigger and the action never change. An archived rule is final. Refused (AUT-02) while "Workflow rules" is off. Needs a person signed in to Fyniq. Side effects: the change and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6)
+- **Parameters:**
+  - `rule_id` (path, required): The rule's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AutomationRuleChange`](../../contracts/schemas/AutomationRuleChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AutomationRule`](../../contracts/schemas/AutomationRule.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found; `AUT-03` No such workflow rule.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AUT-02` Workflow rules are off; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AUT-01` The workflow rule cannot be saved that way.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `AUT-01`, `AUT-02`, `AUT-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
 ## Tasks
 
 Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI.
@@ -28644,6 +28970,36 @@ Updates the title, detail, due date or link of a task the calling client made, o
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ITASK-01`, `ITASK-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
+
+### `POST /v1/tasks/{task_id}/close`
+
+**Finish a task an integration made, as a person** (`closeIntegrationTask`)
+
+A person who holds the right on tasks made by integrations (an Owner or an Administrator) marks one done or cancelled, for good, over the version they read (If-Match; FR-INT-24). Only the status changes. The person must be signed in to Fyniq: no API client, token, agent or AI closes a task this way, and a compliance task is not found here. Side effects: the change and its audit event naming the person. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Organisation integrations: email senders, Slack, Zoho Cliq, inbound capture (rev 0.6). Needs a person signed in to Fyniq with the right on Organisation integrations (Administrator; the Owner too, as for every integration), who also finishes the tasks integrations made: no API client, token, agent or AI finishes a task this way, and no scope reaches it (FR-INT-24).
+- **Parameters:**
+  - `task_id` (path, required): The task's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`IntegrationTaskClose`](../../contracts/schemas/IntegrationTaskClose.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`IntegrationTask`](../../contracts/schemas/IntegrationTask.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `ITASK-03` Only a person finishes a task this way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ITASK-02` The task is finished; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `ITASK-02`, `ITASK-03`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
 ## Connected apps
 

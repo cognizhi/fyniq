@@ -2,9 +2,9 @@
 key: approvals.decide
 type: task
 title: Ask for, approve or reject a change that needs a second approver
-summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
+summary: Which changes wait for a second person, approving from the Inbox or an email, delegating while away, reminders, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:fd2b932e9fab49f8e2c7edb00d43a881f4006cf3c2040841ea8ced7f1acbfe11
+  - docs/user-guide/approvals.md sha256:ee7881e7ffd588d0f21ab5deafafa0278ff6974781d055e69057ad60adfd1fee
 data_class: general
 taint: trusted
 status: published
@@ -31,6 +31,12 @@ aliases:
   - unusual items
   - anomaly review
   - person's bank account
+  - delegate my approvals
+  - on leave
+  - away
+  - approve from email
+  - approval reminder
+  - escalation
 ---
 
 # Ask for, approve or reject a change that needs a second approver
@@ -68,6 +74,29 @@ aliases:
 - From the keyboard, while a request in the Inbox has the focus: J or ↓ and K or ↑ move, E or Enter opens, A and R open it with the approval's or rejection's confirmation showing, which you still confirm, and ? shows the keys; they never fire while typing, and do nothing but say so on a request not yours to decide.
 
 (src: docs/user-guide/approvals.md#approve-or-reject) (src: docs/user-guide/approvals.md#from-the-keyboard)
+
+## Approve from an email
+
+- An email that says an approval waits carries a link to the request; the link approves nothing, it opens Fyniq, asks you to sign in if needed and shows the request, and you approve or reject it as above.
+- A mail program that opens the link changes nothing: only the person signed in decides. By default the email names only the kind of change; amounts and names stay in the app.
+
+(src: docs/user-guide/approvals.md#approve-from-an-email)
+
+## Delegate your approvals
+
+- **Inbox → Away? Delegate your approvals → Delegate my approvals**: choose the member, the first and last day (up to 90 days apart) and a reason, then confirm it's you; both people get a notice and it is audited.
+- The delegate signs the steps that name you on those days. A delegation lends no right: they must hold an approval right themselves, sign as themselves with their own passkey, and the approval says it was made on your behalf.
+- They sign only what you could sign, never a request they asked for, and never one you signed; you and your delegate count as one person, so once they sign for you, you do not sign it too.
+- **End now** ends it early; what the delegate signed stays.
+
+(src: docs/user-guide/approvals.md#delegate-your-approvals)
+
+## Reminders and escalation
+
+- Fyniq reminds those who may sign a waiting approval once a day, up to three times; after three days without a decision it tells the Owners and the person who asked.
+- They only tell people: they never approve, reject or extend a request, which still expires after seven days. The times are under **Settings → Organisation → Approvals** ([[settings.organisation]]).
+
+(src: docs/user-guide/approvals.md#reminders-and-escalation)
 
 ## Approve a person's bank account
 

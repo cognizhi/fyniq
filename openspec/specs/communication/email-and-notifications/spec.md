@@ -342,6 +342,11 @@ Source: PRD-001 §8.24 · Priority S · Phase P2
 - **THEN** routing rules send its event type to a channel, for example approvals to #finance and company-secretary runs to #compliance
 - **AND** users who linked their chat account also get direct messages
 
+#### Scenario: Chat carries a label and a link only
+- **WHEN** an event of a type with a routing rule is fanned out
+- **THEN** one message per rule carries the type's label and a deep link, never a title, a name or an amount, and only for operational and approval events
+- **AND** a sandbox organisation, a paused connector and a security or personal-data type post nothing
+
 #### Scenario: Approvals open the web app
 - **WHEN** a chat message concerns an approval
 - **THEN** its button opens the web app, where step-up applies (FR-APR-03/04)

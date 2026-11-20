@@ -4,7 +4,7 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:0e764a09d95d1888355a4d2db1f542e46f4e9d46a91b5f86f47c3406cfdee30e
+  - docs/user-guide/integrations.md sha256:0d14f2b9ea920b799936a24b5b3c676f9e191909490c9bbf5573b190fd6ebd94
 data_class: general
 taint: trusted
 status: draft
@@ -168,3 +168,20 @@ aliases:
   and set aside for a person, and posts nothing.
 
 (src: docs/user-guide/integrations.md#payment-providers-stripe-and-hitpay)
+
+## Slack
+
+- An Administrator installs Slack under Settings › Integrations: a private Slack app with the scope chat:write, its bot token as the connector's secret, the app added to each channel named.
+- Routing rules in the connector's configuration send an event type to a channel, such as fyniq.approval.requested.v1 to #finance; a type with no rule is not sent, and security, personal-data and payee events never are.
+- A message is the type's label and a link, with no amount, name or title; approving never happens in Slack, the link opens Fyniq where step-up applies. A refused message is retried and then reported to the Owner and Administrators; a sandbox organisation never posts; Zoho Cliq is not available yet.
+
+(src: docs/user-guide/integrations.md#slack)
+
+## Tasks from other systems
+
+- A ticketing system or another connected system makes tasks, each with its own reference and a link back, which show in the Inbox under Tasks from other systems, apart from the compliance tasks.
+- The system that made a task finishes it, and a finished task stays finished. An Owner or an Administrator can also mark one done or cancel it in the Inbox, for good; ask the system for a new one rather than reopening.
+- A task never approves anything, marks no obligation met and changes no record; do not put personal data or amounts in one.
+
+(src: docs/user-guide/integrations.md#tasks-from-other-systems)
+

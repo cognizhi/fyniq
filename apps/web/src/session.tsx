@@ -15,6 +15,7 @@ import { mayOpen, personalOnly } from "./shell/navigation";
 import { NotPartOfAccess } from "./shell/NotPartOfAccess";
 import { CoolingOff, RecoverAccount } from "./screens/Recovery";
 import { CompanyLogo } from "./screens/settings/Brand";
+import { OfflineNotice } from "./pwa/OfflineQueue";
 import { Banners } from "./shell/Banners";
 import { NemuraPasskeyReminder } from "./shell/NemuraPasskeyReminder";
 import { PracticeBanner } from "./shell/PracticeBanner";
@@ -180,6 +181,7 @@ export function SignedIn() {
           <>
             <PracticeBanner practice={state.organisation?.practice} />
             <NemuraPasskeyReminder needed={state.session.nemura_passkey_needed} />
+            <OfflineNotice />
             <Banners />
           </>
         } logo={<CompanyLogo name={state.organisation?.name} />}>

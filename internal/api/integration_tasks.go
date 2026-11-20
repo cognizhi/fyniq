@@ -108,6 +108,7 @@ type (
 )
 
 func registerIntegrationTasks(a *API) {
+	registerIntegrationTaskClose(a)
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := []string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}
 

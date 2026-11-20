@@ -18,6 +18,11 @@ import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
 import { Careers } from "./pages/Careers";
+import { PersonGoals } from "./pages/PersonGoals";
+import { Pipeline } from "./pages/Pipeline";
+import { MyApplication } from "./pages/MyApplication";
+import { MyInterviews } from "./pages/MyInterviews";
+import { MyRoles } from "./pages/MyRoles";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -2035,5 +2040,130 @@ describe("careers page", () => {
     answer("GET /v1/careers/nobody", { status: 200, body: { found: false, posts: [] } });
     render(<Careers slug="nobody" />);
     expect(await screen.findByText("There is no careers page at this address.")).toBeTruthy();
+  });
+});
+
+// req: NM-REC-04, NM-REC-05, QA-UI-05
+describe("pipeline", () => {
+  it("shows a requisition's candidates with their stage and consent, adds one, and moves one with the reason of a decision", async () => {
+    const cand = { id: "c1", requisition_id: "r1", name: "Chen Yu", email: "chen.yu@example.com", stage: "screening", stage_at: "2026-11-02T10:00:00Z", applied_via: "careers_page", applied_at: "2026-11-01T10:00:00Z", consent_future: true };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: true, questions: ["Walk us through a forecast you built."], criteria: ["Analytical skill"], findings: [] } });
+    answer("POST /v1/candidates/c1/moves", { status: 200, body: { ...cand, stage: "interview" } });
+    answer("POST /v1/requisitions/r1/candidates", { status: 201, body: cand });
+    const { container } = render(<Pipeline requisition="r1" canWrite />);
+    expect(await screen.findByText("Chen Yu: Screening")).toBeTruthy();
+    expect(screen.getByText("Consented to be kept for future roles")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Move Chen Yu to Interview" }));
+    expect(await screen.findByText("The candidate is moved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c1/moves")).toEqual({ to: "interview" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Mei Tan" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "mei.tan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the candidate" }));
+    expect(await screen.findByText("The candidate is added.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions/r1/candidates")).toMatchObject({ name: "Mei Tan", email: "mei.tan@example.com", consent_future: false });
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("hires a candidate at the offer stage with a start date, and offers no hire to someone who cannot", async () => {
+    const cand = { id: "c2", requisition_id: "r1", name: "Mei Tan", email: "mei.tan@example.com", stage: "offer", stage_at: "2026-11-02T10:00:00Z", applied_via: "recruiter", applied_at: "2026-11-01T10:00:00Z", consent_future: false };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: false, questions: [], criteria: [], findings: [] } });
+    answer("POST /v1/candidates/c2/hire", { status: 201, body: { ...cand, stage: "hired", hire: { person_id: "p1", plan_id: "pl1", start_date: "2027-02-01", pass_needed: false } } });
+    render(<Pipeline requisition="r1" canWrite canHire={false} />);
+    expect(await screen.findByText("Mei Tan: Offer")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Hire Mei Tan" })).toBeNull();
+    cleanup();
+    render(<Pipeline requisition="r1" canWrite canHire />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(await screen.findByLabelText("First day of employment"), { target: { value: "2027-02-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Hire Mei Tan" }));
+    expect(await screen.findByText("The candidate is hired: their person record and onboarding plan are made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c2/hire")).toEqual({ start_date: "2027-02-01", employment_type: "full_time" });
+  });
+});
+
+// req: NM-REC-04, NM-REC-05, QA-UI-05
+describe("assigning an interviewer and a candidate's own link", () => {
+  it("assigns an interviewer from those who hold the role, and makes a link whose token is shown once", async () => {
+    const cand = { id: "c3", requisition_id: "r1", name: "Chen Yu", email: "chen.yu@example.com", stage: "screening", stage_at: "2026-11-02T10:00:00Z", applied_via: "careers_page", applied_at: "2026-11-01T10:00:00Z", consent_future: false };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: false, questions: [], criteria: [], findings: [] } });
+    answer("GET /v1/interviewers", { status: 200, body: { interviewers: [{ member_id: "m1", name: "Ian Interviewer" }, { member_id: "m2", name: "Ivy Interviewer" }] } });
+    answer("GET /v1/candidates/c3/access-links", { status: 200, body: { links: [{ id: "l1", created_at: "2026-11-20T10:00:00Z", expires_at: "2026-12-04T10:00:00Z" }] } });
+    answer("POST /v1/candidates/c3/interviewers", { status: 201, body: cand });
+    answer("POST /v1/candidates/c3/access-links", { status: 201, body: { id: "l2", token: "org.token", expires_at: "2026-12-04T10:00:00Z", path: "/my-application" } });
+    answer("POST /v1/candidate-access-links/l1/revocation", { status: 200, body: { revoked: true } });
+    const { container } = render(<Pipeline requisition="r1" canWrite />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(await screen.findByLabelText("Interviewer to assign"), { target: { value: "m2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Assign" }));
+    expect(await screen.findByText(/The interviewer is assigned/)).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c3/interviewers")).toEqual({ member_id: "m2" });
+    fireEvent.click(screen.getByRole("button", { name: "Make the link" }));
+    expect(await screen.findByText(/\/my-application#org\.token/)).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c3/access-links")).toEqual({ days: 14 });
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke the link made 2026-11-20" }));
+    expect(await screen.findByText("The link is revoked and no longer works.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("lists an interviewer's candidates and saves a score, and shows a line manager's roles as counts", async () => {
+    answer("GET /v1/me/interviews", { status: 200, body: { interviews: [{ candidate_id: "c4", name: "Mei Tan", stage: "interview", requisition_id: "r1", requisition_title: "Analyst", criteria: ["Analytical skill", "Communication"], scored: [] }] } });
+    answer("GET /v1/candidates/c4", { status: 200, body: { id: "c4", requisition_id: "r1", name: "Mei Tan", email: "mei.tan@example.com", cv: "Five years in FP&A.", stage: "interview", stage_at: "2026-11-02T10:00:00Z", applied_via: "recruiter", applied_at: "2026-11-01T10:00:00Z", consent_future: false } });
+    answer("POST /v1/candidates/c4/scores", { status: 201, body: { id: "c4", requisition_id: "r1", name: "Mei Tan", email: "mei.tan@example.com", stage: "interview", stage_at: "2026-11-02T10:00:00Z", applied_via: "recruiter", applied_at: "2026-11-01T10:00:00Z", consent_future: false } });
+    const { container } = render(<MyInterviews roles={["interviewer"]} />);
+    expect(await screen.findByText("Mei Tan, Analyst: Interview")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Read and score Mei Tan" }));
+    expect(await screen.findByText("Five years in FP&A.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Score, 1 to 5"), { target: { value: "4" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the score" }));
+    expect(await screen.findByText(/Your score is saved/)).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c4/scores")).toEqual({ criterion: "Analytical skill", score: 4 });
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    answer("GET /v1/me/hiring-roles", { status: 200, body: { roles: [{ id: "r2", title: "Designer", department: "Product", state: "approved", target_start: "2027-02-01", pass_needed: false, post_state: "published", candidates: { applied: 3, screening: 2, interview: 1, offer: 0, hired: 0, not_progressing: 4 } }] } });
+    const r = render(<MyRoles roles={["line_manager"]} />);
+    expect(await screen.findByText("Designer, Product: approved")).toBeTruthy();
+    expect(screen.getByText("Applied 3, screening 2, interview 1, offer 0, hired 0, not progressing 4")).toBeTruthy();
+    expect(await violations(r.container)).toEqual([]);
+  });
+
+  it("shows a candidate their own application through a link, never the team's words, and lets them withdraw the consent", async () => {
+    const view = { found: true, name: "Chen Yu", email: "chen.yu@example.com", cv: "Five years in FP&A.", role: "Analyst", stage: "interview", stage_at: "2026-11-02T10:00:00Z", applied_at: "2026-11-01T10:00:00Z", applied_via: "careers_page", consent_future: true, consent_withdrawn: false, link_expires_at: "2026-12-04T10:00:00Z" };
+    answer("POST /v1/candidate-data", { status: 200, body: view });
+    answer("POST /v1/candidate-data/consent-withdrawal", { status: 200, body: { ...view, consent_future: false, consent_withdrawn: true } });
+    window.history.replaceState(null, "", "/my-application#0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx");
+    const { container } = render(<MyApplication />);
+    expect(await screen.findByText("Role: Analyst")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidate-data")).toEqual({ token: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d0001.xxxxxxxxxx" });
+    expect(screen.getByText("Five years in FP&A.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw my consent to be kept for future roles" }));
+    expect(await screen.findByText(/Your consent is withdrawn/)).toBeTruthy();
+    cleanup();
+    answer("POST /v1/candidate-data", { status: 200, body: { found: false, consent_future: false, consent_withdrawn: false } });
+    render(<MyApplication />);
+    expect(await screen.findByText(/That link is not valid/)).toBeTruthy();
+    window.history.replaceState(null, "", "/");
+  });
+});
+
+// req: NM-PRF-01, NM-PRF-02, QA-UI-05
+describe("a person's goals for the manager", () => {
+  it("shows the goals and KPIs read only, and says there are none when the API does", async () => {
+    const measure = { id: "m1", title: "Pilot customers live", unit: "customers", start_value: "0", target: "3", current: "2", lower_is_better: false, progress: 66, status: "on_track" };
+    answer("GET /v1/people/p1/goals", { status: 200, body: { goals: [{ id: "g1", scope: "personal", title: "Bank sync in beta", starts_on: "2026-07-01", due_on: "2026-12-31", state: "open", progress: 66, measures: [measure] }], kpis: [] } });
+    const { container } = render(<PersonGoals roles={["line_manager"]} personId="p1" />);
+    expect(await screen.findByText("Bank sync in beta")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Update/ })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    answer("GET /v1/people/p2/goals", { status: 404, body: { detail: "There is no such goal." } });
+    render(<PersonGoals roles={["employee"]} personId="p2" />);
+    expect(await screen.findByText(/There are no such goals for you to read/)).toBeTruthy();
   });
 });

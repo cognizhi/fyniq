@@ -10,6 +10,7 @@ import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { CameraButton, OfflineQueuePanel, useOnline, useReceiptQueue } from "../../pwa/OfflineQueue";
 import { listAccounts } from "../accounting/data";
 import { useCategories } from "../claims/claims";
 
@@ -403,6 +404,8 @@ export function DocumentInbox() {
   const idPrefix = useId();
   const help = helpText("documents.inbox");
   const mayDraft = (session.roles ?? []).some((r) => preparers.includes(r));
+  const online = useOnline();
+  const receipts = useReceiptQueue(session.user_id ?? "", () => void queries.invalidateQueries({ queryKey: ["captures"] }));
   const [status, setStatus] = useState("");
   const [open, setOpen] = useState("");
   const [busy, setBusy] = useState("");
@@ -463,8 +466,13 @@ export function DocumentInbox() {
   };
 
   const capture = async (file: File, source: "upload" | "paste") => {
-    setBusy("upload");
     setProblem(null);
+    if (!online) {
+      // No signal (FR-UX-16): the receipt waits on this device, sealed, and uploads by itself when the signal is back.
+      setSaid(await receipts.enqueue(file));
+      return;
+    }
+    setBusy("upload");
     const body = { file: file.name, source };
     const bodySerializer = () => {
       const form = new FormData();
@@ -472,7 +480,16 @@ export function DocumentInbox() {
       form.append("source", source);
       return form;
     };
-    const r = await api.POST("/v1/captures", { params: { header: { "Idempotency-Key": newKey() } }, body, bodySerializer });
+    const post = () => api.POST("/v1/captures", { params: { header: { "Idempotency-Key": newKey() } }, body, bodySerializer });
+    let r: Awaited<ReturnType<typeof post>>;
+    try {
+      r = await post();
+    } catch {
+      // The signal went while the file was going: keep it on the device rather than lose it.
+      setBusy("");
+      setSaid(await receipts.enqueue(file));
+      return;
+    }
     if (r.error) return fail(r.error);
     setOpen(r.data?.id ?? "");
     await refresh(r.data?.status === "duplicate" ? `${file.name} is in the inbox already.` : `${file.name} is captured. Have it read, then check what was read.`);
@@ -530,6 +547,7 @@ export function DocumentInbox() {
               <Icon of={Upload} />
               Upload a document
             </label>
+            <CameraButton onFile={(f) => void capture(f, "upload")} />
             <input
               id={`${idPrefix}-file`}
               className="fy-sr"
@@ -589,6 +607,8 @@ export function DocumentInbox() {
           </ul>
         </section>
       )}
+
+      {mayDraft && (receipts.waiting.length > 0 || !online) && <OfflineQueuePanel q={receipts} />}
 
       {said && (
         <div className="fy-banner fy-banner--good" role="status">

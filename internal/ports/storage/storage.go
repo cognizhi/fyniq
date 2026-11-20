@@ -119,6 +119,9 @@ type UnitOfWork interface {
 	Notifications() Notifications
 	// Webhooks are the organisation's outbound webhook endpoints, their deliveries and attempts (FR-INT-12).
 	Webhooks() Webhooks
+	ApprovalDelegations() ApprovalDelegations
+	ApprovalReminders() ApprovalReminders
+	AutomationRules() AutomationRules
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
 	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).
@@ -127,6 +130,8 @@ type UnitOfWork interface {
 	SavedItems() SavedItems
 	// Practices opens a practice organisation from the organisation this unit of work is for, and says whether one is practice (FR-UX-36).
 	Practices() Practices
+	// Sandboxes make a sandbox organisation (the installation's unit of work) and say whether the unit of work's organisation is one (FR-INT-18).
+	Sandboxes() Sandboxes
 	// RecordComments are the comments and @mentions on records (FR-UX-13).
 	RecordComments() RecordComments
 	// PeopleLinks are the link to Nemura, the inbox of its events and the employee projection (FR-PPL-06, 15, 16).
@@ -1085,6 +1090,9 @@ const (
 	// at a time (FR-UX-36; the owner's decision of 21 Nov 2026). CodePracticeHeld: they hold one already.
 	CodePractice     = "STORAGE-PRACTICE-01"
 	CodePracticeHeld = "STORAGE-PRACTICE-02"
+	// CodeSandbox: only a new organisation is made a sandbox one and the flag is never changed or removed; a sandbox organisation's name starts with
+	// "Sandbox: " (FR-INT-18).
+	CodeSandbox = "STORAGE-SANDBOX-01"
 	// CodeAsset: an asset comes from one line of a posted bill or bank line that debits an asset account, once, and
 	// keeps it; a month's depreciation names a registered asset at its current version (FR-FA-01, FR-FA-02).
 	CodeAsset = "STORAGE-ASSET-01"

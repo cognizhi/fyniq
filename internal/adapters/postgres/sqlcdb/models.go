@@ -659,6 +659,22 @@ type FyniqAppUser struct {
 	CreatedAt   time.Time
 }
 
+type FyniqApprovalDelegation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Delegator      uuid.UUID
+	Delegate       uuid.UUID
+	StartsOn       time.Time
+	EndsOn         time.Time
+	Reason         string
+	Status         string
+	EndedAt        *time.Time
+	EndedBy        *uuid.UUID
+	Version        int32
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqApprovalPolicy struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -669,6 +685,15 @@ type FyniqApprovalPolicy struct {
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
 	Rules          []byte
+}
+
+type FyniqApprovalReminder struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RequestID      uuid.UUID
+	Kind           string
+	Number         int32
+	SentAt         time.Time
 }
 
 type FyniqApprovalRequest struct {
@@ -714,6 +739,7 @@ type FyniqApprovalSignature struct {
 	ClientData         []byte
 	AssertionSignature []byte
 	SelectionSha256    *string
+	OnBehalfOf         *uuid.UUID
 }
 
 type FyniqAuditBoundary struct {
@@ -834,6 +860,22 @@ type FyniqAuthzRefusal struct {
 	UserID         uuid.UUID
 	WindowStart    time.Time
 	Refused        int32
+}
+
+type FyniqAutomationRule struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Name           string
+	Trigger        string
+	DocumentType   *string
+	AmountAtLeast  *string
+	Action         string
+	Recipients     []uuid.UUID
+	State          string
+	Version        int32
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type FyniqBalance struct {
@@ -4057,6 +4099,53 @@ type FyniqSalesReminder struct {
 	Reason         *string
 	DecidedBy      string
 	DecidedAt      time.Time
+}
+
+type FyniqSandboxOrganisation struct {
+	OrganisationID uuid.UUID
+	CreatedBy      uuid.UUID
+	ChangeID       *uuid.UUID
+	CreatedAt      time.Time
+}
+
+type FyniqSecurityAssessment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	Tester         string
+	Independent    bool
+	Scope          string
+	StartedOn      time.Time
+	EndedOn        time.Time
+	Summary        string
+	ReportSha256   *string
+	ReportLocation *string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqSecurityFinding struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	AssessmentID   uuid.UUID
+	Ref            string
+	Title          string
+	Severity       string
+	FoundOn        time.Time
+	DueOn          pgtype.Date
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+type FyniqSecurityFindingStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FindingID      uuid.UUID
+	Step           string
+	OnDate         time.Time
+	Reason         *string
+	RecordedBy     string
+	RecordedAt     time.Time
 }
 
 type FyniqSecurityIncident struct {

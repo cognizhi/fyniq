@@ -10,6 +10,7 @@ import { date } from "../../format/date";
 import { helpText } from "../../i18n";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { SettingsPage } from "./SettingsPage";
+import { ThirdPartyApps } from "./ThirdPartyApps";
 
 type View = components["schemas"]["ConnectedAppsView"];
 type Registration = components["schemas"]["MCPRegistration"];
@@ -274,6 +275,7 @@ export function ConnectedApps() {
           </ul>
         </section>
       )}
+      <ThirdPartyApps />
       {(waiting.data?.length ?? 0) > 0 && (
         <section className="fy-card" aria-labelledby={`${id}-waiting`}>
           <div className="fy-card__head">

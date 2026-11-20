@@ -217,7 +217,7 @@ class ApprovalProgress(_ApprovalProgressRequired, _ApprovalProgressOptional):
     """ApprovalProgress is a schema of the contract."""
 
 _ApprovalSignatureRequired = TypedDict("_ApprovalSignatureRequired", {"decision": "str", "method": "str", "signed_at": "str", "signer": "str", "signer_name": "str", "voided": "bool"})
-_ApprovalSignatureOptional = TypedDict("_ApprovalSignatureOptional", {"passkey_id": "str", "reason": "str"}, total=False)
+_ApprovalSignatureOptional = TypedDict("_ApprovalSignatureOptional", {"on_behalf_of": "str", "on_behalf_of_name": "str", "passkey_id": "str", "reason": "str"}, total=False)
 
 
 class ApprovalSignature(_ApprovalSignatureRequired, _ApprovalSignatureOptional):
@@ -2604,7 +2604,7 @@ class OrderCloseRequest(_OrderCloseRequestRequired, _OrderCloseRequestOptional):
     """OrderCloseRequest is a schema of the contract."""
 
 _OrganisationRequired = TypedDict("_OrganisationRequired", {"base_currency": "str", "base_minor_units": "int", "id": "str", "name": "str", "team_mode": "str", "version": "int"})
-_OrganisationOptional = TypedDict("_OrganisationOptional", {"practice": "bool"}, total=False)
+_OrganisationOptional = TypedDict("_OrganisationOptional", {"practice": "bool", "sandbox": "bool"}, total=False)
 
 
 class Organisation(_OrganisationRequired, _OrganisationOptional):

@@ -147,3 +147,27 @@ func TestThePayrollCalendarAndFinalPayAreChecked(t *testing.T) {
 		t.Errorf("a fortnight before: %+v", got)
 	}
 }
+
+// N.1 #11 and #12: a report of candidates past their retention period is a ⚠ for Hiring; a report of any record type waiting for its review is a ⚠ for Records and a ✖ once the review date has passed.
+// req: NM-REC-05, NM-SEC-05
+func TestAReportWaitingForItsReviewIsWarnedAboutAndFailsAfterItsDate(t *testing.T) {
+	reports := []DeletionWaiting{
+		{Record: "candidates", Due: 2, Created: d("2026-11-01"), ReviewBy: d("2026-12-01")},
+		{Record: "medical_certificates", Due: 1, Held: 3, Created: d("2026-11-01"), ReviewBy: d("2026-11-30")},
+	}
+	got := RetentionWaiting(reports, d("2026-11-20"))
+	if len(got) != 3 || got[0].Check != 11 || got[0].Status != Warn || got[0].Area != "Hiring" || !strings.Contains(got[0].Message, "2 candidates' data is past its retention period") ||
+		got[1].Check != 12 || got[1].Status != Warn || got[1].Subject != "candidates" || got[2].Subject != "medical_certificates" || !strings.Contains(got[2].Message, "3 more are kept by a legal hold") {
+		t.Fatalf("while waiting: %+v", got)
+	}
+	got = RetentionWaiting(reports, d("2026-12-02"))
+	if len(got) != 3 || got[1].Status != Fail || got[2].Status != Fail || !strings.Contains(got[2].Message, "was due for review on 2026-11-30") {
+		t.Errorf("after the review date: %+v", got)
+	}
+	if got := RetentionWaiting(reports, d("2026-12-01")); got[1].Status != Warn || got[2].Status != Fail {
+		t.Errorf("on the review day of one report: %+v", got)
+	}
+	if got := RetentionWaiting(nil, d("2026-12-02")); len(got) != 0 {
+		t.Errorf("nothing waiting: %+v", got)
+	}
+}

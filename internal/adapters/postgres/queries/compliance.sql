@@ -341,3 +341,38 @@ INSERT INTO fyniq.tick_drill (held_on, environment, paused_minutes, first_alert_
 VALUES (sqlc.arg(held_on), sqlc.arg(environment), sqlc.arg(paused_minutes), sqlc.narg(first_alert_minutes), sqlc.narg(escalation_minutes),
         sqlc.arg(findings), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
 RETURNING id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at;
+
+-- name: ListSecurityAssessments :many
+-- The organisation's security assessments, the latest ended first (SEC-25).
+SELECT id, kind, tester, independent, scope, started_on, ended_on, summary, report_sha256, report_location, recorded_by, recorded_at
+FROM fyniq.security_assessment ORDER BY ended_on DESC, recorded_at DESC, id DESC;
+
+-- name: ListSecurityFindings :many
+SELECT id, assessment_id, ref, title, severity, found_on, due_on, recorded_by, recorded_at
+FROM fyniq.security_finding ORDER BY found_on, recorded_at, id;
+
+-- name: ListSecurityFindingSteps :many
+SELECT id, finding_id, step, on_date, reason, recorded_by, recorded_at
+FROM fyniq.security_finding_step ORDER BY recorded_at, id;
+
+-- name: InsertSecurityAssessment :one
+INSERT INTO fyniq.security_assessment (kind, tester, independent, scope, started_on, ended_on, summary, report_sha256, report_location, recorded_by, recorded_at)
+VALUES (sqlc.arg(kind), sqlc.arg(tester), sqlc.arg(independent), sqlc.arg(scope), sqlc.arg(started_on), sqlc.arg(ended_on), sqlc.arg(summary),
+        sqlc.narg(report_sha256), sqlc.narg(report_location), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id;
+
+-- name: InsertSecurityFinding :one
+INSERT INTO fyniq.security_finding (assessment_id, ref, title, severity, found_on, due_on, recorded_by, recorded_at)
+VALUES (sqlc.arg(assessment_id), sqlc.arg(ref), sqlc.arg(title), sqlc.arg(severity), sqlc.arg(found_on), sqlc.narg(due_on), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id;
+
+-- name: InsertSecurityFindingStep :one
+INSERT INTO fyniq.security_finding_step (finding_id, step, on_date, reason, recorded_by, recorded_at)
+VALUES (sqlc.arg(finding_id), sqlc.arg(step), sqlc.arg(on_date), sqlc.narg(reason), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id;
+
+-- name: SecurityFindingExists :one
+SELECT EXISTS (SELECT 1 FROM fyniq.security_finding WHERE id = sqlc.arg(id))::boolean AS found;
+
+-- name: SecurityAssessmentExists :one
+SELECT EXISTS (SELECT 1 FROM fyniq.security_assessment WHERE id = sqlc.arg(id))::boolean AS found;

@@ -51,6 +51,7 @@ type MyOrganisation struct {
 	ID       string `json:"id" format:"uuid" doc:"The organisation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b01"`
 	Name     string `json:"name" doc:"Its name." example:"Northwind Analytics Pte. Ltd."`
 	Practice bool   `json:"practice" doc:"true for a practice organisation (FR-UX-36)." example:"false"`
+	Sandbox  bool   `json:"sandbox" doc:"true for a sandbox organisation, made for integration testing with the sample company (FR-INT-18)." example:"false"`
 	Current  bool   `json:"current" doc:"true for the one this session is in." example:"true"`
 }
 
@@ -96,7 +97,7 @@ func registerPractice(a *API) {
 		}
 		all := make([]MyOrganisation, 0, len(rows))
 		for _, r := range rows {
-			all = append(all, MyOrganisation{ID: r.ID.String(), Name: r.Name, Practice: r.Practice, Current: r.ID == p.Organisation})
+			all = append(all, MyOrganisation{ID: r.ID.String(), Name: r.Name, Practice: r.Practice, Sandbox: a.isSandbox(ctx, r.ID), Current: r.ID == p.Organisation})
 		}
 		items, next, err := pageOf(all, func(o MyOrganisation) string { return o.ID }, in.PageQuery)
 		if err != nil {
@@ -134,7 +135,7 @@ func registerPractice(a *API) {
 		}
 		for _, r := range rows {
 			if r.ID == org {
-				return &switchedOutput{Body: MyOrganisation{ID: r.ID.String(), Name: r.Name, Practice: r.Practice, Current: true}}, nil
+				return &switchedOutput{Body: MyOrganisation{ID: r.ID.String(), Name: r.Name, Practice: r.Practice, Sandbox: a.isSandbox(ctx, r.ID), Current: true}}, nil
 			}
 		}
 		return nil, problem(CodeNotFound, "You are no member of an organisation with that ID.", "List the organisations you work in and choose one of them")
@@ -149,7 +150,7 @@ func registerPractice(a *API) {
 			"last 5 minutes. Side effects: the organisation, its membership and Owner role, and audit events in both organisations' trails. It is deleted " +
 			"through the organisation's tenant export and delete. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
 	}, append([]string{CodeStepUpRequired, CodeSessionRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld,
-		storage.CodePractice, storage.CodePracticeHeld}, storage.CodeRetry, storage.CodeLockTimeout), func(ctx context.Context, in *createPracticeInput) (*practiceOutput, error) {
+		storage.CodePractice, storage.CodePracticeHeld, CodeSandboxRefused}, storage.CodeRetry, storage.CodeLockTimeout), func(ctx context.Context, in *createPracticeInput) (*practiceOutput, error) {
 		p, _ := authn.From(ctx)
 		if p.UserID == uuid.Nil || p.Class != authn.ClassUser || p.AI() {
 			return nil, problem(CodeSessionRequired, "Only a person signed in to Fyniq opens a practice organisation.", "Sign in as yourself")
@@ -165,6 +166,12 @@ func registerPractice(a *API) {
 			is, err := u.Practices().IsPractice(ctx, p.Organisation)
 			if err != nil {
 				return PracticeOrganisation{}, err
+			}
+			if sandbox, err := inSandbox(ctx, u); err != nil || sandbox { // FR-INT-18: a sandbox organisation opens no practice organisation
+				if err != nil {
+					return PracticeOrganisation{}, err
+				}
+				return PracticeOrganisation{}, refuseSandbox("Opening a practice organisation")
 			}
 			if is {
 				return PracticeOrganisation{}, problem(storage.CodePractice, "A practice organisation opens no other: open it from the organisation that keeps your books.", "Switch to your own organisation first")
@@ -187,4 +194,15 @@ func registerPractice(a *API) {
 		}
 		return &practiceOutput{Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
+}
+
+// isSandbox says whether an organisation the caller is a member of is a sandbox one (FR-INT-18); a failed read says no, which only costs the label.
+func (a *API) isSandbox(ctx context.Context, org uuid.UUID) bool {
+	var sandbox bool
+	_ = a.deps.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		sandbox, err = u.Sandboxes().Is(ctx)
+		return err
+	})
+	return sandbox
 }

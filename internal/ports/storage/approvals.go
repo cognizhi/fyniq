@@ -86,6 +86,7 @@ type ApprovalSignature struct {
 	Reason       string // a rejection's
 	VoidedAt     *time.Time
 	Passkey      *PasskeyAssertion // a passkey-signed approval's assertion; nil for any other
+	OnBehalfOf   *uuid.UUID        // the delegator a delegate signed for (FR-APR-06); nil for a person's own signature
 }
 
 // PasskeyAssertion is what a passkey signed for an approval (FR-APR-03): kept with the signature so it can be verified
@@ -112,6 +113,8 @@ type NewApprovalSignature struct {
 	Passkey      *PasskeyAssertion // with MFAMethod passkey
 	// SelectionSHA256 is the hash of the items of an AI proposal its approver approves, re-hashed (AI-32); "" for the whole.
 	SelectionSHA256 string
+	// OnBehalfOf is the delegator a delegate signs for (FR-APR-06); the database checks a live delegation on the day.
+	OnBehalfOf *uuid.UUID
 }
 
 // Approvals are the organisation's approval requests and their signatures. Every change is audited. The
@@ -171,4 +174,59 @@ type ApprovalPolicies interface {
 	List(ctx context.Context) ([]ApprovalPolicy, error)
 	// Add records a version.
 	Add(ctx context.Context, n NewApprovalPolicy) (ApprovalPolicy, error)
+}
+
+// ApprovalDelegation is an approver's delegation of their authority to another member for some days (FR-APR-06): it lends no right, it only makes
+// the delegate eligible for a step the delegator could sign, as themselves, with the signature recording on whose behalf.
+type ApprovalDelegation struct {
+	ID        uuid.UUID
+	Delegator uuid.UUID
+	Delegate  uuid.UUID
+	StartsOn  time.Time // the first day, a date
+	EndsOn    time.Time // the last day, a date
+	Reason    string
+	Status    string // active or ended
+	EndedAt   *time.Time
+	EndedBy   *uuid.UUID
+	Version   int
+	CreatedAt time.Time
+}
+
+// NewApprovalDelegation is what ApprovalDelegations.Create needs: the delegator's own delegation.
+type NewApprovalDelegation struct {
+	Delegator, Delegate uuid.UUID
+	StartsOn, EndsOn    time.Time
+	Reason              string
+	At                  time.Time
+}
+
+// ApprovalDelegations are the organisation's delegations of approval authority. The database refuses one to oneself, one over 90 days, one changed other than
+// by being ended once, and a delete (CodeApproval). Every change is audited.
+type ApprovalDelegations interface {
+	// Create records a delegation.
+	Create(ctx context.Context, n NewApprovalDelegation) (ApprovalDelegation, error)
+	// Get returns a delegation, or ports.ErrNotFound.
+	Get(ctx context.Context, id uuid.UUID) (ApprovalDelegation, error)
+	// Lock is Get with the row locked until commit.
+	Lock(ctx context.Context, id uuid.UUID) (ApprovalDelegation, error)
+	// List returns every delegation, oldest first.
+	List(ctx context.Context) ([]ApprovalDelegation, error)
+	// End ends an active delegation at version by user at at: CodeVersion when it changed since.
+	End(ctx context.Context, id uuid.UUID, version int, by uuid.UUID, at time.Time) (ApprovalDelegation, error)
+}
+
+// ApprovalReminder is a reminder or the escalation of a pending approval that was sent (FR-APR-08).
+type ApprovalReminder struct {
+	Kind   string // reminder or escalation
+	Number int    // a reminder's, from 1 to 3; an escalation's, 1
+	SentAt time.Time
+}
+
+// ApprovalReminders are the log of the reminders and escalations sent for pending approvals. Only the worker records one, and nobody changes one: it
+// notifies and never signs, decides or extends a request.
+type ApprovalReminders interface {
+	// Sent returns what was sent for a request, in order.
+	Sent(ctx context.Context, requestID uuid.UUID) ([]ApprovalReminder, error)
+	// Record logs one sent at at: CodeApproval when that one was recorded already.
+	Record(ctx context.Context, requestID uuid.UUID, kind string, number int, at time.Time) error
 }

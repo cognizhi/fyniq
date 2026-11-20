@@ -1,0 +1,97 @@
+{
+  "id": "slack",
+  "name": "Slack",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Posts short messages with a deep link into Fyniq to the Slack channels the organisation's routing rules name, with a bot token. Minimal content: the type of event, never an amount, a name or a title. Approvals never happen in Slack: a message only opens the web app.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "messaging",
+      "trigger": "system-rule",
+      "trigger_rule": "A notification event of a type the connection's routing rules send to a channel, fanned out by the platform: never a person's or the AI's request, and never an approval.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "secrets": [
+    {
+      "name": "bot_token",
+      "title": "Bot token",
+      "description": "The Slack app's bot token (xoxb-\u2026) with the scope chat:write, from a private Slack app installed in your workspace (not an incoming webhook, which is fixed to one channel). Add the app to each channel the rules name. Fyniq only posts with it.",
+      "used_by": [
+        "worker"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [
+    "chat:write"
+  ],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": [
+    "US"
+  ],
+  "destinations": [
+    {
+      "host": "slack.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "content_level": {
+        "enum": [
+          "minimal"
+        ],
+        "title": "Content",
+        "description": "What a message says: minimal is the type of event and a link (\"An approval waits for you\"). A standard level with amounts and counterparties waits for the data inventory's entry and the PDPA transfer assessment for Slack (FR-NTF-04), so it is not offered yet.",
+        "default": "minimal"
+      },
+      "routes": {
+        "type": "array",
+        "title": "Routing rules",
+        "description": "Which event types go to which channel, such as approvals to #finance. A type with no rule is not sent to Slack.",
+        "maxItems": 50,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "event_type",
+            "channel"
+          ],
+          "properties": {
+            "event_type": {
+              "type": "string",
+              "title": "Event type",
+              "pattern": "^fyniq\\.[a-z_.]+\\.v1$",
+              "description": "One of the operational and approval events, such as fyniq.approval.requested.v1."
+            },
+            "channel": {
+              "type": "string",
+              "title": "Channel",
+              "minLength": 2,
+              "maxLength": 80,
+              "pattern": "^[#@A-Za-z0-9_.-]+$",
+              "description": "A Slack channel ID (C0123456789) or name (#finance)."
+            }
+          }
+        }
+      }
+    }
+  },
+  "health_check": "Counts the messages posted and refused in recent days, and the last refusal's reason (a channel the app is not in, a revoked token).",
+  "test_action": "Reports whether Slack accepted the token, by posting nothing: it is not run until a live workspace is connected [live-verify].",
+  "local_substitute": "A fake Slack in tests with the recorded contract; Prism serves contracts/partners/slack.yaml in the local partners profile.",
+  "limits": {
+    "requests_per_minute": 50,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 300
+  }
+}

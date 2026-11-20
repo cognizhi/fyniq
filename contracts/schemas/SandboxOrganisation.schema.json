@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_currency": {
+      "description": "Its books' currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The sandbox organisation's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, always labelled \"Sandbox: \".",
+      "examples": [
+        "Sandbox: Integration tests"
+      ],
+      "type": "string"
+    },
+    "sandbox": {
+      "description": "Always true: this organisation holds only the synthetic sample company and sends nothing outside Fyniq.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "base_currency",
+    "sandbox"
+  ],
+  "title": "SandboxOrganisation",
+  "type": "object"
+}

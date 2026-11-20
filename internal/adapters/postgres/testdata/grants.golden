@@ -93,13 +93,17 @@ fyniq_api       INSERT    api_client (approval_id, class, client_id, created_at,
 fyniq_api       SELECT    api_client
 fyniq_api       UPDATE    api_client (class, revoke_reason, revoked_at, revoked_by, version)
 fyniq_api       EXECUTE   api_client_access()
+fyniq_api       INSERT    approval_delegation (created_at, created_by, delegate, delegator, ends_on, reason, starts_on)
+fyniq_api       SELECT    approval_delegation
+fyniq_api       UPDATE    approval_delegation (ended_at, ended_by, status, version)
 fyniq_api       INSERT    approval_policy (created_at, created_by, object_type, request_id, rules, steps, version)
 fyniq_api       SELECT    approval_policy
+fyniq_api       SELECT    approval_reminder
 fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, expires_at, object_key, object_type, operation, policy_steps, policy_version, requested_at, requested_by, requester_mfa_at, requester_mfa_method, summary)
 fyniq_api       SELECT    approval_request
 fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
 fyniq_api       EXECUTE   approval_rules_valid()
-fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, passkey_challenge_id, passkey_id, reason, request_id, selection_sha256, signed_at, signer, step)
+fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, on_behalf_of, passkey_challenge_id, passkey_id, reason, request_id, selection_sha256, signed_at, signer, step)
 fyniq_api       SELECT    approval_signature
 fyniq_api       EXECUTE   approval_steps_met()
 fyniq_api       EXECUTE   approval_steps_valid()
@@ -127,6 +131,9 @@ fyniq_api       SELECT    auditor_sample
 fyniq_api       INSERT    authz_refusal (user_id, window_start)
 fyniq_api       SELECT    authz_refusal
 fyniq_api       UPDATE    authz_refusal (refused)
+fyniq_api       INSERT    automation_rule (action, amount_at_least, created_at, created_by, document_type, name, recipients, trigger, updated_at)
+fyniq_api       SELECT    automation_rule
+fyniq_api       UPDATE    automation_rule (amount_at_least, document_type, name, recipients, state, updated_at, version)
 fyniq_api       SELECT    balance
 fyniq_api       EXECUTE   balance_differences()
 fyniq_api       EXECUTE   balance_lines_at()
@@ -222,6 +229,7 @@ fyniq_api       SELECT    conversion_step
 fyniq_api       EXECUTE   count_ip_request()
 fyniq_api       EXECUTE   count_super_admins()
 fyniq_api       EXECUTE   create_practice_organisation()
+fyniq_api       EXECUTE   create_sandbox_organisation()
 fyniq_api       SELECT    currencies
 fyniq_api       EXECUTE   current_org()
 fyniq_api       INSERT    customer_group (name, reminder_days)
@@ -476,6 +484,7 @@ fyniq_api       INSERT    organisation_connector_secret (connector_id, expires_o
 fyniq_api       SELECT    organisation_connector_secret
 fyniq_api       UPDATE    organisation_connector_secret (valid_until)
 fyniq_api       EXECUTE   organisation_is_practice()
+fyniq_api       EXECUTE   organisation_is_sandbox()
 fyniq_api       INSERT    organisation_setting (effective_from, key, value, version)
 fyniq_api       SELECT    organisation_setting
 fyniq_api       EXECUTE   organisations_of_session()
@@ -692,6 +701,12 @@ fyniq_api       SELECT    salary_release_line
 fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
 fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
+fyniq_api       INSERT    security_assessment (ended_on, independent, kind, recorded_at, recorded_by, report_location, report_sha256, scope, started_on, summary, tester)
+fyniq_api       SELECT    security_assessment
+fyniq_api       INSERT    security_finding (assessment_id, due_on, found_on, recorded_at, recorded_by, ref, severity, title)
+fyniq_api       SELECT    security_finding
+fyniq_api       INSERT    security_finding_step (finding_id, on_date, reason, recorded_at, recorded_by, step)
+fyniq_api       SELECT    security_finding_step
 fyniq_api       INSERT    security_incident (detected_at, opened_at, opened_by, severity, summary, title)
 fyniq_api       SELECT    security_incident
 fyniq_api       INSERT    security_incident_step (at, breach_id, by_actor, incident_id, note, step)
@@ -788,6 +803,7 @@ fyniq_executor  SELECT    accountant_review_query
 fyniq_executor  SELECT    ai_proposal
 fyniq_executor  UPDATE    ai_proposal (execution, finished_at, reason, started_at, status, version)
 fyniq_executor  SELECT    allocation
+fyniq_executor  SELECT    approval_delegation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
 fyniq_executor  SELECT    approval_signature
@@ -863,6 +879,7 @@ fyniq_executor  EXECUTE   member_names()
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
+fyniq_executor  EXECUTE   organisation_is_sandbox()
 fyniq_executor  SELECT    organisation_setting
 fyniq_executor  INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_executor  SELECT    outbox
@@ -942,7 +959,9 @@ fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    announcement
 fyniq_readonly  SELECT    announcement_dismissal
 fyniq_readonly  SELECT    api_client
+fyniq_readonly  SELECT    approval_delegation
 fyniq_readonly  SELECT    approval_policy
+fyniq_readonly  SELECT    approval_reminder
 fyniq_readonly  SELECT    approval_request
 fyniq_readonly  SELECT    approval_signature
 fyniq_readonly  SELECT    audit_boundary
@@ -956,6 +975,7 @@ fyniq_readonly  SELECT    auditor_engagement
 fyniq_readonly  SELECT    auditor_request
 fyniq_readonly  SELECT    auditor_sample
 fyniq_readonly  SELECT    authz_refusal
+fyniq_readonly  SELECT    automation_rule
 fyniq_readonly  SELECT    balance
 fyniq_readonly  EXECUTE   balance_differences()
 fyniq_readonly  EXECUTE   balance_lines_at()
@@ -1083,6 +1103,7 @@ fyniq_readonly  SELECT    operation
 fyniq_readonly  SELECT    organisation
 fyniq_readonly  SELECT    organisation_connector
 fyniq_readonly  SELECT    organisation_connector_secret
+fyniq_readonly  EXECUTE   organisation_is_sandbox()
 fyniq_readonly  SELECT    organisation_setting
 fyniq_readonly  SELECT    outbox
 fyniq_readonly  SELECT    owner_succession
@@ -1171,6 +1192,9 @@ fyniq_readonly  SELECT    salary_release
 fyniq_readonly  SELECT    salary_release_line
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
+fyniq_readonly  SELECT    security_assessment
+fyniq_readonly  SELECT    security_finding
+fyniq_readonly  SELECT    security_finding_step
 fyniq_readonly  SELECT    security_incident
 fyniq_readonly  SELECT    security_incident_step
 fyniq_readonly  EXECUTE   share_class_of()
@@ -1247,7 +1271,10 @@ fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal
 fyniq_worker    EXECUTE   anonymise_contact()
 fyniq_worker    SELECT    api_client
+fyniq_worker    SELECT    approval_delegation
 fyniq_worker    SELECT    approval_policy
+fyniq_worker    INSERT    approval_reminder (kind, number, request_id, sent_at)
+fyniq_worker    SELECT    approval_reminder
 fyniq_worker    SELECT    approval_request
 fyniq_worker    SELECT    approval_signature
 fyniq_worker    INSERT    audit_boundary (anchor_key, approval, counts, last_hash, last_occurred_at, last_seq, written_at)
@@ -1268,6 +1295,7 @@ fyniq_worker    SELECT    auditor_request
 fyniq_worker    SELECT    auditor_sample
 fyniq_worker    DELETE    authz_refusal
 fyniq_worker    SELECT    authz_refusal (id, organisation_id, window_start)
+fyniq_worker    SELECT    automation_rule
 fyniq_worker    SELECT    balance
 fyniq_worker    EXECUTE   balance_differences()
 fyniq_worker    EXECUTE   balance_lines_at()
@@ -1482,6 +1510,7 @@ fyniq_worker    SELECT    organisation
 fyniq_worker    SELECT    organisation_connector
 fyniq_worker    SELECT    organisation_connector_secret
 fyniq_worker    UPDATE    organisation_connector_secret (destroyed_at)
+fyniq_worker    EXECUTE   organisation_is_sandbox()
 fyniq_worker    SELECT    organisation_setting
 fyniq_worker    INSERT    outbox (business_key, kind, max_attempts, payload, worker_class)
 fyniq_worker    SELECT    outbox
@@ -1615,6 +1644,9 @@ fyniq_worker    SELECT    salary_release_line
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq
+fyniq_worker    SELECT    security_assessment
+fyniq_worker    SELECT    security_finding
+fyniq_worker    SELECT    security_finding_step
 fyniq_worker    SELECT    security_incident
 fyniq_worker    SELECT    security_incident_step
 fyniq_worker    EXECUTE   share_class_of()

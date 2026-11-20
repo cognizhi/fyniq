@@ -39,6 +39,13 @@
       ],
       "type": "boolean"
     },
+    "sandbox": {
+      "description": "true for a sandbox organisation, made for integration testing with the sample company: it holds only synthetic data and sends nothing outside Fyniq (FR-INT-18).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "team_mode": {
       "description": "The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42).",
       "enum": [

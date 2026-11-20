@@ -338,6 +338,13 @@ type privateUnit struct {
 
 func (u privateUnit) PrivateEndpoints() storage.PrivateEndpoints { return u.eps }
 
+// Sandboxes says the organisation is no sandbox one (FR-INT-18).
+func (privateUnit) Sandboxes() storage.Sandboxes { return notSandbox{} }
+
+type notSandbox struct{ storage.Sandboxes }
+
+func (notSandbox) Is(context.Context) (bool, error) { return false, nil }
+
 type privateEndpoints struct {
 	storage.PrivateEndpoints
 	registered []storage.PrivateEndpoint

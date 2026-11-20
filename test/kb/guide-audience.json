@@ -850,6 +850,20 @@
     "status": "published"
   },
   {
+    "file": "mobile-app.md",
+    "key": "app.mobile",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "ap_clerk",
+      "approver",
+      "employee"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "needs-verification.md",
     "key": "review.awaiting-verification",
     "roles": [
@@ -1080,6 +1094,15 @@
       "auditor",
       "tax_agent",
       "dpo"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "sandbox-organisation.md",
+    "key": "settings.sandbox",
+    "roles": [
+      "owner",
+      "administrator"
     ],
     "status": "draft"
   },

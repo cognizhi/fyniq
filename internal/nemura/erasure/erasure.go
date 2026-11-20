@@ -172,6 +172,7 @@ var Classes = map[string]Bucket{
 	"access-requests":        AppendOnly, // an answered request and its decisions are kept as the record of how the obligation was met
 	"legal-holds":            AppendOnly,
 	"performance-goals":      AppendOnly, // goals and updates are append-only and name the person by ID; a note may mention them, so a de-identification of notes is left with the other append-only text
+	"candidates":             AppendOnly, // a candidate is not a person: an unsuccessful one is deleted six months after the decision (NM-REC-05), and a hired one becomes the person record
 	"grievances":             AppendOnly, // a grievance is final once decided and its inquiry record is append-only; its words may name people, so a de-identification of them is left (PRD-002 NM-SEC-06, NM-SEC-08)
 }
 

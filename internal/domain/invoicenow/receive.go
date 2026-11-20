@@ -23,6 +23,9 @@ import (
 // kept as received for a person to add the supplier and draft it. A draft is only a draft: it posts nothing, and its input-tax facts are left to confirm (FR-AP-20). An
 // outage returns ports.ErrAccessPointUnavailable and keeps nothing.
 func Receive(ctx context.Context, u storage.UnitOfWork, ap ports.AccessPoint, now time.Time) ([]storage.InvoiceInbound, error) {
+	if sandbox, err := u.Sandboxes().Is(ctx); err != nil || sandbox { // FR-INT-18: a sandbox organisation polls no access point
+		return nil, err
+	}
 	cursor, err := u.InvoiceNow().InboundCursor(ctx)
 	if err != nil {
 		return nil, err

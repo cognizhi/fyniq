@@ -14,7 +14,7 @@ import (
 
 const approvalSignatures = `-- name: ApprovalSignatures :many
 SELECT id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
-  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, on_behalf_of
   FROM fyniq.approval_signature WHERE request_id = $1
  ORDER BY signed_at, id
 `
@@ -36,6 +36,7 @@ type ApprovalSignaturesRow struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	OnBehalfOf         *uuid.UUID
 }
 
 func (q *Queries) ApprovalSignatures(ctx context.Context, requestID uuid.UUID) ([]ApprovalSignaturesRow, error) {
@@ -64,6 +65,7 @@ func (q *Queries) ApprovalSignatures(ctx context.Context, requestID uuid.UUID) (
 			&i.AuthenticatorData,
 			&i.ClientData,
 			&i.AssertionSignature,
+			&i.OnBehalfOf,
 		); err != nil {
 			return nil, err
 		}
@@ -346,12 +348,12 @@ func (q *Queries) InsertApprovalRequest(ctx context.Context, arg InsertApprovalR
 
 const insertApprovalSignature = `-- name: InsertApprovalSignature :one
 INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason,
-  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, selection_sha256)
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, selection_sha256, on_behalf_of)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9, $10, $11,
-  $12, $13, $14, $15)
+  $12, $13, $14, $15, $16)
 RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
-  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, on_behalf_of
 `
 
 type InsertApprovalSignatureParams struct {
@@ -370,6 +372,7 @@ type InsertApprovalSignatureParams struct {
 	ClientData         []byte
 	AssertionSignature []byte
 	SelectionSha256    *string
+	OnBehalfOf         *uuid.UUID
 }
 
 type InsertApprovalSignatureRow struct {
@@ -389,6 +392,7 @@ type InsertApprovalSignatureRow struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	OnBehalfOf         *uuid.UUID
 }
 
 func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprovalSignatureParams) (InsertApprovalSignatureRow, error) {
@@ -408,6 +412,7 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 		arg.ClientData,
 		arg.AssertionSignature,
 		arg.SelectionSha256,
+		arg.OnBehalfOf,
 	)
 	var i InsertApprovalSignatureRow
 	err := row.Scan(
@@ -427,6 +432,7 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 		&i.AuthenticatorData,
 		&i.ClientData,
 		&i.AssertionSignature,
+		&i.OnBehalfOf,
 	)
 	return i, err
 }

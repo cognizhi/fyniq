@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -92,6 +93,8 @@ type Deliverer struct {
 	Clock  ports.Clock
 	Source string // the installation's origin, the CloudEvent's source
 	Batch  int    // deliveries a run sends for one organisation; 0 is 100
+	// SandboxHosts are the only hosts a sandbox organisation's deliveries may reach (FR-INT-18), exact names; none by default, so a sandbox sends no webhook.
+	SandboxHosts []string
 }
 
 // RunAll sends what is due for every organisation. One that fails does not stop the others.
@@ -113,6 +116,7 @@ type job struct {
 	delivery storage.WebhookDelivery
 	endpoint storage.WebhookEndpoint
 	secrets  []string
+	sandbox  bool // the organisation is a sandbox one, read in the unit of work that read the delivery
 }
 
 // Run sends org's due deliveries, each signed afresh now, and records every try. It answers how many it sent.
@@ -126,6 +130,10 @@ func (d Deliverer) Run(ctx context.Context, org uuid.UUID) (int, error) {
 	var jobs []job
 	if err := d.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		if on, err := On(ctx, u, now); err != nil || !on {
+			return err
+		}
+		sandbox, err := u.Sandboxes().Is(ctx)
+		if err != nil {
 			return err
 		}
 		due, err := u.Webhooks().Due(ctx, now, batch)
@@ -145,7 +153,7 @@ func (d Deliverer) Run(ctx context.Context, org uuid.UUID) (int, error) {
 			if err != nil {
 				return err
 			}
-			jobs = append(jobs, job{delivery: x, endpoint: e, secrets: secrets})
+			jobs = append(jobs, job{delivery: x, endpoint: e, secrets: secrets, sandbox: sandbox})
 		}
 		return nil
 	}); err != nil {
@@ -184,6 +192,10 @@ func (d Deliverer) attempt(ctx context.Context, j job, now time.Time) storage.We
 	u, err := url.Parse(j.endpoint.URL)
 	if err != nil || (u.Scheme != "https" && !(u.Scheme == "http" && d.Egress.Local)) {
 		return fail(nil, "the endpoint's address is not an https address")
+	}
+	if j.sandbox && !slices.Contains(d.SandboxHosts, strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))) { // FR-INT-18: never to a host the operator has not allowed
+		r.Status, r.Error, r.Dead = nil, "a sandbox organisation's webhook reaches only the hosts its operator allows", true
+		return r
 	}
 	body, err := Event(j.delivery.MessageID, j.delivery.EventType, d.Source, subjectOf(j.delivery.Payload), j.delivery.CreatedAt, j.delivery.Payload)
 	if err != nil {

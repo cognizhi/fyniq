@@ -104,6 +104,10 @@ Source: PRD-002 §N.1
 - **WHEN** a candidate's data is 7 months old with no consent to keep it
 - **THEN** the check shows ⚠
 
+#### Scenario: A report of candidates waits (rev 0.74)
+- **WHEN** the nightly job has reported candidates past their retention period and no person has reviewed the report
+- **THEN** the check shows ⚠ for Hiring until the review
+
 ### Requirement: N.1 #12 Records waiting for deletion
 The system SHALL flag for review records past their retention date waiting for the reviewed deletion job, and SHALL block once their review date has passed (NM-SEC-05).
 
@@ -116,6 +120,10 @@ Source: PRD-002 §N.1
 #### Scenario: Review date passed
 - **WHEN** records are still waiting after their review date
 - **THEN** the check shows ✖
+
+#### Scenario: Any kind of record (rev 0.74)
+- **WHEN** a report of records of any kind waits for its review
+- **THEN** the check shows ⚠ for Records, and ✖ once the report's review date has passed
 
 ### Requirement: N.1 #13 Unverified pack value in use
 The system SHALL block a live calculation that needs a pack value that is not verified and has no recorded company decision (NM-PACK-07).

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2099-03-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "delegate": {
+      "description": "Who may sign for them.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "delegate_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "delegator": {
+      "description": "Whose authority it lends.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "delegator_name": {
+      "description": "Their name.",
+      "examples": [
+        "Ah Kow Lim"
+      ],
+      "type": "string"
+    },
+    "ended_at": {
+      "description": "When it was ended.",
+      "examples": [
+        "2099-03-12T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The last day.",
+      "examples": [
+        "2099-03-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The delegation's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "in_force": {
+      "description": "true when the delegate may sign for the delegator today: active, and between its first and last day.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "Why.",
+      "examples": [
+        "Annual leave"
+      ],
+      "type": "string"
+    },
+    "starts_on": {
+      "description": "The first day.",
+      "examples": [
+        "2099-03-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "active until it is ended; it then lends nothing. A delegation past its last day is active but not in force: see in_force.",
+      "enum": [
+        "active",
+        "ended"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The delegation's version; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "delegator",
+    "delegator_name",
+    "delegate",
+    "delegate_name",
+    "starts_on",
+    "ends_on",
+    "reason",
+    "status",
+    "in_force",
+    "version",
+    "created_at"
+  ],
+  "title": "ApprovalDelegation",
+  "type": "object"
+}

@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, Clock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, Webhook, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, Clock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, Webhook, Workflow, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -73,6 +73,8 @@ export const routes = [
   { kind: "route", id: "ai-proposal", path: "/inbox/proposals/$proposalId", mode: "basic", signedIn: true, help: "ai-proposal.review", guide: "ai.proposals#review-a-proposal" },
   { kind: "route", id: "ai-tasks", path: "/inbox/ai-tasks", mode: "basic", signedIn: true, help: "ai-tasks.page", guide: "ai.proposals#the-ai-tasks-page" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
+  // Delegation of approval authority (FR-APR-06; p2-mobile-approvals-automation): an approver hands their approvals to another member for some days.
+  { kind: "route", id: "approval-delegations", path: "/delegations", mode: "basic", signedIn: true, help: "approvals.delegations", guide: "approvals.decide#delegate-your-approvals" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   // Projects and time (FR-PRJ-01; p1-projects), off until the organisation switches them on (FR-ORG-06).
@@ -251,6 +253,8 @@ export const routes = [
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
   { kind: "route", id: "settings-webhooks", path: "/settings/integrations/webhooks", mode: "expert", signedIn: true, help: "settings.webhooks", guide: "settings.webhooks" },
+  // Workflow rules without code (FR-AUT-03; p2-mobile-approvals-automation): tell members when a document of a kind is posted.
+  { kind: "route", id: "settings-workflow-rules", path: "/settings/workflow-rules", mode: "expert", signedIn: true, help: "settings.workflow-rules", guide: "settings.organisation#workflow-rules" },
   { kind: "route", id: "settings-brand", path: "/settings/brand", mode: "basic", signedIn: true, help: "settings.brand", guide: "settings.brand" },
   { kind: "route", id: "settings-console", path: "/settings/installation", mode: "expert", signedIn: true, help: "settings.console", guide: "settings.console" },
   { kind: "route", id: "settings-sign-in-providers", path: "/settings/sign-in-providers", mode: "expert", signedIn: true, help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
@@ -274,6 +278,10 @@ export const actions = [
   { kind: "action", id: "compliance.restore-drills", mode: "expert", help: "compliance.restore-drills", guide: "compliance.controls#restore-drills" },
   { kind: "action", id: "restore-drills.checks", mode: "expert", help: "restore-drills.checks", guide: "compliance.controls#restore-drills" },
   // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
+  { kind: "action", id: "compliance.security-assessments", mode: "expert", help: "compliance.security-assessments", guide: "compliance.controls#security-assessments" },
+  { kind: "action", id: "compliance.readiness", mode: "expert", help: "compliance.readiness", guide: "compliance.controls#readiness-by-framework" },
+  { kind: "action", id: "compliance.assessment-record", mode: "expert", help: "compliance.assessment-record", guide: "compliance.controls#security-assessments" },
+  { kind: "action", id: "compliance.finding-step", mode: "expert", help: "compliance.finding-step", guide: "compliance.controls#security-assessments" },
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.saved", mode: "basic", help: "shell.saved", guide: "home.overview#favourites-and-saved-views" },
@@ -346,6 +354,7 @@ export const actions = [
   { kind: "action", id: "approval.withdraw", mode: "basic", help: "approval.withdraw", guide: "approvals.decide#withdraw-your-request" },
   { kind: "action", id: "approval.copy-hash", mode: "basic", help: "approval.copy-hash", guide: "approvals.decide#approve-or-reject" },
   { kind: "action", id: "review.mark", mode: "basic", help: "review.mark", guide: "approvals.decide#review-high-risk-actions" },
+  { kind: "action", id: "approvals.delegate", mode: "basic", help: "approvals.delegate", guide: "approvals.decide#delegate-your-approvals" },
   { kind: "action", id: "break-glass.start", mode: "basic", help: "break-glass.start", guide: "settings.team-mode#start-break-glass" },
   { kind: "action", id: "break-glass.end", mode: "basic", help: "break-glass.end", guide: "settings.team-mode#end-and-review-a-break-glass" },
   { kind: "action", id: "break-glass.review", mode: "basic", help: "break-glass.review", guide: "settings.team-mode#end-and-review-a-break-glass" },
@@ -436,6 +445,7 @@ export const actions = [
   { kind: "action", id: "banner.dismiss", mode: "basic", help: "banner.dismiss", guide: "settings.notifications#banners" },
   { kind: "action", id: "announcement.publish", mode: "expert", help: "announcement.publish", guide: "settings.announcements#publish-an-announcement" },
   { kind: "action", id: "announcement.withdraw", mode: "expert", help: "announcement.withdraw", guide: "settings.announcements#end-an-announcement" },
+  { kind: "action", id: "workflow-rules.add", mode: "expert", help: "workflow-rules.add", guide: "settings.organisation#workflow-rules" },
   { kind: "action", id: "webhooks.add", mode: "expert", help: "webhooks.add", guide: "settings.webhooks#add-an-endpoint" },
   { kind: "action", id: "webhooks.verify", mode: "expert", help: "webhooks.verify", guide: "settings.webhooks#add-an-endpoint" },
   { kind: "action", id: "webhooks.roll-secret", mode: "expert", help: "webhooks.roll-secret", guide: "settings.webhooks#change-an-endpoint" },
@@ -564,6 +574,12 @@ export const actions = [
   { kind: "action", id: "calendar.tile-done", mode: "basic", help: "calendar.tile-done", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "inbox.deadlines", mode: "basic", help: "inbox.deadlines", guide: "compliance.calendar#reminders-and-checks" },
   { kind: "action", id: "inbox.tasks", mode: "basic", help: "inbox.tasks", guide: "compliance.secretary#tasks-in-the-inbox" },
+  { kind: "action", id: "inbox.integration-tasks", mode: "basic", help: "inbox.integration-tasks", guide: "settings.integrations#tasks-from-other-systems" },
+  { kind: "action", id: "inbox.integration-task-done", mode: "basic", help: "inbox.integration-task-done", guide: "settings.integrations#tasks-from-other-systems" },
+  { kind: "action", id: "inbox.integration-task-cancel", mode: "basic", help: "inbox.integration-task-cancel", guide: "settings.integrations#tasks-from-other-systems" },
+  { kind: "action", id: "mcp.third-party", mode: "expert", help: "mcp.third-party", guide: "settings.connected-apps#apps-from-other-publishers" },
+  { kind: "action", id: "mcp.register-third-party", mode: "expert", help: "mcp.register-third-party", guide: "settings.connected-apps#apps-from-other-publishers" },
+  { kind: "action", id: "mcp.remove-third-party", mode: "expert", help: "mcp.remove-third-party", guide: "settings.connected-apps#apps-from-other-publishers" },
   { kind: "action", id: "controls.filter", mode: "expert", help: "controls.filter", guide: "compliance.controls#filter-by-framework" },
   { kind: "action", id: "inbox.controls", mode: "basic", help: "inbox.controls", guide: "compliance.controls#when-a-control-fails" },
   { kind: "action", id: "inbox.reviews", mode: "basic", help: "inbox.reviews", guide: "compliance.reviews#sign-off-a-review" },
@@ -898,6 +914,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.statutory-packs", route: "/settings/statutory-packs", icon: Scale, group: "organisation", roles: ["owner", "controller", "accountant", "tax_agent", "payroll_administrator", "auditor"], mode: "expert", help: "settings.statutory-packs", guide: "settings.statutory-packs" },
   { kind: "nav", id: "settings.expense-policy", route: "/settings/expense-policy", icon: Wallet, group: "organisation", roles: ["owner", "administrator", "controller", "approver", "accountant", "auditor"], mode: "expert", help: "settings.expense-policy", guide: "claims.approve-team#set-the-expense-policy" },
   { kind: "nav", id: "settings.templates", route: "/settings/templates", icon: LayoutTemplate, group: "organisation", roles: ["owner", "controller", "accountant", "ar_specialist", "ap_specialist", "auditor"], mode: "basic", help: "settings.templates", guide: "settings.templates" },
+  { kind: "nav", id: "settings.workflow-rules", route: "/settings/workflow-rules", icon: Workflow, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.workflow-rules", guide: "settings.organisation#workflow-rules" },
   { kind: "nav", id: "settings.webhooks", route: "/settings/integrations/webhooks", icon: Webhook, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.webhooks", guide: "settings.webhooks" },
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },

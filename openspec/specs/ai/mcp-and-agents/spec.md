@@ -399,6 +399,11 @@ Source: PRD-001 §9.7 · Priority S · Phase P2
 - **AND** it cannot connect until an Owner adds it to the apps that may connect, the approval a self-registered app needs
 - **AND** a registration while either switch is off is refused
 
+#### Scenario: The registration form on Connected apps
+- **WHEN** an Administrator opens Apps from other publishers on Connected apps in Expert mode
+- **THEN** they can register an app by hand, see the registered apps and remove one, with step-up for each write
+- **AND** a Controller or an Owner sees the list without the buttons
+
 #### Scenario: Quarterly access review
 - **WHEN** the quarterly access review runs (FR-CTL-06)
 - **THEN** each third-party client is reviewed

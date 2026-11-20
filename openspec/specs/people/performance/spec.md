@@ -14,6 +14,15 @@ Source: PRD-002 §13 · Priority M · Phase P2
 - **WHEN** a person adds a goal aligned to a team goal
 - **THEN** its progress shows under the team goal
 
+#### Scenario: Roll-up of aligned goals (rev 0.73)
+- **GIVEN** a team goal with two aligned personal goals, one of which the reader may not read
+- **WHEN** the reader opens the team goal
+- **THEN** the roll-up counts its own key results and only the aligned goal the reader may read, rounded down
+
+#### Scenario: A person's goals for the manager (rev 0.73)
+- **WHEN** a line manager opens a report's Goals and KPIs
+- **THEN** they read the goals and KPIs without being able to change them, and a member who may not is told there are none
+
 #### Scenario: Progress is exact and moves by updates (rev 0.67)
 - **GIVEN** a key result from 0 to 3
 - **WHEN** the person records 2

@@ -76,6 +76,7 @@ var Catalogue = []Type{
 	{Key: SignInProviderType, Label: "A sign-in provider was turned on or off, or its domains changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: SecurityAlertType, Label: "A security alert: an unusual sign-in, export or refusals, a vendor's bank change, an audit-chain failure", Category: Security, Severity: "critical", Email: storage.EmailImmediate, Locked: true},
 	{Key: PrivateEndpointType, Label: "A private endpoint was registered, changed or retired", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
+	{Key: SandboxType, Label: "A sandbox organisation was made", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: "security.roles", Label: "Your roles changed", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: ConnectorType, Label: "A connector was paused", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
 	{Key: PayeeBankType, Label: "Supplier bank details", Category: Security, Severity: "warning", Email: storage.EmailImmediate, Locked: true},
@@ -362,6 +363,16 @@ type Fanout struct {
 	Dispatcher outbox.Dispatcher
 	Clock      ports.Clock
 	Origin     string // the web app's origin, for the links in emails
+	// Chat queues the event for the chat channels the organisation's routing rules name (FR-NTF-04), in this transaction; nil: no chat.
+	Chat func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, ev ChatEvent) error
+}
+
+// ChatEvent is what the chat routing sees of an event: its ID and type, the label of the type and the link into the web app, never its title or its words.
+type ChatEvent struct {
+	ID    uuid.UUID
+	Type  string
+	Label string
+	Link  string
 }
 
 // Work is the worker's handler of FanoutKind: an event fanned out before is left as it is; each person it concerns gets
@@ -429,6 +440,11 @@ func (f Fanout) Work() outbox.Work {
 				return err
 			} else if _, err := webhooks.QueueFor(ctx, u, events.Type(ev.Type, 1), ev.ID, data, now); err != nil {
 				return err
+			}
+			if f.Chat != nil { // chat (FR-NTF-04): the type's label and a link, by the connection's routing rules, in the same transaction
+				if err := f.Chat(ctx, u, org, ChatEvent{ID: ev.ID, Type: ev.Type, Label: t.Label, Link: ev.Link}); err != nil {
+					return err
+				}
 			}
 			return u.Notifications().FannedOut(ctx, ev.ID, now)
 		})

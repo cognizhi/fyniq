@@ -23,11 +23,31 @@ channels:
     messages:
       fyniq.approval.decided.v1:
         $ref: '#/components/messages/fyniq.approval.decided.v1'
+  fyniq.approval.delegated.v1:
+    address: fyniq.approval.delegated.v1
+    messages:
+      fyniq.approval.delegated.v1:
+        $ref: '#/components/messages/fyniq.approval.delegated.v1'
+  fyniq.approval.escalated.v1:
+    address: fyniq.approval.escalated.v1
+    messages:
+      fyniq.approval.escalated.v1:
+        $ref: '#/components/messages/fyniq.approval.escalated.v1'
+  fyniq.approval.reminder.v1:
+    address: fyniq.approval.reminder.v1
+    messages:
+      fyniq.approval.reminder.v1:
+        $ref: '#/components/messages/fyniq.approval.reminder.v1'
   fyniq.approval.requested.v1:
     address: fyniq.approval.requested.v1
     messages:
       fyniq.approval.requested.v1:
         $ref: '#/components/messages/fyniq.approval.requested.v1'
+  fyniq.automation.rule.v1:
+    address: fyniq.automation.rule.v1
+    messages:
+      fyniq.automation.rule.v1:
+        $ref: '#/components/messages/fyniq.automation.rule.v1'
   fyniq.bills.due.v1:
     address: fyniq.bills.due.v1
     messages:
@@ -203,6 +223,11 @@ channels:
     messages:
       fyniq.security.roles.v1:
         $ref: '#/components/messages/fyniq.security.roles.v1'
+  fyniq.security.sandbox_organisation.v1:
+    address: fyniq.security.sandbox_organisation.v1
+    messages:
+      fyniq.security.sandbox_organisation.v1:
+        $ref: '#/components/messages/fyniq.security.sandbox_organisation.v1'
   fyniq.security.second_factor.v1:
     address: fyniq.security.second_factor.v1
     messages:
@@ -251,6 +276,27 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.approval.decided.v1.schema.json'
+    fyniq.approval.delegated.v1:
+      name: fyniq.approval.delegated.v1
+      title: fyniq.approval.delegated.v1
+      summary: "Fires when: Approval authority was delegated to you, or by you"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.approval.delegated.v1.schema.json'
+    fyniq.approval.escalated.v1:
+      name: fyniq.approval.escalated.v1
+      title: fyniq.approval.escalated.v1
+      summary: "Fires when: An approval has waited a long time"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.approval.escalated.v1.schema.json'
+    fyniq.approval.reminder.v1:
+      name: fyniq.approval.reminder.v1
+      title: fyniq.approval.reminder.v1
+      summary: "Fires when: An approval still waits for you"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.approval.reminder.v1.schema.json'
     fyniq.approval.requested.v1:
       name: fyniq.approval.requested.v1
       title: fyniq.approval.requested.v1
@@ -258,6 +304,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.approval.requested.v1.schema.json'
+    fyniq.automation.rule.v1:
+      name: fyniq.automation.rule.v1
+      title: fyniq.automation.rule.v1
+      summary: "Fires when: A workflow rule of your organisation fired"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.automation.rule.v1.schema.json'
     fyniq.bills.due.v1:
       name: fyniq.bills.due.v1
       title: fyniq.bills.due.v1
@@ -503,6 +556,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.security.roles.v1.schema.json'
+    fyniq.security.sandbox_organisation.v1:
+      name: fyniq.security.sandbox_organisation.v1
+      title: fyniq.security.sandbox_organisation.v1
+      summary: "Fires when: A sandbox organisation was made"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.sandbox_organisation.v1.schema.json'
     fyniq.security.second_factor.v1:
       name: fyniq.security.second_factor.v1
       title: fyniq.security.second_factor.v1

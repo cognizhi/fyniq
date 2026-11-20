@@ -100,8 +100,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).
 		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}), Converter: converter(os.Getenv),
-		Mail:   LocalMail(os.Getenv),
-		Origin: cmp.Or(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "http://localhost:8080"),
+		Mail:         LocalMail(os.Getenv),
+		Origin:       cmp.Or(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "http://localhost:8080"),
+		SandboxHosts: SandboxWebhookHosts(os.Getenv),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
 		// The InvoiceNow access point's stand-in, in memory (FR-AR-12, ADR-T4).

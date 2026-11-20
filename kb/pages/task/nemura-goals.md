@@ -4,7 +4,7 @@ type: task
 title: Set your goals and update their key results
 summary: Company, team and personal goals with key results, how progress is worked out and who reads a personal goal
 sources:
-  - docs/user-guide/nemura/goals.md sha256:499b44b82f0bb4a9867f3ccbee9382a4423ac3e961d5eb6d5b576a5f2e303639
+  - docs/user-guide/nemura/goals.md sha256:590fc47a34026652db178ece0df6493559e86363e962e4ef0bc2efdc97653b0e
 data_class: personal
 taint: trusted
 status: published
@@ -34,6 +34,10 @@ aliases:
 ## Who reads what
 
 - Everyone reads the company's and the teams' goals; only you, your line manager and the people team read your own goals and KPIs. Nemura shows no company financial figure. (src: docs/user-guide/nemura/goals.md#before-you-start)
+
+## For the line manager and the people team
+
+- A person's record has Goals and KPIs: their goals, key results and role KPIs, read only, for their line manager (their reports), the HR officer, the HR administrator and the Owner; anyone else is told there are none. Under a company or team goal the roll-up is the average, rounded down, of the goal's own key results and the aligned goals the reader may read, so a goal the reader may not read never counts towards the number. (src: docs/user-guide/nemura/goals.md#for-the-line-manager-and-the-people-team)
 
 ## When it looks wrong
 

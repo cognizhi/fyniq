@@ -8,7 +8,7 @@ package reportexport
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
 	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal", "invoicenow_submission", "invoicenow_event", "invoicenow_exclusion", "invoicenow_contingency", "invoicenow_inbound",
-	"api_client", "approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
+	"api_client", "approval_delegation", "approval_policy", "approval_reminder", "approval_request", "approval_signature", "audit_boundary", "automation_rule", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
 	"bank_transfer", "bill_payment_plan", "brand_version", "break_glass", "break_glass_use", "capture_address",
@@ -32,7 +32,7 @@ var Exported = []string{
 	"policy_version", "project", "project_member", "project_task", "billing_rate", "person_cost_rate", "project_billed_item", "project_milestone", "quote_outcome", "time_entry", "time_timer", "timesheet_submission", "recurring_bill", "recurring_bill_version", "recurring_invoice",
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill", "retention_hold",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
-	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
+	"security_assessment", "security_finding", "security_finding_step", "security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "record_comment", "withholding_decision", "people_source", "salary_batch", "payroll_arrangement", "payroll_import", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt", "payroll_run_refusal", "people_leave",
 	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn", "payment_link", "payment_link_payment", "portal_link", "invoice_dispute", "subscription_contract", "subscription_amendment", "project_revenue_election", "project_revenue_run", "psp_customer", "psp_subscription", "psp_invoice", "psp_credit_note", "psp_charge_invoice", "webhook_endpoint", "webhook_delivery", "webhook_attempt", "integration_task", "mcp_third_party_app",
 	"report_definition", "report_schedule", "report_schedule_run", "board_pack", "investor_update", "investor_update_read", "kpi_alert", "dashboard_layout", "cap_table_grant",

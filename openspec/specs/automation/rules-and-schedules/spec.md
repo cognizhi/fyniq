@@ -135,6 +135,12 @@ Source: PRD-001 §8.17 · Priority C · Phase P2
 - **WHEN** a bill over S$5,000 is created
 - **THEN** X is notified
 
+#### Scenario: A rule only tells people (rev 0.620)
+- **GIVEN** a workflow rule, whose trigger and action are fixed lists the database holds
+- **WHEN** a person posts a document that meets its conditions
+- **THEN** the members it names, who may see the document, are told, and the rule posts, approves, pays and files nothing
+- **AND** the person who posted it is not told, a paused or archived rule does not fire, and no rule exists while the feature is off
+
 ### Requirement: FR-AUT-04 Outbound webhooks
 The system SHALL send outbound webhooks for document and ledger events (signed, retried, logged), as specified in FR-INT-12.
 

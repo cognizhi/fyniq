@@ -525,6 +525,19 @@ app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
 app_user | created_at | timestamp with time zone | not null | now()
+approval_delegation | organisation_id | uuid | not null | current_org()
+approval_delegation | id | uuid | not null | uuidv7()
+approval_delegation | delegator | uuid | not null | 
+approval_delegation | delegate | uuid | not null | 
+approval_delegation | starts_on | date | not null | 
+approval_delegation | ends_on | date | not null | 
+approval_delegation | reason | text | not null | 
+approval_delegation | status | text | not null | 'active'::text
+approval_delegation | ended_at | timestamp with time zone | null | 
+approval_delegation | ended_by | uuid | null | 
+approval_delegation | version | integer | not null | 1
+approval_delegation | created_by | uuid | not null | 
+approval_delegation | created_at | timestamp with time zone | not null | 
 approval_policy | organisation_id | uuid | not null | current_org()
 approval_policy | id | uuid | not null | uuidv7()
 approval_policy | object_type | text | not null | 
@@ -534,6 +547,12 @@ approval_policy | request_id | uuid | not null |
 approval_policy | created_by | uuid | not null | 
 approval_policy | created_at | timestamp with time zone | not null | 
 approval_policy | rules | jsonb | not null | '[]'::jsonb
+approval_reminder | organisation_id | uuid | not null | current_org()
+approval_reminder | id | uuid | not null | uuidv7()
+approval_reminder | request_id | uuid | not null | 
+approval_reminder | kind | text | not null | 
+approval_reminder | number | integer | not null | 
+approval_reminder | sent_at | timestamp with time zone | not null | 
 approval_request | organisation_id | uuid | not null | current_org()
 approval_request | id | uuid | not null | uuidv7()
 approval_request | object_type | text | not null | 
@@ -573,6 +592,7 @@ approval_signature | authenticator_data | bytea | null |
 approval_signature | client_data | bytea | null | 
 approval_signature | assertion_signature | bytea | null | 
 approval_signature | selection_sha256 | text | null | 
+approval_signature | on_behalf_of | uuid | null | 
 audit_boundary | organisation_id | uuid | not null | current_org()
 audit_boundary | id | uuid | not null | uuidv7()
 audit_boundary | last_seq | bigint | not null | 
@@ -663,6 +683,19 @@ authz_refusal | id | uuid | not null | uuidv7()
 authz_refusal | user_id | uuid | not null | 
 authz_refusal | window_start | timestamp with time zone | not null | 
 authz_refusal | refused | integer | not null | 1
+automation_rule | organisation_id | uuid | not null | current_org()
+automation_rule | id | uuid | not null | uuidv7()
+automation_rule | name | text | not null | 
+automation_rule | trigger | text | not null | 
+automation_rule | document_type | text | null | 
+automation_rule | amount_at_least | numeric(20,4) | null | 
+automation_rule | action | text | not null | 
+automation_rule | recipients | uuid[] | not null | 
+automation_rule | state | text | not null | 'active'::text
+automation_rule | version | integer | not null | 1
+automation_rule | created_by | uuid | not null | 
+automation_rule | created_at | timestamp with time zone | not null | 
+automation_rule | updated_at | timestamp with time zone | not null | 
 balance | organisation_id | uuid | not null | 
 balance | id | uuid | not null | uuidv7()
 balance | account_id | uuid | not null | 
@@ -3178,6 +3211,41 @@ sales_reminder | send_id | uuid | null |
 sales_reminder | reason | text | null | 
 sales_reminder | decided_by | text | not null | 
 sales_reminder | decided_at | timestamp with time zone | not null | now()
+sandbox_organisation | organisation_id | uuid | not null | 
+sandbox_organisation | created_by | uuid | not null | 
+sandbox_organisation | change_id | uuid | null | 
+sandbox_organisation | created_at | timestamp with time zone | not null | 
+security_assessment | organisation_id | uuid | not null | current_org()
+security_assessment | id | uuid | not null | uuidv7()
+security_assessment | kind | text | not null | 
+security_assessment | tester | text | not null | 
+security_assessment | independent | boolean | not null | 
+security_assessment | scope | text | not null | 
+security_assessment | started_on | date | not null | 
+security_assessment | ended_on | date | not null | 
+security_assessment | summary | text | not null | 
+security_assessment | report_sha256 | text | null | 
+security_assessment | report_location | text | null | 
+security_assessment | recorded_by | text | not null | 
+security_assessment | recorded_at | timestamp with time zone | not null | 
+security_finding | organisation_id | uuid | not null | current_org()
+security_finding | id | uuid | not null | uuidv7()
+security_finding | assessment_id | uuid | not null | 
+security_finding | ref | text | not null | 
+security_finding | title | text | not null | 
+security_finding | severity | text | not null | 
+security_finding | found_on | date | not null | 
+security_finding | due_on | date | null | 
+security_finding | recorded_by | text | not null | 
+security_finding | recorded_at | timestamp with time zone | not null | 
+security_finding_step | organisation_id | uuid | not null | current_org()
+security_finding_step | id | uuid | not null | uuidv7()
+security_finding_step | finding_id | uuid | not null | 
+security_finding_step | step | text | not null | 
+security_finding_step | on_date | date | not null | 
+security_finding_step | reason | text | null | 
+security_finding_step | recorded_by | text | not null | 
+security_finding_step | recorded_at | timestamp with time zone | not null | 
 security_incident | organisation_id | uuid | not null | current_org()
 security_incident | id | uuid | not null | uuidv7()
 security_incident | title | text | not null | 
@@ -4307,6 +4375,29 @@ app_user | app_user_pkey | PRIMARY KEY (user_id)
 app_user | app_user_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'deactivated'::text])))
 app_user | app_user_status_not_null | NOT NULL status
 app_user | app_user_user_id_not_null | NOT NULL user_id
+approval_delegation | approval_delegation_by_delegator | CHECK ((created_by = delegator))
+approval_delegation | approval_delegation_created_at_not_null | NOT NULL created_at
+approval_delegation | approval_delegation_created_by_not_null | NOT NULL created_by
+approval_delegation | approval_delegation_days | CHECK (((ends_on >= starts_on) AND ((ends_on - starts_on) <= 90)))
+approval_delegation | approval_delegation_delegate_fkey | FOREIGN KEY (delegate) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_delegate_not_null | NOT NULL delegate
+approval_delegation | approval_delegation_delegator_fkey | FOREIGN KEY (delegator) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_delegator_not_null | NOT NULL delegator
+approval_delegation | approval_delegation_ended_by_fkey | FOREIGN KEY (ended_by) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_ended_form | CHECK (((status = 'ended'::text) = ((ended_at IS NOT NULL) AND (ended_by IS NOT NULL))))
+approval_delegation | approval_delegation_ends_on_not_null | NOT NULL ends_on
+approval_delegation | approval_delegation_id_not_null | NOT NULL id
+approval_delegation | approval_delegation_not_self | CHECK ((delegator <> delegate))
+approval_delegation | approval_delegation_organisation_id_not_null | NOT NULL organisation_id
+approval_delegation | approval_delegation_pkey | PRIMARY KEY (organisation_id, id)
+approval_delegation | approval_delegation_reason | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 300)))
+approval_delegation | approval_delegation_reason_not_null | NOT NULL reason
+approval_delegation | approval_delegation_starts_on_not_null | NOT NULL starts_on
+approval_delegation | approval_delegation_status | CHECK ((status = ANY (ARRAY['active'::text, 'ended'::text])))
+approval_delegation | approval_delegation_status_not_null | NOT NULL status
+approval_delegation | approval_delegation_version | CHECK ((version >= 1))
+approval_delegation | approval_delegation_version_not_null | NOT NULL version
+approval_delegation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
@@ -4327,6 +4418,17 @@ approval_policy | approval_policy_version_not_null | NOT NULL version
 approval_policy | approval_policy_version_once | UNIQUE (organisation_id, object_type, version)
 approval_policy | approval_policy_version_range | CHECK (((version >= 1) AND (version <= 1000000)))
 approval_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+approval_reminder | approval_reminder_id_not_null | NOT NULL id
+approval_reminder | approval_reminder_kind | CHECK ((((kind = 'reminder'::text) AND ((number >= 1) AND (number <= 3))) OR ((kind = 'escalation'::text) AND (number = 1))))
+approval_reminder | approval_reminder_kind_not_null | NOT NULL kind
+approval_reminder | approval_reminder_number_not_null | NOT NULL number
+approval_reminder | approval_reminder_once | UNIQUE (organisation_id, request_id, kind, number)
+approval_reminder | approval_reminder_organisation_id_not_null | NOT NULL organisation_id
+approval_reminder | approval_reminder_pkey | PRIMARY KEY (organisation_id, id)
+approval_reminder | approval_reminder_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
+approval_reminder | approval_reminder_request_id_not_null | NOT NULL request_id
+approval_reminder | approval_reminder_sent_at_not_null | NOT NULL sent_at
+approval_reminder | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_request | approval_request_change_not_null | NOT NULL change
 approval_request | approval_request_change_object | CHECK ((jsonb_typeof(change) = 'object'::text))
 approval_request | approval_request_decided | CHECK (((status = 'pending'::text) = (decided_at IS NULL)))
@@ -4373,6 +4475,8 @@ approval_signature | approval_signature_mfa_at_not_null | NOT NULL mfa_at
 approval_signature | approval_signature_mfa_fresh | CHECK (((mfa_at <= signed_at) AND ((signed_at - mfa_at) <= '00:05:00'::interval)))
 approval_signature | approval_signature_mfa_known | CHECK ((mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_signature | approval_signature_mfa_method_not_null | NOT NULL mfa_method
+approval_signature | approval_signature_on_behalf_fkey | FOREIGN KEY (on_behalf_of) REFERENCES app_user(user_id)
+approval_signature | approval_signature_on_behalf_other | CHECK (((on_behalf_of IS NULL) OR ((on_behalf_of <> signer) AND (decision = ANY (ARRAY['approve'::text, 'reject'::text])))))
 approval_signature | approval_signature_once | UNIQUE (organisation_id, request_id, signer)
 approval_signature | approval_signature_organisation_id_not_null | NOT NULL organisation_id
 approval_signature | approval_signature_passkey_shape | CHECK ((((mfa_method = 'passkey'::text) AND (passkey_challenge_id IS NOT NULL) AND (passkey_id IS NOT NULL) AND ((length(authenticator_data) >= 37) AND (length(authenticator_data) <= 2048)) AND ((length(client_data) >= 1) AND (length(client_data) <= 4096)) AND ((length(assertion_signature) >= 8) AND (length(assertion_signature) <= 2048))) OR ((mfa_method <> 'passkey'::text) AND (passkey_challenge_id IS NULL) AND (passkey_id IS NULL) AND (authenticator_data IS NULL) AND (client_data IS NULL) AND (assertion_signature IS NULL))))
@@ -4527,6 +4631,28 @@ authz_refusal | authz_refusal_refused_positive | CHECK ((refused > 0))
 authz_refusal | authz_refusal_user_id_not_null | NOT NULL user_id
 authz_refusal | authz_refusal_user_key | UNIQUE (organisation_id, user_id, window_start)
 authz_refusal | authz_refusal_window_start_not_null | NOT NULL window_start
+automation_rule | automation_rule_action_known | CHECK ((action = 'notify'::text))
+automation_rule | automation_rule_action_not_null | NOT NULL action
+automation_rule | automation_rule_amount | CHECK (((amount_at_least IS NULL) OR ((amount_at_least <> 'NaN'::numeric) AND (amount_at_least >= (0)::numeric))))
+automation_rule | automation_rule_created_at_not_null | NOT NULL created_at
+automation_rule | automation_rule_created_by_not_null | NOT NULL created_by
+automation_rule | automation_rule_creator_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+automation_rule | automation_rule_document_type | CHECK (((document_type IS NULL) OR (document_type ~ '^[a-z][a-z_]{1,40}$'::text)))
+automation_rule | automation_rule_id_not_null | NOT NULL id
+automation_rule | automation_rule_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+automation_rule | automation_rule_name_not_null | NOT NULL name
+automation_rule | automation_rule_organisation_id_not_null | NOT NULL organisation_id
+automation_rule | automation_rule_pkey | PRIMARY KEY (organisation_id, id)
+automation_rule | automation_rule_recipients | CHECK ((((cardinality(recipients) >= 1) AND (cardinality(recipients) <= 20)) AND (array_position(recipients, NULL::uuid) IS NULL)))
+automation_rule | automation_rule_recipients_not_null | NOT NULL recipients
+automation_rule | automation_rule_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'paused'::text, 'archived'::text])))
+automation_rule | automation_rule_state_not_null | NOT NULL state
+automation_rule | automation_rule_trigger_known | CHECK ((trigger = 'document.posted'::text))
+automation_rule | automation_rule_trigger_not_null | NOT NULL trigger
+automation_rule | automation_rule_updated_at_not_null | NOT NULL updated_at
+automation_rule | automation_rule_version_not_null | NOT NULL version
+automation_rule | automation_rule_version_positive | CHECK ((version >= 1))
+automation_rule | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 balance | balance_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
 balance | balance_account_id_not_null | NOT NULL account_id
 balance | balance_amount_not_null | NOT NULL amount
@@ -5876,7 +6002,7 @@ installation_change | installation_change_requested_by_not_null | NOT NULL reque
 installation_change | installation_change_requester_mfa_at_not_null | NOT NULL requester_mfa_at
 installation_change | installation_change_status_known | CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'expired'::text])))
 installation_change | installation_change_status_not_null | NOT NULL status
-installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text, 'private_endpoint'::text])))
+installation_change | installation_change_step_known | CHECK ((step = ANY (ARRAY['install'::text, 'configure'::text, 'secret'::text, 'enable'::text, 'resume'::text, 'disable'::text, 'uninstall'::text, 'order'::text, 'consent'::text, 'sign_in'::text, 'private_endpoint'::text, 'sandbox'::text])))
 installation_change | installation_change_step_not_null | NOT NULL step
 installation_change | installation_change_summary_length | CHECK (((length(summary) >= 1) AND (length(summary) <= 300)))
 installation_change | installation_change_summary_not_null | NOT NULL summary
@@ -6492,7 +6618,6 @@ mcp_seen | mcp_seen_user_id_not_null | NOT NULL user_id
 mcp_seen | mcp_seen_value_not_null | NOT NULL value
 mcp_third_party_app | mcp_third_party_app_client | CHECK ((client_id ~ '^mcp-[0-9a-f]{20}$'::text))
 mcp_third_party_app | mcp_third_party_app_client_id_not_null | NOT NULL client_id
-mcp_third_party_app | mcp_third_party_app_client_once | UNIQUE (client_id)
 mcp_third_party_app | mcp_third_party_app_id_not_null | NOT NULL id
 mcp_third_party_app | mcp_third_party_app_inventory_entry_not_null | NOT NULL inventory_entry
 mcp_third_party_app | mcp_third_party_app_name_not_null | NOT NULL name
@@ -8526,6 +8651,63 @@ sales_reminder | sales_reminder_reason_length | CHECK (((reason IS NULL) OR ((le
 sales_reminder | sales_reminder_send_fkey | FOREIGN KEY (organisation_id, send_id) REFERENCES document_send(organisation_id, id)
 sales_reminder | sales_reminder_step_not_null | NOT NULL step
 sales_reminder | sales_reminder_step_range | CHECK (((step >= '-30'::integer) AND (step <= 365)))
+sandbox_organisation | sandbox_organisation_change_fkey | FOREIGN KEY (change_id) REFERENCES installation_change(id)
+sandbox_organisation | sandbox_organisation_created_at_not_null | NOT NULL created_at
+sandbox_organisation | sandbox_organisation_created_by_not_null | NOT NULL created_by
+sandbox_organisation | sandbox_organisation_org_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+sandbox_organisation | sandbox_organisation_organisation_id_not_null | NOT NULL organisation_id
+sandbox_organisation | sandbox_organisation_pkey | PRIMARY KEY (organisation_id)
+sandbox_organisation | sandbox_organisation_user_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+security_assessment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_assessment | security_assessment_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_assessment | security_assessment_dates | CHECK ((ended_on >= started_on))
+security_assessment | security_assessment_ended_on_not_null | NOT NULL ended_on
+security_assessment | security_assessment_id_not_null | NOT NULL id
+security_assessment | security_assessment_independent_not_null | NOT NULL independent
+security_assessment | security_assessment_kind_known | CHECK ((kind = ANY (ARRAY['penetration_test'::text, 'vulnerability_assessment'::text, 'other'::text])))
+security_assessment | security_assessment_kind_not_null | NOT NULL kind
+security_assessment | security_assessment_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+security_assessment | security_assessment_organisation_id_not_null | NOT NULL organisation_id
+security_assessment | security_assessment_pkey | PRIMARY KEY (organisation_id, id)
+security_assessment | security_assessment_recorded_at_not_null | NOT NULL recorded_at
+security_assessment | security_assessment_recorded_by_not_null | NOT NULL recorded_by
+security_assessment | security_assessment_report | CHECK (((report_sha256 IS NULL) OR (report_sha256 ~ '^[0-9a-f]{64}$'::text)))
+security_assessment | security_assessment_scope_not_null | NOT NULL scope
+security_assessment | security_assessment_started_on_not_null | NOT NULL started_on
+security_assessment | security_assessment_summary_not_null | NOT NULL summary
+security_assessment | security_assessment_tester_not_null | NOT NULL tester
+security_assessment | security_assessment_texts | CHECK ((((length(btrim(tester)) >= 1) AND (length(btrim(tester)) <= 300)) AND ((length(btrim(scope)) >= 1) AND (length(btrim(scope)) <= 2000)) AND ((length(btrim(summary)) >= 1) AND (length(btrim(summary)) <= 4000)) AND ((length(report_location) >= 1) AND (length(report_location) <= 500))))
+security_finding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_finding | security_finding_assessment_fkey | FOREIGN KEY (organisation_id, assessment_id) REFERENCES security_assessment(organisation_id, id)
+security_finding | security_finding_assessment_id_not_null | NOT NULL assessment_id
+security_finding | security_finding_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_finding | security_finding_due | CHECK ((((severity = 'info'::text) AND (due_on IS NULL)) OR ((severity <> 'info'::text) AND (due_on IS NOT NULL) AND (due_on >= found_on))))
+security_finding | security_finding_found_on_not_null | NOT NULL found_on
+security_finding | security_finding_id_not_null | NOT NULL id
+security_finding | security_finding_organisation_id_not_null | NOT NULL organisation_id
+security_finding | security_finding_pkey | PRIMARY KEY (organisation_id, id)
+security_finding | security_finding_recorded_at_not_null | NOT NULL recorded_at
+security_finding | security_finding_recorded_by_not_null | NOT NULL recorded_by
+security_finding | security_finding_ref_not_null | NOT NULL ref
+security_finding | security_finding_ref_once | UNIQUE (organisation_id, assessment_id, ref)
+security_finding | security_finding_severity_known | CHECK ((severity = ANY (ARRAY['critical'::text, 'high'::text, 'medium'::text, 'low'::text, 'info'::text])))
+security_finding | security_finding_severity_not_null | NOT NULL severity
+security_finding | security_finding_texts | CHECK ((((length(btrim(ref)) >= 1) AND (length(btrim(ref)) <= 40)) AND ((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 300))))
+security_finding | security_finding_title_not_null | NOT NULL title
+security_finding_step | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+security_finding_step | security_finding_step_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+security_finding_step | security_finding_step_finding_fkey | FOREIGN KEY (organisation_id, finding_id) REFERENCES security_finding(organisation_id, id)
+security_finding_step | security_finding_step_finding_id_not_null | NOT NULL finding_id
+security_finding_step | security_finding_step_id_not_null | NOT NULL id
+security_finding_step | security_finding_step_known | CHECK ((step = ANY (ARRAY['fixed'::text, 'retested'::text, 'accepted'::text])))
+security_finding_step | security_finding_step_on_date_not_null | NOT NULL on_date
+security_finding_step | security_finding_step_once | UNIQUE (organisation_id, finding_id, step)
+security_finding_step | security_finding_step_organisation_id_not_null | NOT NULL organisation_id
+security_finding_step | security_finding_step_pkey | PRIMARY KEY (organisation_id, id)
+security_finding_step | security_finding_step_reason | CHECK ((((step = 'accepted'::text) AND ((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500))) OR ((step <> 'accepted'::text) AND (reason IS NULL))))
+security_finding_step | security_finding_step_recorded_at_not_null | NOT NULL recorded_at
+security_finding_step | security_finding_step_recorded_by_not_null | NOT NULL recorded_by
+security_finding_step | security_finding_step_step_not_null | NOT NULL step
 security_incident | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 security_incident | security_incident_detected | CHECK ((detected_at <= opened_at))
 security_incident | security_incident_detected_at_not_null | NOT NULL detected_at
@@ -9084,6 +9266,8 @@ CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_i
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
 CREATE INDEX api_client_owner ON fyniq.api_client USING btree (organisation_id, owner_id)
+CREATE INDEX approval_delegation_delegate ON fyniq.approval_delegation USING btree (organisation_id, delegate, ends_on)
+CREATE INDEX approval_delegation_delegator ON fyniq.approval_delegation USING btree (organisation_id, delegator, ends_on)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_action_idx ON fyniq.audit_event USING btree (organisation_id, action, seq)
 CREATE INDEX audit_event_actor_idx ON fyniq.audit_event USING btree (organisation_id, ((((body)::jsonb -> 'actor'::text) ->> 'id'::text)), seq)
@@ -9091,6 +9275,7 @@ CREATE INDEX audit_event_object_idx ON fyniq.audit_event USING btree (organisati
 CREATE INDEX audit_event_record_idx ON fyniq.audit_event USING btree (organisation_id, object_type, object_id, seq)
 CREATE INDEX audit_request_detail_age_idx ON fyniq.audit_request_detail USING btree (organisation_id, occurred_at)
 CREATE INDEX authz_refusal_start_idx ON fyniq.authz_refusal USING btree (organisation_id, window_start)
+CREATE INDEX automation_rule_active ON fyniq.automation_rule USING btree (organisation_id, trigger) WHERE (state = 'active'::text)
 CREATE INDEX balance_period_idx ON fyniq.balance USING btree (organisation_id, period_id)
 CREATE INDEX bank_feed_connector ON fyniq.bank_feed USING btree (organisation_id, connector_id)
 CREATE INDEX bank_gap_open ON fyniq.bank_gap USING btree (organisation_id, money_account_id) WHERE (resolved_at IS NULL)
@@ -9337,11 +9522,15 @@ CREATE UNIQUE INDEX api_client_client_id_key ON fyniq.api_client USING btree (or
 CREATE UNIQUE INDEX api_client_pkey ON fyniq.api_client USING btree (organisation_id, id)
 CREATE UNIQUE INDEX api_client_route_pkey ON fyniq.api_client_route USING btree (client_id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
+CREATE UNIQUE INDEX approval_delegation_pkey ON fyniq.approval_delegation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_pkey ON fyniq.approval_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_request_once ON fyniq.approval_policy USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX approval_policy_version_once ON fyniq.approval_policy USING btree (organisation_id, object_type, version)
+CREATE UNIQUE INDEX approval_reminder_once ON fyniq.approval_reminder USING btree (organisation_id, request_id, kind, number)
+CREATE UNIQUE INDEX approval_reminder_pkey ON fyniq.approval_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_request_one_pending ON fyniq.approval_request USING btree (organisation_id, object_type, object_key) WHERE (status = 'pending'::text)
 CREATE UNIQUE INDEX approval_request_pkey ON fyniq.approval_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX approval_signature_on_behalf_once ON fyniq.approval_signature USING btree (organisation_id, request_id, on_behalf_of) WHERE (on_behalf_of IS NOT NULL)
 CREATE UNIQUE INDEX approval_signature_once ON fyniq.approval_signature USING btree (organisation_id, request_id, signer)
 CREATE UNIQUE INDEX approval_signature_pkey ON fyniq.approval_signature USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_boundary_pkey ON fyniq.audit_boundary USING btree (organisation_id, id)
@@ -9360,6 +9549,7 @@ CREATE UNIQUE INDEX auditor_request_pkey ON fyniq.auditor_request USING btree (o
 CREATE UNIQUE INDEX auditor_sample_pkey ON fyniq.auditor_sample USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_pkey ON fyniq.authz_refusal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX authz_refusal_user_key ON fyniq.authz_refusal USING btree (organisation_id, user_id, window_start)
+CREATE UNIQUE INDEX automation_rule_pkey ON fyniq.automation_rule USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_pkey ON fyniq.balance USING btree (organisation_id, id)
 CREATE UNIQUE INDEX balance_set_key ON fyniq.balance USING btree (organisation_id, account_id, period_id, dimension_set_id, currency) NULLS NOT DISTINCT
 CREATE UNIQUE INDEX bank_feed_id_key ON fyniq.bank_feed USING btree (organisation_id, id)
@@ -9554,7 +9744,7 @@ CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (o
 CREATE UNIQUE INDEX mcp_call_pkey ON fyniq.mcp_call USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_client_pkey ON fyniq.mcp_client USING btree (client_id)
 CREATE UNIQUE INDEX mcp_seen_pkey ON fyniq.mcp_seen USING btree (organisation_id, user_id, kind, value)
-CREATE UNIQUE INDEX mcp_third_party_app_client_once ON fyniq.mcp_third_party_app USING btree (client_id)
+CREATE UNIQUE INDEX mcp_third_party_app_client_once ON fyniq.mcp_third_party_app USING btree (organisation_id, client_id)
 CREATE UNIQUE INDEX mcp_third_party_app_pkey ON fyniq.mcp_third_party_app USING btree (organisation_id, id)
 CREATE UNIQUE INDEX mcp_user_optin_pkey ON fyniq.mcp_user_optin USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
@@ -9765,6 +9955,12 @@ CREATE UNIQUE INDEX salary_release_line_pkey ON fyniq.salary_release_line USING 
 CREATE UNIQUE INDEX salary_release_pkey ON fyniq.salary_release USING btree (organisation_id, id)
 CREATE UNIQUE INDEX sales_reminder_once ON fyniq.sales_reminder USING btree (organisation_id, document_id, step)
 CREATE UNIQUE INDEX sales_reminder_pkey ON fyniq.sales_reminder USING btree (organisation_id, id)
+CREATE UNIQUE INDEX sandbox_organisation_pkey ON fyniq.sandbox_organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX security_assessment_pkey ON fyniq.security_assessment USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_finding_pkey ON fyniq.security_finding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX security_finding_ref_once ON fyniq.security_finding USING btree (organisation_id, assessment_id, ref)
+CREATE UNIQUE INDEX security_finding_step_once ON fyniq.security_finding_step USING btree (organisation_id, finding_id, step)
+CREATE UNIQUE INDEX security_finding_step_pkey ON fyniq.security_finding_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_pkey ON fyniq.security_incident USING btree (organisation_id, id)
 CREATE UNIQUE INDEX security_incident_step_pkey ON fyniq.security_incident_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX share_issue_entry_once ON fyniq.share_issue USING btree (organisation_id, entry_id)
@@ -9851,6 +10047,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_quality_review 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_route DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_route', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery_acknowledgement', 'id')
@@ -9949,6 +10146,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_batch_line 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_line_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.salary_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('salary_batch', 'batch_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.sales_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('sales_reminder', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_assessment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_assessment', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_finding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_finding', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_finding_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_finding', 'finding_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.security_incident_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('security_incident', 'incident_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.share_issue DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('share_issue', 'id')
@@ -9981,10 +10181,12 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_feedb
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_proposal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_proposal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('api_client', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_delegation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_delegation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_engagement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_engagement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_sample DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_sample', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.automation_rule DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('automation_rule', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_gap DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_gap', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_match DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'line_id')
@@ -10154,8 +10356,12 @@ CREATE TRIGGER announcement_guard BEFORE DELETE OR UPDATE ON fyniq.announcement 
 CREATE TRIGGER announcement_no_truncate BEFORE TRUNCATE ON fyniq.announcement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER api_client_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.api_client FOR EACH ROW EXECUTE FUNCTION api_client_guard()
 CREATE TRIGGER api_client_no_truncate BEFORE TRUNCATE ON fyniq.api_client FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER approval_delegation_guard BEFORE DELETE OR UPDATE ON fyniq.approval_delegation FOR EACH ROW EXECUTE FUNCTION approval_delegation_guard()
+CREATE TRIGGER approval_delegation_no_truncate BEFORE TRUNCATE ON fyniq.approval_delegation FOR EACH STATEMENT EXECUTE FUNCTION approval_delegation_guard()
 CREATE TRIGGER approval_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_guard()
 CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_voids()
+CREATE TRIGGER approval_reminder_guard BEFORE DELETE OR UPDATE ON fyniq.approval_reminder FOR EACH ROW EXECUTE FUNCTION approval_reminder_guard()
+CREATE TRIGGER approval_reminder_no_truncate BEFORE TRUNCATE ON fyniq.approval_reminder FOR EACH STATEMENT EXECUTE FUNCTION approval_reminder_guard()
 CREATE TRIGGER approval_request_ai_requester BEFORE INSERT ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_ai_requester()
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
 CREATE TRIGGER approval_request_voided AFTER UPDATE OF status ON fyniq.approval_request FOR EACH ROW WHEN ((new.status = 'void'::text)) EXECUTE FUNCTION approval_request_voided()
@@ -10180,6 +10386,8 @@ CREATE TRIGGER auditor_request_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.
 CREATE TRIGGER auditor_request_no_truncate BEFORE TRUNCATE ON fyniq.auditor_request FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.auditor_sample FOR EACH ROW EXECUTE FUNCTION auditor_child_guard()
 CREATE TRIGGER auditor_sample_no_truncate BEFORE TRUNCATE ON fyniq.auditor_sample FOR EACH STATEMENT EXECUTE FUNCTION auditor_child_guard()
+CREATE TRIGGER automation_rule_guard BEFORE DELETE OR UPDATE ON fyniq.automation_rule FOR EACH ROW EXECUTE FUNCTION automation_rule_guard()
+CREATE TRIGGER automation_rule_no_truncate BEFORE TRUNCATE ON fyniq.automation_rule FOR EACH STATEMENT EXECUTE FUNCTION automation_rule_guard()
 CREATE TRIGGER bad_debt_relief_posts BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'bad_debt_relief'::text) AND (new.status = 'posted'::text) AND (old.status IS DISTINCT FROM 'posted'::text))) EXECUTE FUNCTION bad_debt_relief_posts()
 CREATE TRIGGER bank_agreement_guard BEFORE UPDATE OF status ON fyniq.document FOR EACH ROW WHEN ((new.type = 'bank_agreement'::text)) EXECUTE FUNCTION bank_agreement_guard()
 CREATE TRIGGER bank_feed_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_feed FOR EACH ROW EXECUTE FUNCTION bank_feed_guard()
@@ -10614,6 +10822,7 @@ CREATE TRIGGER salary_release_line_no_truncate BEFORE TRUNCATE ON fyniq.salary_r
 CREATE TRIGGER salary_release_no_truncate BEFORE TRUNCATE ON fyniq.salary_release FOR EACH STATEMENT EXECUTE FUNCTION salary_append_only()
 CREATE TRIGGER sales_reminder_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sales_reminder FOR EACH ROW EXECUTE FUNCTION sales_reminder_guard()
 CREATE TRIGGER sales_reminder_no_truncate BEFORE TRUNCATE ON fyniq.sales_reminder FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER sandbox_organisation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.sandbox_organisation FOR EACH ROW EXECUTE FUNCTION sandbox_organisation_guard()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_number FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.document_send FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
@@ -10621,6 +10830,12 @@ CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.evidence FOR EACH RO
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT ON fyniq.review_log_entry FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE INSERT OR UPDATE ON fyniq.document_sequence FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
 CREATE TRIGGER scheduled_issue_fence BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION scheduled_issue_fence()
+CREATE TRIGGER security_assessment_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_assessment FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_assessment_no_truncate BEFORE TRUNCATE ON fyniq.security_assessment FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER security_finding_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_finding FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_finding_no_truncate BEFORE TRUNCATE ON fyniq.security_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER security_finding_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_finding_step FOR EACH ROW EXECUTE FUNCTION security_register_guard()
+CREATE TRIGGER security_finding_step_no_truncate BEFORE TRUNCATE ON fyniq.security_finding_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER security_incident_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
 CREATE TRIGGER security_incident_no_truncate BEFORE TRUNCATE ON fyniq.security_incident FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER security_incident_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.security_incident_step FOR EACH ROW EXECUTE FUNCTION security_incident_guard()
@@ -10702,7 +10917,9 @@ allocation | tenant_isolation | * | (organisation_id = current_org()) | (organis
 announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 api_client | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+approval_delegation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+approval_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10715,6 +10932,7 @@ auditor_engagement | tenant_isolation | * | (organisation_id = current_org()) | 
 auditor_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 auditor_sample | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+automation_rule | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10924,6 +11142,9 @@ salary_line_event | tenant_isolation | * | (organisation_id = current_org()) | (
 salary_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 salary_release_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 sales_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_assessment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+security_finding_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 security_incident_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 share_issue | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10986,7 +11207,9 @@ announcement_dismissal | enabled | forced
 api_client | enabled | forced
 api_client_route | disabled | not forced
 app_user | disabled | not forced
+approval_delegation | enabled | forced
 approval_policy | enabled | forced
+approval_reminder | enabled | forced
 approval_request | enabled | forced
 approval_signature | enabled | forced
 audit_boundary | enabled | forced
@@ -10999,6 +11222,7 @@ auditor_engagement | enabled | forced
 auditor_request | enabled | forced
 auditor_sample | enabled | forced
 authz_refusal | enabled | forced
+automation_rule | enabled | forced
 balance | enabled | forced
 bank_feed | enabled | forced
 bank_gap | enabled | forced
@@ -11230,6 +11454,10 @@ salary_line_event | enabled | forced
 salary_release | enabled | forced
 salary_release_line | enabled | forced
 sales_reminder | enabled | forced
+sandbox_organisation | disabled | not forced
+security_assessment | enabled | forced
+security_finding | enabled | forced
+security_finding_step | enabled | forced
 security_incident | enabled | forced
 security_incident_step | enabled | forced
 share_issue | enabled | forced
@@ -11305,13 +11533,15 @@ anonymise_contact(p_contact uuid) → integer | security definer | v | search_pa
 api_client_access(p_client text, p_now timestamp with time zone, OUT organisation_id uuid, OUT id uuid, OUT kind text, OUT class text, OUT owner_id uuid, OUT owner_active boolean, OUT roles text[], OUT scopes text[], OUT ip_allow text[], OUT reads_per_minute integer, OUT writes_per_minute integer, OUT expires_at timestamp with time zone, OUT revoked boolean) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9eef2824b34633aeed9a230932617834
 api_client_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bdd02814df045b0babe7e247a6095bc4
 apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
+approval_delegation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ff3f3a96b6a143a48934976541640a91
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf2f3a845eb3f3f37b28ac86827d4dd0
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
+approval_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a2fff4a48ea0a489d6f874fef8e8239a
 approval_request_ai_requester() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d672fb5bb2d84b143a84c9d5499ff4c
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
 approval_rules_valid(p_rules jsonb) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 2f1658d0c494b984aaf4d99dd4b8e89d
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 102271dad94b050dac62a7689b6cc955
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ec4dd6b04beab8372315c4371945d569
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d
@@ -11330,6 +11560,7 @@ audit_recovery_guard() → trigger | security definer | v | search_path=pg_catal
 audit_request_detail_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 67a6785cc368830387635f0fb5aa797c
 auditor_child_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 73936615d90033601ab9c8a92929f74f
 auditor_engagement_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9a7254df65329a945d9e3efa3bc57cc8
+automation_rule_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c47d851f707f3811ce0a26fc29825147
 bad_debt_relief_posts() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4ebbe77c21888f787658ca63a058c5b4
 balance_differences() → TABLE(account_id uuid, period_id uuid, dimension_set_id uuid, currency text, cached_amount numeric, cached_base_amount numeric, lines_amount numeric, lines_base_amount numeric) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | db220537924bcf527c3806307453ed67
 balance_lines_at(p_period uuid, p_revision bigint) → TABLE(account_id uuid, period_id uuid, currency text, amount numeric, base_amount numeric, line_count bigint) | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c1c7750d26a82cb498c82056eec78082
@@ -11399,6 +11630,7 @@ create_practice_organisation(p_user uuid, p_source uuid, p_name text, p_currency
 create_project_revenue_draft(p_project uuid, p_month date, p_payload jsonb, p_adjustment numeric, p_earned numeric) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c17e3914cf993332ea7297c79b1f3de5
 create_provider_credit_note_draft(p_connector uuid, p_provider_credit_note text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ba5a14e9dac485ea458391449072f2d9
 create_provider_invoice_draft(p_connector uuid, p_provider_invoice text) → TABLE(document_id uuid, contact_id uuid, contact_made boolean) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a3c9b9fb23ce7e6bb4814cca73f1b62a
+create_sandbox_organisation(p_by uuid, p_change uuid, p_organisation uuid, p_name text, p_currency text, p_at timestamp with time zone, OUT membership_id uuid, OUT assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b4b7780af194a2a1149a44a93db6c94e
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
@@ -11576,6 +11808,7 @@ organisation_connector_routed() → trigger | security definer | v | search_path
 organisation_created() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 680a26e58b46782835405da52a7402e9
 organisation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e64f58bdebe328f60e1806f8c9cbcbe6
 organisation_is_practice(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | fa5110d76f6c6beb844c6f741c76b0da
+organisation_is_sandbox(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | e60c7bb52b20098263edb135420f5646
 organisation_kind_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ca73dacb480df743be50b20da1632d78
 organisation_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d82a943b556593182602dbe5a532147
 organisation_setting_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4d07be7995f65387c9c970d632b1bcb8
@@ -11683,10 +11916,12 @@ salary_is_run_party(org uuid, receipt uuid, who uuid) → boolean | security def
 salary_line_insert_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b810a5fb84146784957d2b042c7a827d
 salary_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 459a4750193bd423c30a4e47d90b7e6f
 sales_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cbd827bdca43d21c794de23c30d61fd7
+sandbox_organisation_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | c7b5e82c0231b57a45868e06d8c9b37f
 scheduled_invoice_email_sent() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7b1f59fc29d82c1dc9f6f4ae5afc9272
 scheduled_issue_allowed(p_document uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 574b7af4c2dbb0a7e81f6dedebde4a8b
 scheduled_issue_fence() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f5b36ed327ce553d134249eb0e82efde
 security_incident_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba0df3a8877374fa18fe1af3436dee82
+security_register_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 21517a6a9d5bf60ad8f7c4d1350d19bd
 session_for(p_hash bytea, p_now timestamp with time zone, p_idle interval, OUT issuer text, OUT subject text, OUT provider text, OUT user_id uuid, OUT organisation_id uuid, OUT roles text[], OUT step_up_at timestamp with time zone, OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a437f2b962a69bcf1cb495d6c85ce607
 session_step_up(p_challenge uuid, p_session bytea, p_credential uuid, p_sign_count bigint, p_backup_state boolean, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 557b605544981a727167d857731ab8f9
 session_step_up_method(p_hash bytea) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 69b01e01a7b355f060b2e48248d0d248

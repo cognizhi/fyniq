@@ -12,6 +12,11 @@ audit_event | nemura_migrator | true | true
 bank_account_change | nemura_migrator | true | true
 bank_reconfirm | nemura_migrator | true | true
 bank_version_floor | nemura_migrator | true | true
+candidate | nemura_migrator | true | true
+candidate_access | nemura_migrator | true | true
+candidate_interviewer | nemura_migrator | true | true
+candidate_move | nemura_migrator | true | true
+candidate_note | nemura_migrator | true | true
 careers_directory | nemura_migrator | false | false
 careers_page | nemura_migrator | true | true
 company_policy | nemura_migrator | true | true
@@ -31,10 +36,13 @@ gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
 grievance | nemura_migrator | true | true
 grievance_entry | nemura_migrator | true | true
+hire | nemura_migrator | true | true
 hr_question | nemura_migrator | true | true
 idempotency_key | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
+interview_kit | nemura_migrator | true | true
+interview_score | nemura_migrator | true | true
 invitation | nemura_migrator | true | true
 job_advert | nemura_migrator | true | true
 job_post | nemura_migrator | true | true
@@ -241,6 +249,47 @@ bank_version_floor | organisation_id | uuid | true | nemura.current_org()
 bank_version_floor | person_id | uuid | true | 
 bank_version_floor | floor | integer | true | 
 bank_version_floor | updated_at | timestamp with time zone | true | now()
+candidate | organisation_id | uuid | true | nemura.current_org()
+candidate | id | uuid | true | uuidv7()
+candidate | requisition_id | uuid | true | 
+candidate | full_name | text | true | 
+candidate | email | text | true | 
+candidate | cv_text | text | false | 
+candidate | stage | text | true | 'applied'::text
+candidate | stage_reason | text | false | 
+candidate | stage_at | timestamp with time zone | true | 
+candidate | applied_via | text | true | 
+candidate | applied_at | timestamp with time zone | true | 
+candidate | consent_future_at | timestamp with time zone | false | 
+candidate | consent_future_withdrawn_at | timestamp with time zone | false | 
+candidate | created_by | uuid | false | 
+candidate_access | organisation_id | uuid | true | nemura.current_org()
+candidate_access | id | uuid | true | uuidv7()
+candidate_access | candidate_id | uuid | true | 
+candidate_access | token_hash | bytea | true | 
+candidate_access | expires_at | timestamp with time zone | true | 
+candidate_access | created_by | uuid | true | 
+candidate_access | created_at | timestamp with time zone | true | 
+candidate_access | revoked_at | timestamp with time zone | false | 
+candidate_interviewer | organisation_id | uuid | true | nemura.current_org()
+candidate_interviewer | candidate_id | uuid | true | 
+candidate_interviewer | member_id | uuid | true | 
+candidate_interviewer | assigned_by | uuid | true | 
+candidate_interviewer | assigned_at | timestamp with time zone | true | 
+candidate_move | organisation_id | uuid | true | nemura.current_org()
+candidate_move | id | uuid | true | uuidv7()
+candidate_move | candidate_id | uuid | true | 
+candidate_move | from_stage | text | false | 
+candidate_move | to_stage | text | true | 
+candidate_move | reason | text | false | 
+candidate_move | by_member | uuid | false | 
+candidate_move | at | timestamp with time zone | true | 
+candidate_note | organisation_id | uuid | true | nemura.current_org()
+candidate_note | id | uuid | true | uuidv7()
+candidate_note | candidate_id | uuid | true | 
+candidate_note | body | text | true | 
+candidate_note | by_member | uuid | true | 
+candidate_note | at | timestamp with time zone | true | 
 careers_directory | slug | text | true | 
 careers_directory | organisation_id | uuid | true | 
 careers_directory | enabled | boolean | true | 
@@ -435,6 +484,17 @@ grievance_entry | body | text | true |
 grievance_entry | by_member | uuid | true | 
 grievance_entry | at | timestamp with time zone | true | 
 grievance_entry | subject_people | uuid[] | true | '{}'::uuid[]
+hire | organisation_id | uuid | true | nemura.current_org()
+hire | id | uuid | true | uuidv7()
+hire | candidate_id | uuid | true | 
+hire | requisition_id | uuid | true | 
+hire | person_id | uuid | true | 
+hire | plan_id | uuid | false | 
+hire | start_date | date | true | 
+hire | pass_needed | boolean | true | 
+hire | pass_application_on | date | false | 
+hire | hired_by | uuid | true | 
+hire | hired_at | timestamp with time zone | true | 
 hr_question | organisation_id | uuid | true | nemura.current_org()
 hr_question | id | uuid | true | uuidv7()
 hr_question | person_id | uuid | true | 
@@ -469,6 +529,21 @@ identity_directory | active | boolean | true | true
 installation | singleton | boolean | true | true
 installation | setup_code_hash | bytea | false | 
 installation | setup_completed_at | timestamp with time zone | false | 
+interview_kit | organisation_id | uuid | true | nemura.current_org()
+interview_kit | requisition_id | uuid | true | 
+interview_kit | questions | text[] | true | 
+interview_kit | criteria | text[] | true | 
+interview_kit | requirement_note | text | false | 
+interview_kit | updated_by | uuid | true | 
+interview_kit | updated_at | timestamp with time zone | true | 
+interview_score | organisation_id | uuid | true | nemura.current_org()
+interview_score | id | uuid | true | uuidv7()
+interview_score | candidate_id | uuid | true | 
+interview_score | member_id | uuid | true | 
+interview_score | criterion | text | true | 
+interview_score | score | smallint | true | 
+interview_score | comment | text | false | 
+interview_score | at | timestamp with time zone | true | 
 invitation | organisation_id | uuid | true | nemura.current_org()
 invitation | id | uuid | true | uuidv7()
 invitation | member_id | uuid | true | 
@@ -1223,6 +1298,7 @@ requisition | requested_at | timestamp with time zone | true |
 requisition | decided_by | uuid | false | 
 requisition | decided_at | timestamp with time zone | false | 
 requisition | decision_reason | text | false | 
+requisition | hiring_manager | uuid | false | 
 role_assignment | organisation_id | uuid | true | nemura.current_org()
 role_assignment | id | uuid | true | uuidv7()
 role_assignment | member_id | uuid | true | 
@@ -1504,6 +1580,70 @@ bank_version_floor | bank_version_floor_person_id_not_null | NOT NULL person_id
 bank_version_floor | bank_version_floor_pkey | PRIMARY KEY (organisation_id, person_id)
 bank_version_floor | bank_version_floor_positive | CHECK ((floor >= 1))
 bank_version_floor | bank_version_floor_updated_at_not_null | NOT NULL updated_at
+candidate | candidate_applied_at_not_null | NOT NULL applied_at
+candidate | candidate_applied_via_not_null | NOT NULL applied_via
+candidate | candidate_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+candidate | candidate_consent_whole | CHECK (((consent_future_withdrawn_at IS NULL) OR (consent_future_at IS NOT NULL)))
+candidate | candidate_cv_length | CHECK (((cv_text IS NULL) OR (length(cv_text) <= 20000)))
+candidate | candidate_email_form | CHECK (((email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'::text) AND (length(email) <= 200)))
+candidate | candidate_email_not_null | NOT NULL email
+candidate | candidate_full_name_not_null | NOT NULL full_name
+candidate | candidate_id_not_null | NOT NULL id
+candidate | candidate_name_length | CHECK (((length(btrim(full_name)) >= 1) AND (length(btrim(full_name)) <= 120)))
+candidate | candidate_organisation_id_not_null | NOT NULL organisation_id
+candidate | candidate_pkey | PRIMARY KEY (organisation_id, id)
+candidate | candidate_reason_length | CHECK (((stage_reason IS NULL) OR (length(stage_reason) <= 500)))
+candidate | candidate_requisition_fkey | FOREIGN KEY (organisation_id, requisition_id) REFERENCES nemura.requisition(organisation_id, id)
+candidate | candidate_requisition_id_not_null | NOT NULL requisition_id
+candidate | candidate_stage_at_not_null | NOT NULL stage_at
+candidate | candidate_stage_known | CHECK ((stage = ANY (ARRAY['applied'::text, 'screening'::text, 'interview'::text, 'offer'::text, 'hired'::text, 'not_progressing'::text])))
+candidate | candidate_stage_not_null | NOT NULL stage
+candidate | candidate_via_known | CHECK ((applied_via = ANY (ARRAY['careers_page'::text, 'recruiter'::text])))
+candidate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+candidate_access | candidate_access_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+candidate_access | candidate_access_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+candidate_access | candidate_access_candidate_id_not_null | NOT NULL candidate_id
+candidate_access | candidate_access_created_at_not_null | NOT NULL created_at
+candidate_access | candidate_access_created_by_not_null | NOT NULL created_by
+candidate_access | candidate_access_expires_at_not_null | NOT NULL expires_at
+candidate_access | candidate_access_expiry | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '30 days'::interval))))
+candidate_access | candidate_access_id_not_null | NOT NULL id
+candidate_access | candidate_access_organisation_id_not_null | NOT NULL organisation_id
+candidate_access | candidate_access_pkey | PRIMARY KEY (organisation_id, id)
+candidate_access | candidate_access_token | CHECK ((octet_length(token_hash) = 32))
+candidate_access | candidate_access_token_hash_not_null | NOT NULL token_hash
+candidate_access | candidate_access_token_once | UNIQUE (token_hash)
+candidate_access | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+candidate_interviewer | candidate_interviewer_assigned_at_not_null | NOT NULL assigned_at
+candidate_interviewer | candidate_interviewer_assigned_by_not_null | NOT NULL assigned_by
+candidate_interviewer | candidate_interviewer_by_fkey | FOREIGN KEY (organisation_id, assigned_by) REFERENCES nemura.member(organisation_id, id)
+candidate_interviewer | candidate_interviewer_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+candidate_interviewer | candidate_interviewer_candidate_id_not_null | NOT NULL candidate_id
+candidate_interviewer | candidate_interviewer_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+candidate_interviewer | candidate_interviewer_member_id_not_null | NOT NULL member_id
+candidate_interviewer | candidate_interviewer_organisation_id_not_null | NOT NULL organisation_id
+candidate_interviewer | candidate_interviewer_pkey | PRIMARY KEY (organisation_id, candidate_id, member_id)
+candidate_interviewer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+candidate_move | candidate_move_at_not_null | NOT NULL at
+candidate_move | candidate_move_by_fkey | FOREIGN KEY (organisation_id, by_member) REFERENCES nemura.member(organisation_id, id)
+candidate_move | candidate_move_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+candidate_move | candidate_move_candidate_id_not_null | NOT NULL candidate_id
+candidate_move | candidate_move_id_not_null | NOT NULL id
+candidate_move | candidate_move_organisation_id_not_null | NOT NULL organisation_id
+candidate_move | candidate_move_pkey | PRIMARY KEY (organisation_id, id)
+candidate_move | candidate_move_to_stage_not_null | NOT NULL to_stage
+candidate_move | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+candidate_note | candidate_note_at_not_null | NOT NULL at
+candidate_note | candidate_note_body_not_null | NOT NULL body
+candidate_note | candidate_note_by_fkey | FOREIGN KEY (organisation_id, by_member) REFERENCES nemura.member(organisation_id, id)
+candidate_note | candidate_note_by_member_not_null | NOT NULL by_member
+candidate_note | candidate_note_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+candidate_note | candidate_note_candidate_id_not_null | NOT NULL candidate_id
+candidate_note | candidate_note_id_not_null | NOT NULL id
+candidate_note | candidate_note_length | CHECK (((length(btrim(body)) >= 1) AND (length(btrim(body)) <= 4000)))
+candidate_note | candidate_note_organisation_id_not_null | NOT NULL organisation_id
+candidate_note | candidate_note_pkey | PRIMARY KEY (organisation_id, id)
+candidate_note | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 careers_directory | careers_directory_enabled_not_null | NOT NULL enabled
 careers_directory | careers_directory_org_key | UNIQUE (organisation_id)
 careers_directory | careers_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -1804,6 +1944,22 @@ grievance_entry | grievance_entry_organisation_id_not_null | NOT NULL organisati
 grievance_entry | grievance_entry_pkey | PRIMARY KEY (organisation_id, id)
 grievance_entry | grievance_entry_subject_people_not_null | NOT NULL subject_people
 grievance_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+hire | hire_by_fkey | FOREIGN KEY (organisation_id, hired_by) REFERENCES nemura.member(organisation_id, id)
+hire | hire_candidate_id_not_null | NOT NULL candidate_id
+hire | hire_candidate_key | UNIQUE (organisation_id, candidate_id)
+hire | hire_hired_at_not_null | NOT NULL hired_at
+hire | hire_hired_by_not_null | NOT NULL hired_by
+hire | hire_id_not_null | NOT NULL id
+hire | hire_organisation_id_not_null | NOT NULL organisation_id
+hire | hire_pass_needed_not_null | NOT NULL pass_needed
+hire | hire_pass_whole | CHECK (((pass_application_on IS NULL) OR pass_needed))
+hire | hire_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+hire | hire_person_id_not_null | NOT NULL person_id
+hire | hire_pkey | PRIMARY KEY (organisation_id, id)
+hire | hire_requisition_fkey | FOREIGN KEY (organisation_id, requisition_id) REFERENCES nemura.requisition(organisation_id, id)
+hire | hire_requisition_id_not_null | NOT NULL requisition_id
+hire | hire_start_date_not_null | NOT NULL start_date
+hire | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 hr_question | hr_question_answered_whole | CHECK (((state = 'answered'::text) = ((replied_at IS NOT NULL) AND (replied_by IS NOT NULL) AND (length(btrim(COALESCE(reply, ''::text))) > 0))))
 hr_question | hr_question_asked_at_not_null | NOT NULL asked_at
 hr_question | hr_question_due_on_not_null | NOT NULL due_on
@@ -1853,6 +2009,32 @@ installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
 installation | installation_one_row | CHECK (singleton)
 installation | installation_pkey | PRIMARY KEY (singleton)
 installation | installation_singleton_not_null | NOT NULL singleton
+interview_kit | interview_kit_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
+interview_kit | interview_kit_criteria_not_null | NOT NULL criteria
+interview_kit | interview_kit_note_length | CHECK (((requirement_note IS NULL) OR (length(requirement_note) <= 1000)))
+interview_kit | interview_kit_organisation_id_not_null | NOT NULL organisation_id
+interview_kit | interview_kit_pkey | PRIMARY KEY (organisation_id, requisition_id)
+interview_kit | interview_kit_questions_not_null | NOT NULL questions
+interview_kit | interview_kit_requisition_fkey | FOREIGN KEY (organisation_id, requisition_id) REFERENCES nemura.requisition(organisation_id, id)
+interview_kit | interview_kit_requisition_id_not_null | NOT NULL requisition_id
+interview_kit | interview_kit_sizes | CHECK ((((cardinality(questions) >= 1) AND (cardinality(questions) <= 30)) AND ((cardinality(criteria) >= 1) AND (cardinality(criteria) <= 10))))
+interview_kit | interview_kit_updated_at_not_null | NOT NULL updated_at
+interview_kit | interview_kit_updated_by_not_null | NOT NULL updated_by
+interview_kit | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+interview_score | interview_score_at_not_null | NOT NULL at
+interview_score | interview_score_candidate_fkey | FOREIGN KEY (organisation_id, candidate_id) REFERENCES nemura.candidate(organisation_id, id)
+interview_score | interview_score_candidate_id_not_null | NOT NULL candidate_id
+interview_score | interview_score_comment_length | CHECK (((comment IS NULL) OR (length(comment) <= 1000)))
+interview_score | interview_score_criterion_length | CHECK (((length(btrim(criterion)) >= 1) AND (length(btrim(criterion)) <= 120)))
+interview_score | interview_score_criterion_not_null | NOT NULL criterion
+interview_score | interview_score_id_not_null | NOT NULL id
+interview_score | interview_score_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+interview_score | interview_score_member_id_not_null | NOT NULL member_id
+interview_score | interview_score_organisation_id_not_null | NOT NULL organisation_id
+interview_score | interview_score_pkey | PRIMARY KEY (organisation_id, id)
+interview_score | interview_score_range | CHECK (((score >= 1) AND (score <= 5)))
+interview_score | interview_score_score_not_null | NOT NULL score
+interview_score | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 invitation | invitation_code_hash_not_null | NOT NULL code_hash
 invitation | invitation_code_key | UNIQUE (organisation_id, code_hash)
 invitation | invitation_code_sha256 | CHECK ((length(code_hash) = 32))
@@ -2969,6 +3151,7 @@ requisition | requisition_decider_fkey | FOREIGN KEY (organisation_id, decided_b
 requisition | requisition_department_length | CHECK (((length(btrim(department)) >= 1) AND (length(btrim(department)) <= 120)))
 requisition | requisition_department_not_null | NOT NULL department
 requisition | requisition_id_not_null | NOT NULL id
+requisition | requisition_manager_fkey | FOREIGN KEY (organisation_id, hiring_manager) REFERENCES nemura.member(organisation_id, id)
 requisition | requisition_organisation_id_not_null | NOT NULL organisation_id
 requisition | requisition_pass_needed_not_null | NOT NULL pass_needed
 requisition | requisition_pkey | PRIMARY KEY (organisation_id, id)
@@ -3148,6 +3331,14 @@ CREATE UNIQUE INDEX bank_account_change_pkey ON nemura.bank_account_change USING
 CREATE UNIQUE INDEX bank_reconfirm_one_open ON nemura.bank_reconfirm USING btree (organisation_id, person_id) WHERE (state = 'open'::text)
 CREATE UNIQUE INDEX bank_reconfirm_pkey ON nemura.bank_reconfirm USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_version_floor_pkey ON nemura.bank_version_floor USING btree (organisation_id, person_id)
+CREATE INDEX candidate_access_candidate_idx ON nemura.candidate_access USING btree (organisation_id, candidate_id)
+CREATE UNIQUE INDEX candidate_access_pkey ON nemura.candidate_access USING btree (organisation_id, id)
+CREATE UNIQUE INDEX candidate_access_token_once ON nemura.candidate_access USING btree (token_hash)
+CREATE UNIQUE INDEX candidate_interviewer_pkey ON nemura.candidate_interviewer USING btree (organisation_id, candidate_id, member_id)
+CREATE UNIQUE INDEX candidate_move_pkey ON nemura.candidate_move USING btree (organisation_id, id)
+CREATE UNIQUE INDEX candidate_note_pkey ON nemura.candidate_note USING btree (organisation_id, id)
+CREATE UNIQUE INDEX candidate_pkey ON nemura.candidate USING btree (organisation_id, id)
+CREATE INDEX candidate_requisition_idx ON nemura.candidate USING btree (organisation_id, requisition_id, stage)
 CREATE UNIQUE INDEX careers_directory_org_key ON nemura.careers_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX careers_directory_pkey ON nemura.careers_directory USING btree (slug)
 CREATE UNIQUE INDEX careers_page_pkey ON nemura.careers_page USING btree (organisation_id)
@@ -3185,6 +3376,8 @@ CREATE INDEX gov_leave_person_idx ON nemura.gov_leave USING btree (organisation_
 CREATE UNIQUE INDEX gov_leave_pkey ON nemura.gov_leave USING btree (organisation_id, id)
 CREATE UNIQUE INDEX grievance_entry_pkey ON nemura.grievance_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX grievance_pkey ON nemura.grievance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX hire_candidate_key ON nemura.hire USING btree (organisation_id, candidate_id)
+CREATE UNIQUE INDEX hire_pkey ON nemura.hire USING btree (organisation_id, id)
 CREATE INDEX hr_question_open_idx ON nemura.hr_question USING btree (organisation_id, due_on) WHERE (state = 'open'::text)
 CREATE INDEX hr_question_person_idx ON nemura.hr_question USING btree (organisation_id, person_id, asked_at)
 CREATE UNIQUE INDEX hr_question_pkey ON nemura.hr_question USING btree (organisation_id, id)
@@ -3193,6 +3386,8 @@ CREATE UNIQUE INDEX idempotency_key_pkey ON nemura.idempotency_key USING btree (
 CREATE UNIQUE INDEX identity_directory_member_key ON nemura.identity_directory USING btree (organisation_id, member_id, issuer, tenant)
 CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING btree (issuer, subject, tenant, organisation_id)
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
+CREATE UNIQUE INDEX interview_kit_pkey ON nemura.interview_kit USING btree (organisation_id, requisition_id)
+CREATE UNIQUE INDEX interview_score_pkey ON nemura.interview_score USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX job_advert_pkey ON nemura.job_advert USING btree (organisation_id, id)
@@ -3383,6 +3578,16 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.bank_ac
 CREATE TRIGGER bank_reconfirm_guard BEFORE DELETE OR UPDATE ON nemura.bank_reconfirm FOR EACH ROW EXECUTE FUNCTION nemura.bank_reconfirm_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.bank_reconfirm DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('bank_reconfirm', 'id')
 CREATE TRIGGER bank_version_floor_guard BEFORE DELETE OR UPDATE ON nemura.bank_version_floor FOR EACH ROW EXECUTE FUNCTION nemura.bank_version_floor_guard()
+CREATE TRIGGER candidate_guard BEFORE DELETE OR UPDATE ON nemura.candidate FOR EACH ROW EXECUTE FUNCTION nemura.candidate_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.candidate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'id')
+CREATE TRIGGER candidate_access_guard BEFORE DELETE OR UPDATE ON nemura.candidate_access FOR EACH ROW EXECUTE FUNCTION nemura.candidate_access_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.candidate_access DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
+CREATE TRIGGER append_only BEFORE DELETE OR UPDATE ON nemura.candidate_interviewer FOR EACH ROW EXECUTE FUNCTION nemura.candidate_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.candidate_interviewer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
+CREATE TRIGGER append_only BEFORE DELETE OR UPDATE ON nemura.candidate_move FOR EACH ROW EXECUTE FUNCTION nemura.candidate_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.candidate_move DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
+CREATE TRIGGER append_only BEFORE DELETE OR UPDATE ON nemura.candidate_note FOR EACH ROW EXECUTE FUNCTION nemura.candidate_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.candidate_note DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.careers_page DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('careers_page', 'organisation_id')
 CREATE TRIGGER company_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.company_policy FOR EACH ROW EXECUTE FUNCTION nemura.company_policy_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.company_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('company_policy', 'id')
@@ -3414,8 +3619,13 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.grievan
 CREATE TRIGGER grievance_entry_append_only BEFORE DELETE OR UPDATE ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_guard()
 CREATE TRIGGER grievance_entry_fill BEFORE INSERT ON nemura.grievance_entry FOR EACH ROW EXECUTE FUNCTION nemura.grievance_entry_fill()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.grievance_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('grievance_entry', 'id')
+CREATE TRIGGER hire_guard BEFORE DELETE OR UPDATE ON nemura.hire FOR EACH ROW EXECUTE FUNCTION nemura.hire_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hire DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
 CREATE TRIGGER hr_question_guard BEFORE DELETE OR UPDATE ON nemura.hr_question FOR EACH ROW EXECUTE FUNCTION nemura.hr_question_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hr_question DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('hr_question', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.interview_kit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('requisition', 'requisition_id')
+CREATE TRIGGER append_only BEFORE DELETE OR UPDATE ON nemura.interview_score FOR EACH ROW EXECUTE FUNCTION nemura.candidate_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.interview_score DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('candidate', 'candidate_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
 CREATE TRIGGER job_advert_guard BEFORE DELETE OR UPDATE ON nemura.job_advert FOR EACH ROW EXECUTE FUNCTION nemura.job_advert_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.job_advert DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('job_post', 'job_post_id')
@@ -3560,6 +3770,18 @@ audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (org
 bank_account_change | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 bank_reconfirm | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 bank_version_floor | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+candidate | hiring_scope | (nemura.hiring_team() OR nemura.is_interviewer_of(id)) | 
+candidate | hiring_scope_insert |  | (nemura.hiring_team() OR (nemura.current_person() IS NULL))
+candidate | hiring_scope_write | nemura.hiring_team() | nemura.hiring_team()
+candidate | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+candidate_access | hiring_scope | nemura.hiring_team() | nemura.hiring_team()
+candidate_access | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+candidate_interviewer | hiring_scope | (nemura.hiring_team() OR (member_id = nemura.current_person())) | nemura.hiring_team()
+candidate_interviewer | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+candidate_move | hiring_scope | (nemura.hiring_team() OR (nemura.current_person() IS NULL)) | (nemura.hiring_team() OR (nemura.current_person() IS NULL))
+candidate_move | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+candidate_note | hiring_scope | nemura.hiring_team() | nemura.hiring_team()
+candidate_note | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 careers_page | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 company_policy | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 cpf_ytd | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3589,8 +3811,14 @@ grievance_entry | handler_writes |  | ((organisation_id = nemura.current_org()) 
   WHERE ((g.organisation_id = grievance_entry.organisation_id) AND (g.id = grievance_entry.grievance_id) AND (g.handler_member = nemura.current_person()))))))
 grievance_entry | not_the_subject | ((CURRENT_USER = 'nemura_migrator'::name) OR ((nemura.current_person() IS NOT NULL) AND (NOT nemura.is_subject_member(subject_people, nemura.current_person())))) | 
 grievance_entry | owner_functions | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+hire | hiring_scope | nemura.hiring_team() | nemura.hiring_team()
+hire | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 idempotency_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+interview_kit | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+interview_score | reads | (nemura.hiring_team() OR (member_id = nemura.current_person())) | 
+interview_score | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+interview_score | writes |  | ((member_id = nemura.current_person()) AND nemura.is_interviewer_of(candidate_id))
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 job_advert | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 job_post | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3895,6 +4123,149 @@ AS $function$
     SELECT 1 FROM nemura.role_assignment a JOIN nemura.member m ON m.organisation_id = a.organisation_id AND m.id = a.member_id
      WHERE a.organisation_id = nemura.current_org() AND a.member_id = who AND a.role IN ('hr_admin', 'owner') AND m.deactivated_at IS NULL
        AND a.effective_from <= on_day AND (a.effective_to IS NULL OR a.effective_to > on_day))
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidate_access_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF current_user = 'nemura_migrator' THEN
+      RETURN OLD; -- the retention purge deletes a candidate's links with the candidate
+    END IF;
+    RAISE EXCEPTION 'An access link is kept: it is revoked, never deleted' USING ERRCODE = 'NM217';
+  END IF;
+  IF OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL
+     OR (NEW.organisation_id, NEW.id, NEW.candidate_id, NEW.token_hash, NEW.expires_at, NEW.created_by, NEW.created_at) IS DISTINCT FROM
+        (OLD.organisation_id, OLD.id, OLD.candidate_id, OLD.token_hash, OLD.expires_at, OLD.created_by, OLD.created_at) THEN
+    RAISE EXCEPTION 'An access link changes only by being revoked, once' USING ERRCODE = 'NM217';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidate_access_view(p_token text, p_now timestamp with time zone)
+ RETURNS TABLE(access_id uuid, candidate_id uuid, full_name text, email text, cv_text text, stage text, stage_at timestamp with time zone, applied_at timestamp with time zone, applied_via text, consent_future_at timestamp with time zone, consent_future_withdrawn_at timestamp with time zone, role_title text, hire_start date, expires_at timestamp with time zone)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT a.id, c.id, c.full_name, c.email, c.cv_text, c.stage, c.stage_at, c.applied_at, c.applied_via, c.consent_future_at, c.consent_future_withdrawn_at, r.title, h.start_date, a.expires_at
+    FROM nemura.candidate_access a
+    JOIN nemura.candidate c ON c.organisation_id = a.organisation_id AND c.id = a.candidate_id
+    JOIN nemura.requisition r ON r.organisation_id = c.organisation_id AND r.id = c.requisition_id
+    LEFT JOIN nemura.hire h ON h.organisation_id = c.organisation_id AND h.candidate_id = c.id
+   WHERE a.organisation_id = nemura.current_org() AND a.token_hash = sha256(convert_to('nemura-candidate-access|' || p_token, 'UTF8')) AND a.revoked_at IS NULL AND a.expires_at > p_now
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidate_access_withdraw(p_token text, p_now timestamp with time zone)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  cid uuid;
+BEGIN
+  SELECT a.candidate_id INTO cid FROM nemura.candidate_access a
+   WHERE a.organisation_id = nemura.current_org() AND a.token_hash = sha256(convert_to('nemura-candidate-access|' || p_token, 'UTF8')) AND a.revoked_at IS NULL AND a.expires_at > p_now;
+  IF cid IS NULL THEN
+    RETURN NULL;
+  END IF;
+  UPDATE nemura.candidate SET consent_future_withdrawn_at = p_now
+   WHERE organisation_id = nemura.current_org() AND id = cid AND consent_future_at IS NOT NULL AND consent_future_withdrawn_at IS NULL;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  RETURN cid;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidate_append_only()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' AND current_user = 'nemura_migrator' THEN
+    RETURN OLD; -- the retention purge deletes a candidate's history with the candidate
+  END IF;
+  RAISE EXCEPTION 'A candidate''s moves, notes and scores are kept as written' USING ERRCODE = 'NM215';
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidate_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF current_user = 'nemura_migrator' AND OLD.stage IN ('not_progressing', 'hired') THEN
+      RETURN OLD; -- only purge_candidates runs as its owner, and it checks the retention period, the consent and the start date first
+    END IF;
+    RAISE EXCEPTION 'A candidate is kept until the retention period has run: only a candidate who is not progressing or was hired is deleted, by the retention job' USING ERRCODE = 'NM215';
+  END IF;
+  IF (NEW.organisation_id, NEW.id, NEW.requisition_id, NEW.full_name, NEW.email, NEW.cv_text, NEW.applied_via, NEW.applied_at, NEW.created_by) IS DISTINCT FROM
+     (OLD.organisation_id, OLD.id, OLD.requisition_id, OLD.full_name, OLD.email, OLD.cv_text, OLD.applied_via, OLD.applied_at, OLD.created_by) THEN
+    RAISE EXCEPTION 'What a candidate gave never changes' USING ERRCODE = 'NM215';
+  END IF;
+  IF NEW.stage IS DISTINCT FROM OLD.stage AND NOT (
+       (OLD.stage = 'applied' AND NEW.stage IN ('screening', 'interview', 'not_progressing'))
+    OR (OLD.stage = 'screening' AND NEW.stage IN ('interview', 'not_progressing'))
+    OR (OLD.stage = 'interview' AND NEW.stage IN ('offer', 'not_progressing'))
+    OR (OLD.stage = 'offer' AND NEW.stage IN ('hired', 'not_progressing', 'interview'))
+    OR (OLD.stage = 'not_progressing' AND NEW.stage = 'screening')) THEN
+    RAISE EXCEPTION 'A candidate moves along applied, screening, interview, offer and hired, or is not progressing' USING ERRCODE = 'NM215';
+  END IF;
+  IF OLD.stage = 'hired' THEN
+    RAISE EXCEPTION 'A hired candidate is final: the person record carries on' USING ERRCODE = 'NM215';
+  END IF;
+  IF OLD.consent_future_at IS NOT NULL AND NEW.consent_future_at IS DISTINCT FROM OLD.consent_future_at THEN
+    RAISE EXCEPTION 'The date of a consent never changes; it is withdrawn' USING ERRCODE = 'NM215';
+  END IF;
+  IF OLD.consent_future_withdrawn_at IS NOT NULL AND NEW.consent_future_withdrawn_at IS DISTINCT FROM OLD.consent_future_withdrawn_at THEN
+    RAISE EXCEPTION 'A consent is withdrawn once' USING ERRCODE = 'NM215';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.candidates_for_retention()
+ RETURNS TABLE(id uuid, decided_on date, fingerprint bytea)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT c.id, greatest(c.stage_at::date, coalesce(c.consent_future_withdrawn_at::date, c.stage_at::date)), sha256(convert_to(c.full_name || '|' || c.email, 'UTF8'))
+    FROM nemura.candidate c
+   WHERE c.organisation_id = nemura.current_org() AND c.stage = 'not_progressing'
+     AND NOT (c.consent_future_at IS NOT NULL AND c.consent_future_withdrawn_at IS NULL)
+  UNION ALL
+  SELECT c.id, h.start_date, sha256(convert_to(c.full_name || '|' || c.email, 'UTF8'))
+    FROM nemura.candidate c JOIN nemura.hire h ON h.organisation_id = c.organisation_id AND h.candidate_id = c.id
+   WHERE c.organisation_id = nemura.current_org() AND c.stage = 'hired'
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.careers_application_target(p_slug text, p_post uuid)
+ RETURNS TABLE(organisation_id uuid, requisition_id uuid)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE o uuid;
+BEGIN
+  SELECT d.organisation_id INTO o FROM nemura.careers_directory d WHERE d.slug = p_slug AND d.enabled;
+  IF o IS NULL THEN
+    RETURN;
+  END IF;
+  PERFORM pg_catalog.set_config('app.org_id', o::text, true);
+  RETURN QUERY SELECT j.organisation_id, j.requisition_id FROM nemura.job_post j JOIN nemura.requisition r ON r.organisation_id = j.organisation_id AND r.id = j.requisition_id
+     WHERE j.organisation_id = o AND j.id = p_post AND j.state = 'published' AND r.state = 'approved';
+  PERFORM pg_catalog.set_config('app.org_id', '', true);
+END
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.careers_public(p_slug text)
@@ -4282,6 +4653,32 @@ AS $function$
        AND (a.effective_to IS NULL OR a.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.hire_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR (NEW.organisation_id, NEW.id, NEW.candidate_id, NEW.requisition_id, NEW.person_id, NEW.plan_id, NEW.start_date, NEW.pass_needed, NEW.hired_by, NEW.hired_at)
+       IS DISTINCT FROM (OLD.organisation_id, OLD.id, OLD.candidate_id, OLD.requisition_id, OLD.person_id, OLD.plan_id, OLD.start_date, OLD.pass_needed, OLD.hired_by, OLD.hired_at) THEN
+    RAISE EXCEPTION 'A hire is never deleted or rewritten: only the pass application date is recorded, once' USING ERRCODE = 'NM216';
+  END IF;
+  IF OLD.pass_application_on IS NOT NULL AND NEW.pass_application_on IS DISTINCT FROM OLD.pass_application_on THEN
+    RAISE EXCEPTION 'The pass application date is recorded once' USING ERRCODE = 'NM216';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.hiring_team()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT nemura.has_role('recruiter') OR nemura.has_role('hr_officer') OR nemura.has_role('hr_admin') OR nemura.has_role('owner')
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.hr_question_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -4297,6 +4694,15 @@ BEGIN
   END IF;
   RETURN NEW;
 END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.is_interviewer_of(p_candidate uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT EXISTS (SELECT 1 FROM nemura.candidate_interviewer i WHERE i.organisation_id = nemura.current_org() AND i.candidate_id = p_candidate AND i.member_id = nemura.current_person())
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.is_manager_of(report uuid)
@@ -4849,6 +5255,24 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.my_hiring_roles()
+ RETURNS TABLE(id uuid, title text, department text, state text, target_start date, pass_needed boolean, post_state text, published_on date, closed_on date, applied integer, screening integer, interview integer, offer integer, hired integer, not_progressing integer)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT r.id, r.title, r.department, r.state, r.target_start, r.pass_needed, j.state, j.published_on, j.closed_on,
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'applied'),
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'screening'),
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'interview'),
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'offer'),
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'hired'),
+         (SELECT count(*)::integer FROM nemura.candidate c WHERE c.organisation_id = r.organisation_id AND c.requisition_id = r.id AND c.stage = 'not_progressing')
+    FROM nemura.requisition r LEFT JOIN nemura.job_post j ON j.organisation_id = r.organisation_id AND j.requisition_id = r.id
+   WHERE r.organisation_id = nemura.current_org() AND nemura.current_person() IS NOT NULL AND r.hiring_manager = nemura.current_person()
+   ORDER BY r.requested_at DESC, r.id
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.onboarding_task_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -5318,6 +5742,38 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.purge_candidates(p_ids uuid[], p_on date)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  n integer := 0;
+  c nemura.candidate;
+  started date;
+BEGIN
+  FOR c IN SELECT * FROM nemura.candidate WHERE organisation_id = nemura.current_org() AND id = ANY (p_ids) FOR UPDATE LOOP
+    IF c.stage = 'hired' THEN
+      SELECT h.start_date INTO started FROM nemura.hire h WHERE h.organisation_id = c.organisation_id AND h.candidate_id = c.id;
+      IF started IS NULL OR started > p_on - 180 THEN
+        RAISE EXCEPTION 'A hired candidate is deleted only six months after the start date' USING ERRCODE = 'NM215';
+      END IF;
+    ELSIF c.stage <> 'not_progressing' OR (c.consent_future_at IS NOT NULL AND c.consent_future_withdrawn_at IS NULL) OR greatest(c.stage_at::date, coalesce(c.consent_future_withdrawn_at::date, c.stage_at::date)) > p_on - 180 THEN
+      RAISE EXCEPTION 'A candidate is deleted only six months after the decision, when not progressing and with no consent to keep them' USING ERRCODE = 'NM215';
+    END IF;
+    DELETE FROM nemura.candidate_access WHERE organisation_id = c.organisation_id AND candidate_id = c.id;
+    DELETE FROM nemura.interview_score WHERE organisation_id = c.organisation_id AND candidate_id = c.id;
+    DELETE FROM nemura.candidate_interviewer WHERE organisation_id = c.organisation_id AND candidate_id = c.id;
+    DELETE FROM nemura.candidate_note WHERE organisation_id = c.organisation_id AND candidate_id = c.id;
+    DELETE FROM nemura.candidate_move WHERE organisation_id = c.organisation_id AND candidate_id = c.id;
+    DELETE FROM nemura.candidate WHERE organisation_id = c.organisation_id AND id = c.id;
+    n := n + 1;
+  END LOOP;
+  RETURN n;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.purge_grievances(p_ids uuid[], p_on date)
  RETURNS integer
  LANGUAGE plpgsql
@@ -5463,8 +5919,8 @@ CREATE OR REPLACE FUNCTION nemura.requisition_guard()
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
 BEGIN
-  IF TG_OP = 'DELETE' OR (NEW.title, NEW.department, NEW.reason, NEW.replaces_person, NEW.salary_min, NEW.salary_max, NEW.currency, NEW.target_start, NEW.pass_needed, NEW.requested_by, NEW.requested_at)
-       IS DISTINCT FROM (OLD.title, OLD.department, OLD.reason, OLD.replaces_person, OLD.salary_min, OLD.salary_max, OLD.currency, OLD.target_start, OLD.pass_needed, OLD.requested_by, OLD.requested_at) THEN
+  IF TG_OP = 'DELETE' OR (NEW.title, NEW.department, NEW.reason, NEW.replaces_person, NEW.salary_min, NEW.salary_max, NEW.currency, NEW.target_start, NEW.pass_needed, NEW.requested_by, NEW.requested_at, NEW.hiring_manager)
+       IS DISTINCT FROM (OLD.title, OLD.department, OLD.reason, OLD.replaces_person, OLD.salary_min, OLD.salary_max, OLD.currency, OLD.target_start, OLD.pass_needed, OLD.requested_by, OLD.requested_at, OLD.hiring_manager) THEN
     RAISE EXCEPTION 'A requisition is never deleted, and what was asked for never changes' USING ERRCODE = 'NM213';
   END IF;
   IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'requested' AND NEW.state IN ('approved', 'rejected', 'cancelled')) OR (OLD.state = 'approved' AND NEW.state IN ('filled', 'cancelled'))) THEN

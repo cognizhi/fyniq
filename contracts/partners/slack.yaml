@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: 'Slack Web API (the one operation the slack connector calls: chat.postMessage)'
+  version: v1
+  description: 'chat.postMessage, written from docs.slack.dev/reference/methods/chat.postMessage (retrieved 21 Nov 2026): POST https://slack.com/api/chat.postMessage, JSON or form body, a bot token in the Authorization header with the scope chat:write, `channel` required, `text` the message; the answer is HTTP 200 with `ok` true and `channel` and `ts`, or `ok` false with an `error` such as channel_not_found, not_in_channel, invalid_auth or ratelimited (read Retry-After). Slack publishes no OpenAPI file for it: this is a hand-made extract with examples for the mock. [live-verify] against a workspace.'
+servers:
+  - { url: 'https://slack.com', description: Production }
+paths:
+  /api/chat.postMessage:
+    post:
+      operationId: chatPostMessage
+      security: [{ BotToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                channel: { type: string }
+                text: { type: string }
+            example: { channel: C0123456789, text: '2 approvals wait for you: https://app.fyniq.example/inbox' }
+      responses:
+        '200':
+          description: Always 200 for an API-level answer; check `ok`.
+          content:
+            application/json:
+              example: { ok: true, channel: C0123456789, ts: '1503435956.000247' }
+        '429':
+          description: Rate limited; wait Retry-After seconds.
+          headers:
+            Retry-After: { schema: { type: integer } }
+components:
+  securitySchemes:
+    BotToken: { type: http, scheme: bearer }

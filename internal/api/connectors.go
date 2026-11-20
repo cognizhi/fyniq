@@ -937,6 +937,17 @@ func registerConnectors(a *API) {
 				changes[i].Status = "approved"
 				return out, a.tellOfDecision(ctx, u, changes[i])
 			}
+			if i := slices.IndexFunc(changes, func(c storage.InstallationChange) bool { return c.ID == id && c.Step == stepSandbox }); i >= 0 {
+				if changes[i].Status != "pending" {
+					return nil, &connector.Error{Code: connector.CodeChange, Message: "the change is " + changes[i].Status + " and cannot be approved"}
+				}
+				out, err := a.approveSandboxChange(ctx, u, by, p.StepUpAt, changes[i], hash)
+				if err != nil {
+					return nil, err
+				}
+				changes[i].Status = "approved"
+				return out, a.tellOfDecision(ctx, u, changes[i])
+			}
 			if err := a.connectorsReady(); err != nil {
 				return nil, err
 			}
@@ -965,6 +976,11 @@ func registerConnectors(a *API) {
 		status := w.Status
 		if _, ok := w.Body.(InstallationChange); ok {
 			status = http.StatusOK // a rejection answers with the change, decided
+		}
+		if made, ok := w.Body.(SandboxOrganisation); ok && !w.Previewed && !w.Replayed { // the sample company, once the organisation is committed (FR-INT-18)
+			if _, err := a.loadSandbox(ctx, uuid.MustParse(made.ID)); err != nil {
+				return nil, err
+			}
 		}
 		return &changeOutput{Status: status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	}
@@ -1101,7 +1117,7 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 		Summary: "Install a connector for the organisation",
 		Description: "Asks to install a connector of the catalogue whose scope is the organisation, consenting to its manifest (FR-INT-26)." + note +
 			" Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
-	}, reflect.TypeFor[Connector]()), append(append(append([]string{CodeInvalid}, asks...), writes...), ConnectorCodes...),
+	}, reflect.TypeFor[Connector]()), append(append(append([]string{CodeInvalid, CodeSandboxRefused}, asks...), writes...), ConnectorCodes...),
 		func(ctx context.Context, in *installConnectorInput) (*connectorWriteOutput, error) {
 			if err := a.connectorsReady(); err != nil {
 				return nil, err
@@ -1119,6 +1135,12 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 				return nil, err
 			}
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
+				if sandbox, err := inSandbox(ctx, u); err != nil || sandbox { // FR-INT-18: a sandbox organisation connects nothing outside Fyniq
+					if err != nil {
+						return nil, err
+					}
+					return nil, refuseSandbox("Installing a connector")
+				}
 				return ask(ctx, u, connectorChange{Step: storage.StepInstall, Connector: b.Manifest.ID}, b.Manifest.ID, "Install "+b.Manifest.Name,
 					[]ApprovalDiff{{Field: "connector", After: b.Manifest.ID}})
 			})

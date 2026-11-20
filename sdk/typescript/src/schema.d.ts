@@ -1220,6 +1220,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/approval-delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List delegations of approval authority
+         * @description The delegations you made or hold (FR-APR-06), oldest first, a page at a time; with scope=all an Owner sees every delegation of the organisation. Each says whether it is in force today. Read-only; no side effects.
+         */
+        get: operations["listApprovalDelegations"];
+        put?: never;
+        /**
+         * Delegate your approval authority
+         * @description Lets another member sign for you for up to 90 days (FR-APR-06), for example while you are on leave. It lends no right: the delegate must hold an approval right themselves, signs as themselves with their own step-up or passkey, and each signature records on whose behalf it was made. It makes them eligible for a step you could sign, and for none other; you and your delegate never both count towards one step's quorum. You delegate only your own authority. Needs a person signed in who passed step-up in the last 5 minutes and holds an approval right. Side effects: the delegation and its audit event, and a notice to you and your delegate. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["createApprovalDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/approval-delegations/{delegation_id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a delegation of approval authority
+         * @description Ends a delegation at once (FR-APR-06): its delegate can sign for nobody under it from now on, and what they signed stays. The delegator ends their own; an Owner may end any. Over the version you read (If-Match). Needs a person signed in who passed step-up in the last 5 minutes. Side effects: the end and its audit event, and a notice to both. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["endApprovalDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/approval-policies": {
         parameters: {
             query?: never;
@@ -1862,6 +1906,50 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/automation-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the organisation's workflow rules
+         * @description The rules that tell members when a document of a kind is posted (FR-AUT-03), oldest first, a page at a time, each with its conditions, recipients and state. Read-only; no side effects.
+         */
+        get: operations["listAutomationRules"];
+        put?: never;
+        /**
+         * Make a workflow rule
+         * @description Makes a rule that tells members when a document of a kind, above an amount, is posted (FR-AUT-03): `{ "name": "Large bills", "document_type": "bill", "amount_at_least": "5000.00", "recipients": [...] }`. The trigger and the one action (notify) are fixed: a rule never posts, approves, pays, files or sends outside Fyniq, and has no expressions. Each recipient must be an active member, and holds the right to view the document each time the rule fires; the person who posted it is never told. Refused (AUT-02) while "Workflow rules" is off, as it is until an Owner turns it on with a second approver; at most 50 rules (AUT-01). Needs a person signed in to Fyniq. Side effects: the rule and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["createAutomationRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/automation-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change, pause or archive a workflow rule
+         * @description Changes a rule's name, kind of document, amount or recipients, or pauses, resumes or archives it, over the version you read (If-Match; FR-AUT-03). What you leave out stays. The trigger and the action never change. An archived rule is final. Refused (AUT-02) while "Workflow rules" is off. Needs a person signed in to Fyniq. Side effects: the change and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        patch: operations["changeAutomationRule"];
         trace?: never;
     };
     "/v1/background-work/{work_id}/replay": {
@@ -5008,6 +5096,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the readiness of each framework
+         * @description For each framework of the registry (CMP-08), its stage, how many mapped controls pass, fail, are overdue, are not assessed or do not apply, how many have a check still to arrive, and the controls that are not passing in plain words; and for ISO/IEC 27001:2022 Annex A the control numbers no control maps to. Readiness, never a certificate. Read-only; no side effects.
+         */
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/restore-drills": {
         parameters: {
             query?: never;
@@ -5174,6 +5282,70 @@ export interface paths {
         get: operations["getAgentRun"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the security assessments
+         * @description The register of security assessments (SEC-25, CTL-CHG-12): each penetration test or other assessment of the platform with its tester, whether they are independent, the scope, dates, the report's SHA-256 and where it is kept, and each finding with its severity, due day, state, fix and retest; the day the last independent test ended and the next is due, and how many Critical or High findings are overdue. Read-only; no side effects.
+         */
+        get: operations["listSecurityAssessments"];
+        put?: never;
+        /**
+         * Record a security assessment
+         * @description Records a penetration test or other assessment (SEC-25), with its findings: each is due by its severity (7 days Critical, 30 High, 90 Medium, 180 Low, from the day found). The report itself stays outside Fyniq: record its SHA-256 and where it is kept. Side effects: the assessment and its findings, the audit events security_assessment.recorded and security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["createSecurityAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-assessments/{assessment_id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a finding to a security assessment
+         * @description Adds a finding the assessment's tester reported later, such as at a retest (SEC-25): it is due by its severity from the day found. Side effects: the finding, the audit event security_finding.recorded. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["addSecurityFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/security-findings/{finding_id}/steps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the next step of a finding
+         * @description Records that a finding was fixed, then retested; or that an Owner accepts it, with a reason, before it is retested (SEC-25). A step follows the finding's last, and is dated no earlier than the finding or the step before it. Side effects: the step, the audit event security_finding.stepped. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["stepSecurityFinding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10115,6 +10287,46 @@ export interface paths {
          * @description Registers a private endpoint (SEC-37), or with replaces and If-Match a new version of one, or retires it: a private address or range (no wider than a /24 or a /64, outside the platform's own networks), its port, the base64 SHA-256 of the key its TLS certificate must present, the organisation and service it is for, and the credential bound to it. Only that credential's requests reach it, over TLS with that key; it follows no redirect, and the metadata service and the platform's own services stay refused. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it applies at once. Side effects: the new version, or the change request, its event in the installation's trail and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing.
          */
         post: operations["registerPrivateEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/installation/sandbox-organisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a sandbox organisation
+         * @description Makes a sandbox organisation (FR-INT-18): a new organisation of this installation, labelled "Sandbox: ", flagged for good, holding only the synthetic sample company, where an integrator tests the API with clients of its own. It sends nothing outside Fyniq: no email, payment provider, bank, InvoiceNow, AI model or webhook to a host the deployment's operator has not allowed. The caller becomes its Owner. Only when the deployment enables sandboxes (otherwise API-SANDBOX-01); no organisation becomes a sandbox or stops being one. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it is made at once. Side effects: the organisation, its membership and Owner role, the sample company's accounts, periods and journals, audit events in both trails and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and makes nothing.
+         */
+        post: operations["createSandboxOrganisation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/installation/sandbox-organisations/{organisation_id}/sample-company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Load the sample company into a sandbox organisation
+         * @description Loads the synthetic sample company (FR-UX-10, DEV-04) through the posting engine into a sandbox organisation that has no chart yet: for one made while the load failed. Refused (API-SANDBOX-02) for an organisation that is not a sandbox one or already has books. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Side effects: the accounts, periods and journals and their audit events. Repeating it is refused once the books are there.
+         */
+        post: operations["loadSandboxSampleCompany"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19353,6 +19565,26 @@ export interface paths {
         patch: operations["updateIntegrationTask"];
         trace?: never;
     };
+    "/v1/tasks/{task_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish a task an integration made, as a person
+         * @description A person who holds the right on tasks made by integrations (an Owner or an Administrator) marks one done or cancelled, for good, over the version they read (If-Match; FR-INT-24). Only the status changes. The person must be signed in to Fyniq: no API client, token, agent or AI closes a task this way, and a compliance task is not found here. Side effects: the change and its audit event naming the person. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["closeIntegrationTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tax/bad-debt-relief": {
         parameters: {
             query?: never;
@@ -24815,6 +25047,28 @@ export interface components {
              */
             reason: string;
         };
+        AnnexAReadiness: {
+            /**
+             * @description The numbers some control's mapping names.
+             * @example [
+             *       "5.15"
+             *     ]
+             */
+            covered: string[];
+            /**
+             * Format: int64
+             * @description How many numbers Annex A has.
+             * @example 93
+             */
+            total: number;
+            /**
+             * @description The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body.
+             * @example [
+             *       "5.1"
+             *     ]
+             */
+            uncovered: string[];
+        };
         Announcement: {
             /**
              * @description Whether a person may dismiss it; never a critical one.
@@ -25190,6 +25444,116 @@ export interface components {
              */
             reason?: string;
         };
+        ApprovalDelegation: {
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2099-03-01T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * Format: uuid
+             * @description Who may sign for them.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+             */
+            delegate: string;
+            /**
+             * @description Their name.
+             * @example Wei Ling Tan
+             */
+            delegate_name: string;
+            /**
+             * Format: uuid
+             * @description Whose authority it lends.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            delegator: string;
+            /**
+             * @description Their name.
+             * @example Ah Kow Lim
+             */
+            delegator_name: string;
+            /**
+             * Format: date-time
+             * @description When it was ended.
+             * @example 2099-03-12T09:00:00Z
+             */
+            ended_at?: string;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2099-03-14
+             */
+            ends_on: string;
+            /**
+             * Format: uuid
+             * @description The delegation's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a01
+             */
+            id: string;
+            /**
+             * @description true when the delegate may sign for the delegator today: active, and between its first and last day.
+             * @example true
+             */
+            in_force: boolean;
+            /**
+             * @description Why.
+             * @example Annual leave
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2099-03-10
+             */
+            starts_on: string;
+            /**
+             * @description active until it is ended; it then lends nothing. A delegation past its last day is active but not in force: see in_force.
+             * @example active
+             * @enum {string}
+             */
+            status: "active" | "ended";
+            /**
+             * Format: int64
+             * @description The delegation's version; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        ApprovalDelegationInput: {
+            /**
+             * Format: uuid
+             * @description The member who may sign for you: an active member who holds an approval right themselves. A delegation lends no right.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
+             */
+            delegate: string;
+            /**
+             * Format: date
+             * @description The last day, at most 90 days after the first.
+             * @example 2099-03-14
+             */
+            ends_on: string;
+            /**
+             * @description Why, such as the leave it covers.
+             * @example Annual leave
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The first day, in Singapore time.
+             * @example 2099-03-10
+             */
+            starts_on: string;
+        };
+        ApprovalDelegationPage: {
+            /** @description The delegations. */
+            items: components["schemas"]["ApprovalDelegation"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEifQ
+             */
+            next_cursor?: string;
+        };
         ApprovalDiff: {
             /**
              * @description Its value once approved; empty when it ends.
@@ -25413,6 +25777,17 @@ export interface components {
              * @enum {string}
              */
             method: "session_step_up" | "passkey" | "totp";
+            /**
+             * Format: uuid
+             * @description For a signature by a delegate: the delegator whose step it signed under a live delegation (FR-APR-06). The signer holds the approval right themselves and signed with their own step-up.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            on_behalf_of?: string;
+            /**
+             * @description The delegator's name.
+             * @example Ah Kow Lim
+             */
+            on_behalf_of_name?: string;
             /**
              * Format: uuid
              * @description For a passkey signature: the passkey that signed the envelope's hash; its assertion is kept so it can be verified again (FR-APR-03).
@@ -26507,6 +26882,120 @@ export interface components {
             /**
              * @description The next page's cursor; absent on the last page.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+             */
+            next_cursor?: string;
+        };
+        AutomationRule: {
+            /**
+             * @description What it does: tells the recipients. It is the only action: no rule posts, approves, pays or files.
+             * @example notify
+             * @enum {string}
+             */
+            action: "notify";
+            /**
+             * @description The debits in the base currency from which it fires, with four decimals as kept; absent for any amount.
+             * @example 5000.0000
+             */
+            amount_at_least?: string;
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-11-21T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * @description The kind of document it watches; absent for any.
+             * @example bill
+             */
+            document_type?: string;
+            /**
+             * Format: uuid
+             * @description The rule's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c9a01
+             */
+            id: string;
+            /**
+             * @description The rule's name.
+             * @example Large bills
+             */
+            name: string;
+            /** @description The members told. */
+            recipients: string[];
+            /**
+             * @description active fires; paused does not and can be resumed; archived is final.
+             * @example active
+             * @enum {string}
+             */
+            state: "active" | "paused" | "archived";
+            /**
+             * @description What sets it off: a document of a kind is posted.
+             * @example document.posted
+             * @enum {string}
+             */
+            trigger: "document.posted";
+            /**
+             * Format: date-time
+             * @description When it last changed.
+             * @example 2026-11-21T09:00:00Z
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description The rule's version; it makes the ETag.
+             * @example 1
+             */
+            version: number;
+        };
+        AutomationRuleChange: {
+            /**
+             * @description A new amount; an empty string for any amount.
+             * @example 5000.00
+             */
+            amount_at_least?: string;
+            /**
+             * @description A new kind of document; an empty string for any kind.
+             * @example bill
+             */
+            document_type?: string;
+            /**
+             * @description A new name.
+             * @example Large bills
+             */
+            name?: string;
+            /** @description The new recipients, replacing the old. */
+            recipients?: string[];
+            /**
+             * @description active or paused to turn it on or off; archived ends it for good.
+             * @example paused
+             * @enum {string}
+             */
+            state?: "active" | "paused" | "archived";
+        };
+        AutomationRuleInput: {
+            /**
+             * @description Fires only when the document's debits in the base currency are at least this; leave it out for any amount.
+             * @example 5000.00
+             */
+            amount_at_least?: string;
+            /**
+             * @description The kind of document it watches, such as bill, invoice or journal (the kinds whose postings tell people); leave it out for any kind.
+             * @example bill
+             */
+            document_type?: string;
+            /**
+             * @description The rule's name.
+             * @example Large bills
+             */
+            name: string;
+            /** @description The active members told (user IDs). Each must hold the right to view the document, which is checked every time the rule fires. */
+            recipients: string[];
+        };
+        AutomationRulePage: {
+            /** @description The rules. */
+            items: components["schemas"]["AutomationRule"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEifQ
              */
             next_cursor?: string;
         };
@@ -40386,6 +40875,36 @@ export interface components {
             periods: components["schemas"]["Period"][];
             year: components["schemas"]["FinancialYear"];
         };
+        FindingStepView: {
+            /**
+             * Format: date
+             * @description The day it happened.
+             * @example 2026-11-12
+             */
+            on: string;
+            /**
+             * @description An acceptance's reason.
+             * @example The affected page is retired next month
+             */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-12T02:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description fixed, then retested; or accepted by an Owner, with a reason.
+             * @example fixed
+             * @enum {string}
+             */
+            step: "fixed" | "retested" | "accepted";
+        };
         FixedAsset: {
             /**
              * Format: uuid
@@ -41721,6 +42240,67 @@ export interface components {
              * @example 2026-10-31
              */
             through: string;
+        };
+        FrameworkReadiness: {
+            /**
+             * Format: int64
+             * @description How many controls map to it.
+             * @example 34
+             */
+            controls: number;
+            /**
+             * Format: int64
+             * @description Those that fail.
+             * @example 1
+             */
+            fail: number;
+            /** @description The controls that are not passing, with the worst first. */
+            gaps: components["schemas"]["ReadinessGap"][];
+            /**
+             * @description The framework's key, as the controls dashboard's filter has it.
+             * @example csa-ct
+             */
+            key: string;
+            /**
+             * Format: int64
+             * @description Those that do not apply to this organisation.
+             * @example 4
+             */
+            not_applicable: number;
+            /**
+             * Format: int64
+             * @description Those not assessed yet: a required input is missing.
+             * @example 3
+             */
+            not_assessed: number;
+            /**
+             * Format: int64
+             * @description Those that are overdue.
+             * @example 2
+             */
+            overdue: number;
+            /**
+             * Format: int64
+             * @description Of them, those that pass.
+             * @example 20
+             */
+            pass: number;
+            /**
+             * Format: int64
+             * @description Those with a check that arrives with a later change.
+             * @example 5
+             */
+            planned: number;
+            /**
+             * @description Where it sits in PRD-001's roadmap of assurance (section 14.8).
+             * @example Stage 1, with the first employees
+             */
+            stage: string;
+            /**
+             * @description Its name.
+             * @example CSA Cyber Trust
+             */
+            title: string;
         };
         FundingPlan: {
             /**
@@ -43830,6 +44410,14 @@ export interface components {
             status?: "done" | "cancelled";
             /** @example Chase the signed engagement letter */
             title?: string;
+        };
+        IntegrationTaskClose: {
+            /**
+             * @description done when the person did what the task asked; cancelled when it is no longer needed. For good: a finished task stays finished.
+             * @example done
+             * @enum {string}
+             */
+            status: "done" | "cancelled";
         };
         IntegrationTaskCreate: {
             /**
@@ -49288,6 +49876,11 @@ export interface components {
              * @example false
              */
             practice: boolean;
+            /**
+             * @description true for a sandbox organisation, made for integration testing with the sample company (FR-INT-18).
+             * @example false
+             */
+            sandbox: boolean;
         };
         MyOrganisationPage: {
             /** @description The organisations the caller is an active member of, the oldest first. */
@@ -49498,6 +50091,13 @@ export interface components {
             body: string;
             /** @description The members to mention, by user ID (listRecordMentionable): each must be able to see the record, or the comment is refused. They are told. */
             mention_ids?: string[] | null;
+        };
+        NewSandboxOrganisation: {
+            /**
+             * @description A name after the label "Sandbox: ".
+             * @example Integration tests
+             */
+            name: string;
         };
         NewSuperAdmin: {
             /** @description Ten recovery codes, each usable once. They are shown once: print them and keep them offline. With the other Super admin's confirmation, one gives your access back if you lose your sign-in (FR-ADM-09). Any earlier unused codes no longer work. */
@@ -50557,6 +51157,11 @@ export interface components {
              * @example false
              */
             practice?: boolean;
+            /**
+             * @description true for a sandbox organisation, made for integration testing with the sample company: it holds only synthetic data and sends nothing outside Fyniq (FR-INT-18).
+             * @example false
+             */
+            sandbox?: boolean;
             /**
              * @description The team mode (PRD-001 §6.4): Founder mode until a switch is approved (rev 0.42).
              * @example founder
@@ -57260,6 +57865,40 @@ export interface components {
              */
             next_cursor?: string;
         };
+        Readiness: {
+            /** @description ISO/IEC 27001:2022 Annex A's control numbers, covered and not. */
+            annex_a: components["schemas"]["AnnexAReadiness"];
+            /** @description Every framework of the registry, in the order the dashboard lists them. */
+            frameworks: components["schemas"]["FrameworkReadiness"][];
+            /**
+             * @description What this is not.
+             * @example Readiness, not a certificate: nothing here says Fyniq is certified by any body.
+             */
+            notice: string;
+        };
+        ReadinessGap: {
+            /**
+             * @description What the control holds.
+             * @example Security Command Center high and critical findings fixed within SLA
+             */
+            control: string;
+            /**
+             * @description In plain words, why.
+             * @example The verification has not run for this organisation yet.
+             */
+            detail: string;
+            /**
+             * @description The control's ID.
+             * @example CTL-RES-04
+             */
+            id: string;
+            /**
+             * @description Why it is a gap: it fails, is overdue, or is not assessed yet.
+             * @example not_assessed
+             * @enum {string}
+             */
+            status: "fail" | "overdue" | "not_assessed";
+        };
         Reading: {
             currency: components["schemas"]["Text"];
             customer_named: components["schemas"]["Flag"];
@@ -60633,6 +61272,49 @@ export interface components {
              */
             next_cursor?: string;
         };
+        SandboxOrganisation: {
+            /**
+             * @description Its books' currency.
+             * @example SGD
+             */
+            base_currency: string;
+            /**
+             * Format: uuid
+             * @description The sandbox organisation's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5b02
+             */
+            id: string;
+            /**
+             * @description Its name, always labelled "Sandbox: ".
+             * @example Sandbox: Integration tests
+             */
+            name: string;
+            /**
+             * @description Always true: this organisation holds only the synthetic sample company and sends nothing outside Fyniq.
+             * @example true
+             */
+            sandbox: boolean;
+        };
+        SandboxSampleCompany: {
+            /**
+             * Format: int64
+             * @description Accounts in its chart.
+             * @example 60
+             */
+            accounts: number;
+            /**
+             * Format: int64
+             * @description Journals posted.
+             * @example 24
+             */
+            journals: number;
+            /**
+             * Format: int64
+             * @description Its accounting periods (2026).
+             * @example 12
+             */
+            periods: number;
+        };
         SaveItemRequest: {
             /**
              * @description A view's ID, to rename or change it; a new view when left out. A favourite's ID is its path.
@@ -60961,6 +61643,241 @@ export interface components {
             query: string;
             /** @description The records found: each kind's newest first, in the filters' order; only group's when it is given. */
             results: components["schemas"]["SearchResult"][];
+        };
+        SecurityAssessmentInput: {
+            /**
+             * Format: date
+             * @description The last day, not after today.
+             * @example 2026-11-02
+             */
+            ended_on: string;
+            /** @description Its findings. */
+            findings?: components["schemas"]["SecurityFindingInput"][] | null;
+            /**
+             * @description true when the testers are not the people who build and run Fyniq.
+             * @example true
+             */
+            independent: boolean;
+            /**
+             * @description What it was.
+             * @example penetration_test
+             * @enum {string}
+             */
+            kind: "penetration_test" | "vulnerability_assessment" | "other";
+            /**
+             * @description Where the report is kept.
+             * @example The security folder of the shared drive
+             */
+            report_location?: string;
+            /**
+             * @description The report's SHA-256, lower-case hex.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            report_sha256?: string;
+            /**
+             * @description What it covered.
+             * @example The web app, the API and the MCP server on staging
+             */
+            scope: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-10-19
+             */
+            started_on: string;
+            /**
+             * @description What it concluded.
+             * @example No critical finding; one high
+             */
+            summary: string;
+            /**
+             * @description The firm or person.
+             * @example Example Security Pte Ltd
+             */
+            tester: string;
+        };
+        SecurityAssessmentRegister: {
+            /** @description The assessments, the latest ended first. */
+            items: components["schemas"]["SecurityAssessmentView"][];
+            /**
+             * Format: date
+             * @description The day the last independent assessment ended.
+             * @example 2026-11-02
+             */
+            last_independent_on?: string;
+            /**
+             * Format: date
+             * @description The day the next independent test is due: 12 months after the last.
+             * @example 2027-11-02
+             */
+            next_due_on?: string;
+            /**
+             * Format: int64
+             * @description How many Critical or High findings are past their day.
+             * @example 0
+             */
+            overdue_findings: number;
+        };
+        SecurityAssessmentView: {
+            /**
+             * Format: uuid
+             * @description The assessment.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11
+             */
+            assessment_id: string;
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-11-02
+             */
+            ended_on: string;
+            /** @description Its findings. */
+            findings: components["schemas"]["SecurityFindingView"][];
+            /**
+             * @description true when the testers are not the people who build and run Fyniq.
+             * @example true
+             */
+            independent: boolean;
+            /**
+             * @description What it was.
+             * @example penetration_test
+             * @enum {string}
+             */
+            kind: "penetration_test" | "vulnerability_assessment" | "other";
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-03T02:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * @description Who recorded it, as records name actors.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            recorded_by: string;
+            /**
+             * @description Where the report is kept; it stays outside Fyniq.
+             * @example The security folder of the shared drive
+             */
+            report_location?: string;
+            /**
+             * @description The report's SHA-256, so it is shown to be the one received.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            report_sha256?: string;
+            /**
+             * @description What it covered.
+             * @example The web app, the API and the MCP server on staging
+             */
+            scope: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-10-19
+             */
+            started_on: string;
+            /**
+             * @description What it concluded.
+             * @example No critical finding; one high
+             */
+            summary: string;
+            /**
+             * @description The firm or person.
+             * @example Example Security Pte Ltd
+             */
+            tester: string;
+        };
+        SecurityFindingInput: {
+            /**
+             * Format: date
+             * @description The day it was found; the assessment's last day when left out.
+             * @example 2026-11-02
+             */
+            found_on?: string;
+            /**
+             * @description The tester's reference.
+             * @example PT-2026-07
+             */
+            ref: string;
+            /**
+             * @description How serious.
+             * @example high
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low" | "info";
+            /**
+             * @description What it is.
+             * @example Reflected script in the search page
+             */
+            title: string;
+        };
+        SecurityFindingStepInput: {
+            /**
+             * Format: date
+             * @description The day it happened, not after today.
+             * @example 2026-11-12
+             */
+            on: string;
+            /**
+             * @description An acceptance's reason: why the risk is taken.
+             * @example The affected page is retired next month
+             */
+            reason?: string;
+            /**
+             * @description fixed, then retested; or accepted, before the retest, with a reason.
+             * @example fixed
+             * @enum {string}
+             */
+            step: "fixed" | "retested" | "accepted";
+        };
+        SecurityFindingView: {
+            /**
+             * Format: date
+             * @description The day it is due: 7 days for Critical, 30 High, 90 Medium, 180 Low from the day found; none for info.
+             * @example 2026-12-02
+             */
+            due_on?: string;
+            /**
+             * Format: uuid
+             * @description The finding.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
+             */
+            finding_id: string;
+            /**
+             * Format: date
+             * @description The day it was found.
+             * @example 2026-11-02
+             */
+            found_on: string;
+            /**
+             * @description true when a Critical or High finding is past its day: open after its due day, or fixed and not retested 30 days on.
+             * @example false
+             */
+            overdue: boolean;
+            /**
+             * @description The tester's reference.
+             * @example PT-2026-07
+             */
+            ref: string;
+            /**
+             * @description How serious.
+             * @example high
+             * @enum {string}
+             */
+            severity: "critical" | "high" | "medium" | "low" | "info";
+            /**
+             * @description Where it stands.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "fixed" | "retested" | "accepted";
+            /** @description The steps it took, in order. */
+            steps: components["schemas"]["FindingStepView"][];
+            /**
+             * @description What it is.
+             * @example Reflected script in the search page
+             */
+            title: string;
         };
         SendInvestorUpdateInputBody: {
             /** @description Member user IDs: each an active member who may read the board pack, such as a Board viewer (BPACK-04). */
@@ -75198,6 +76115,422 @@ export interface operations {
             };
         };
     };
+    listApprovalDelegations: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description mine: those you delegated or hold; all: every delegation of the organisation, for an Owner. */
+                scope?: "mine" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDelegationPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createApprovalDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalDelegationInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDelegation"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDelegation"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APR-17` The delegation cannot be made that way. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    endApprovalDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The delegation's ID. */
+                delegation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDelegation"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-18` That delegation cannot be ended by you, or has ended; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listApprovalPolicies: {
         parameters: {
             query?: {
@@ -79748,6 +81081,424 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAutomationRules: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRulePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createAutomationRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutomationRuleInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRule"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRule"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `AUT-03` No such workflow rule. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AUT-02` Workflow rules are off; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AUT-01` The workflow rule cannot be saved that way. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    changeAutomationRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The rule's ID. */
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutomationRuleChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRule"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found; `AUT-03` No such workflow rule. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `AUT-02` Workflow rules are off; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `AUT-01` The workflow rule cannot be saved that way. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -104432,6 +106183,99 @@ export interface operations {
             };
         };
     };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listRestoreDrills: {
         parameters: {
             query?: never;
@@ -105708,6 +107552,519 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSecurityAssessments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityAssessmentRegister"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createSecurityAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityAssessmentView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addSecurityFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The assessment. */
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityFindingInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityFindingView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    stepSecurityFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The finding. */
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecurityFindingStepInput"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingStepView"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-ASSESSMENT-01` The register of security assessments is only added to, and a finding's steps follow each other; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -145652,6 +148009,299 @@ export interface operations {
             };
         };
     };
+    createSandboxOrganisation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewSandboxOrganisation"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxOrganisation"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxOrganisation"];
+                };
+            };
+            /** @description Accepted: with two Super admins, the step waits for the other one's approval (FR-ADM-07); nothing changed yet. The body is the change. */
+            202: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallationChange"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-01` Sandbox organisations are not enabled here; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SANDBOX-01` A sandbox organisation is made new and stays a sandbox. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-SANDBOX-03` The sandbox organisation's sample company is not loaded; `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    loadSandboxSampleCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The sandbox organisation's ID. */
+                organisation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxSampleCompany"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-SANDBOX-03` The sandbox organisation's sample company is not loaded; `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listSignInMethods: {
         parameters: {
             query?: {
@@ -175829,7 +178479,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `CONNECTOR-04` A secret the connector needs is not set; `CONNECTOR-06` The connector cannot take that step now; `CONNECTOR-08` The change cannot be decided or applied now; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CONNECTOR-01` A connector moves only along its lifecycle; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `APR-06` A change to it is waiting for approval already; `CONNECTOR-04` A secret the connector needs is not set; `CONNECTOR-06` The connector cannot take that step now; `CONNECTOR-08` The change cannot be decided or applied now; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-CONNECTOR-01` A connector moves only along its lifecycle; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -179522,7 +182172,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PRACTICE-02` You hold a practice organisation already. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PRACTICE-02` You hold a practice organisation already. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -213729,6 +216379,171 @@ export interface operations {
             };
         };
     };
+    closeIntegrationTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The task's ID. */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrationTaskClose"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Idempotent-Replayed"?: string;
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationTask"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `ITASK-03` Only a person finishes a task this way. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `ITASK-02` The task is finished; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getBadDebtRelief: {
         parameters: {
             query?: {
@@ -217885,7 +220700,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -218118,7 +220933,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
+            /** @description Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -218371,7 +221186,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -218638,7 +221453,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
+            /** @description Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -218792,7 +221607,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
+            /** @description Conflict: `API-SANDBOX-02` A sandbox organisation does not do that; `STORAGE-LOCK-01` Another change is in progress; `WEBHOOK-05` The endpoint cannot take that step. */
             409: {
                 headers: {
                     [name: string]: unknown;

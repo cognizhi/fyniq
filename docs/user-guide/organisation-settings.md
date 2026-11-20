@@ -174,6 +174,21 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
 | AI apps through MCP | Off | No AI app reaches your books until an Owner turns it on with a second approver; see [AI apps through MCP](#ai-apps-through-mcp) |
 
+## Approval reminders
+
+Two settings time the reminders of a waiting approval (FR-APR-08): **Remind approvers every** (24 hours
+recommended, 1 to 72) and **Escalate a waiting approval after** (72 hours recommended, 2 to 168). A
+reminder goes to the people who may sign the approval's current step, up to three times; the escalation
+tells the Owners and the person who asked, and ends the reminders. Neither changes who may sign or when
+the request expires. Either can be changed without a second approver.
+
+## Offline receipts
+
+**Keep an offline receipt for** (72 hours recommended, 1 to 168) is how long a receipt captured with no
+signal waits on the phone before it is removed (FR-UX-16). It is kept sealed on the device, removed
+when the person signs out, never kept on a device the person marked as shared, and checked by Fyniq
+when it uploads. See [Use Fyniq on your phone](mobile-app.md). A change needs no second approver.
+
 ## Motion
 
 Fyniq uses a few short transitions so you can follow what changed: a page or panel fading in, rows
@@ -246,6 +261,24 @@ what is shown, never what a person may do.
 
 - **Webhooks and events**: off unless changed. Turning it on needs a second approver; turning it off takes effect at once and stops every delivery. While it is on, an Administrator can add endpoints that
   receive the event types they ask for, as IDs and times only, signed and retried for three days. See [Send events to another system with webhooks](webhooks.md).
+
+## Workflow rules
+
+A workflow rule tells members when something is posted: "when a bill of S$5,000 or more is posted, tell
+the Controller". It is for people who want to hear about the books without watching them.
+
+1. An Owner turns on **Workflow rules** under **Features**, with a second approver. Until then no rule can be made.
+2. Open **Settings → Workflow rules** (Expert mode) and select **Add rule**. Give it a name, choose the kind
+   of document (a supplier bill, an invoice, a manual journal and others, or any), an amount if you want
+   one (the document's debits in the base currency; leave it empty for any amount), and the members to tell.
+3. When a person posts a matching document, each member named hears of it in their notification centre,
+   by email as their notification preferences say. The person who posted it is not told.
+
+A rule only tells people. It cannot post, approve, pay or file anything, and it has no other action: that
+list is fixed. Each member it names must hold the right to see the document, which is checked every time
+the rule fires. **Pause** stops a rule and **Resume** starts it again; **Archive** ends it for good. A rule
+watches postings, not voids, and a rule's own notice never sets another rule off. Turning the feature off
+stops every rule at once.
 
 ## AI apps through MCP
 

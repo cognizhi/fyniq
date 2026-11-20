@@ -29,6 +29,10 @@ requirements: [NM-PRF-01, NM-PRF-02]
 - Company goals are set by the HR administrator or the Owner; team goals by a line manager, the HR administrator or the Owner.
 - Nemura shows no company financial figure. A KPI that is read from Fyniq's metrics arrives with the link to Fyniq; until then values are entered by a person.
 
+## For the line manager and the people team
+
+Open a person's record and select **Goals and KPIs** to read their goals, key results and role KPIs, read only. A line manager reads the goals of their reports, and the HR officer, the HR administrator and the Owner read anyone's; anyone else is told there are none, because a personal goal is private to the person, their manager and the people team. Under a company or team goal, **With the goals aligned with it** shows the average progress of the goal's own key results and the goals aligned with it that you may read, rounded down: a goal you may not read does not count towards the number you see.
+
 ## Common problems
 
 - **It says there is no such goal or person for you.** You may not read or change it: only the person, their line manager and the people team read a personal goal.

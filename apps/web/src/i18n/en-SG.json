@@ -251,6 +251,14 @@
       "label": "Review log",
       "tooltip": "Every high-risk action, for another founder to review once a week. Nobody reviews their own."
     },
+    "approvals.delegations": {
+      "label": "Delegations",
+      "tooltip": "Hand your approvals to another member for some days, for example during leave. They sign as themselves, and only what you could sign."
+    },
+    "approvals.delegate": {
+      "label": "Delegate my approvals",
+      "tooltip": "Lets a member who holds an approval right sign for you, from a first day to a last day, up to 90 days. It lends no right: you can end it at any time."
+    },
     "approvals.break-glass": {
       "label": "Break-glass",
       "tooltip": "When the other founder is unreachable, an Owner releases waiting payment batches alone for 24 hours, up to a cap. Reviewed afterwards."
@@ -2127,6 +2135,14 @@
       "label": "Connector",
       "tooltip": "One connector: its lifecycle, configuration and secrets, its test and health, an upgrade to consent to, and its history."
     },
+    "settings.workflow-rules": {
+      "label": "Workflow rules",
+      "tooltip": "Tell members when a document of a kind, above an amount, is posted. A rule only tells people: it never posts, approves, pays or files anything."
+    },
+    "workflow-rules.add": {
+      "label": "Add rule",
+      "tooltip": "Choose the kind of document, an amount if you want one, and the members to tell. Each must be allowed to see the document."
+    },
     "settings.webhooks": {
       "label": "Webhooks",
       "tooltip": "The addresses Fyniq sends signed event messages to, each verified before it is active, with their secrets and the events that never arrived."
@@ -2695,6 +2711,22 @@
       "label": "What worked on the restored copy",
       "tooltip": "A drill counts as recovered only when every one passed: the ledger's and the audit chain's verifications, documents, keys, sign-in, the tick and the outbox's reconciliation."
     },
+    "compliance.security-assessments": {
+      "label": "Security assessments",
+      "tooltip": "Each penetration test and other assessment of the platform, with its findings: due by their severity, fixed, retested or accepted. An independent test is due every year. The Owner keeps it."
+    },
+    "compliance.readiness": {
+      "label": "Readiness",
+      "tooltip": "For each framework, how many of its mapped controls pass, and the ones that do not; and the ISO/IEC 27001 Annex A numbers no control maps to. Readiness, never a certificate."
+    },
+    "compliance.assessment-record": {
+      "label": "Record an assessment",
+      "tooltip": "Say who tested, what was covered and when, what it concluded, and the report's SHA-256 and where it is kept; the report itself stays outside Fyniq. An entry is never changed."
+    },
+    "compliance.finding-step": {
+      "label": "Record a step",
+      "tooltip": "A finding is fixed, then retested; or the Owner accepts it, with a reason, before it is retested. A Critical or High finding that is not closed by its day makes the control overdue."
+    },
     "compliance.heartbeat-drills": {
       "label": "Heartbeat drills",
       "tooltip": "Each quarter's drill of the scheduled tick paused in staging: whether the platform owner heard within 30 minutes and the Owners within an hour. The DPO keeps it."
@@ -2810,6 +2842,30 @@
     "mcp.revoke-member": {
       "label": "Disconnect for a person",
       "tooltip": "End one person's access for one AI app at once. Their other apps, their sign-in and their integrations are not touched."
+    },
+    "mcp.third-party": {
+      "label": "Apps from other publishers",
+      "tooltip": "AI apps of other publishers, registered by hand by an Administrator. Fyniq has not verified them; an Owner allows each one, with a second approver, before anyone can connect it."
+    },
+    "mcp.register-third-party": {
+      "label": "Register an app",
+      "tooltip": "Record an AI app of another publisher: who publishes it, where it signs people in, what it is for and where it processes data. It cannot connect until an Owner allows it."
+    },
+    "mcp.remove-third-party": {
+      "label": "Remove the app",
+      "tooltip": "Take the app away at once: it can no longer sign anyone in, and its record stays for the access review."
+    },
+    "inbox.integration-tasks": {
+      "label": "Tasks from other systems",
+      "tooltip": "Tasks that a ticketing system or another connected system asked a person to do. The system finishes its own; an Owner or an Administrator can finish one here."
+    },
+    "inbox.integration-task-done": {
+      "label": "Mark done",
+      "tooltip": "The task was done: it is finished for good and the system that made it will see so."
+    },
+    "inbox.integration-task-cancel": {
+      "label": "Cancel the task",
+      "tooltip": "The task is no longer needed: it is finished for good and the system that made it will see so."
     },
     "policy.acknowledge": {
       "label": "Acknowledge policy",

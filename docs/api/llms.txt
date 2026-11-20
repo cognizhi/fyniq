@@ -85,6 +85,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
+- `GET /v1/approval-delegations` (listApprovalDelegations): List delegations of approval authority
+- `POST /v1/approval-delegations` (createApprovalDelegation): Delegate your approval authority
+- `POST /v1/approval-delegations/{delegation_id}/end` (endApprovalDelegation): End a delegation of approval authority
 - `GET /v1/approval-policies` (listApprovalPolicies): List the approval policies
 - `GET /v1/approval-policies/{object_type}` (getApprovalPolicy): Get an approval policy
 - `PATCH /v1/approval-policies/{object_type}` (changeApprovalPolicy): Ask to change an approval policy
@@ -122,6 +125,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/audit/recoveries/{recovery_id}/acknowledge` (acknowledgeAuditRecovery): Acknowledge a recovery of the audit trail
 - `GET /v1/audit/verification` (getAuditVerification): Verify the audit trail's integrity for a range of days
 - `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
+- `GET /v1/automation-rules` (listAutomationRules): List the organisation's workflow rules
+- `POST /v1/automation-rules` (createAutomationRule): Make a workflow rule
+- `PATCH /v1/automation-rules/{rule_id}` (changeAutomationRule): Change, pause or archive a workflow rule
 - `POST /v1/background-work/{work_id}/replay` (replayBackgroundWork): Replay a background task that stopped
 - `POST /v1/bank-changes` (createPayeeBankChange): Prepare a change of a vendor's bank details
 - `GET /v1/bank-changes/{change_id}` (getPayeeBankChange): Get a change of a vendor's bank details
@@ -312,6 +318,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
 - `POST /v1/compliance/policies/{key}/versions` (publishPolicyVersion): Publish a policy's next version
 - `POST /v1/compliance/policies/{key}/versions/{version}/acknowledgements` (acknowledgePolicyVersion): Acknowledge a policy
+- `GET /v1/compliance/readiness` (getReadiness): Get the readiness of each framework
 - `GET /v1/compliance/restore-drills` (listRestoreDrills): List the restore drills
 - `POST /v1/compliance/restore-drills` (recordRestoreDrill): Record a restore drill
 - `GET /v1/compliance/reviews` (listComplianceReviews): List the recurring reviews and attestations
@@ -323,6 +330,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/secretary/runs` (listAgentRuns): List the assistant's runs
 - `POST /v1/compliance/secretary/runs` (runCompanySecretary): Run the assistant now
 - `GET /v1/compliance/secretary/runs/{run_id}` (getAgentRun): Get a run's report
+- `GET /v1/compliance/security-assessments` (listSecurityAssessments): List the security assessments
+- `POST /v1/compliance/security-assessments` (createSecurityAssessment): Record a security assessment
+- `POST /v1/compliance/security-assessments/{assessment_id}/findings` (addSecurityFinding): Add a finding to a security assessment
+- `POST /v1/compliance/security-findings/{finding_id}/steps` (stepSecurityFinding): Record the next step of a finding
 - `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
 - `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
 - `GET /v1/compliance/tasks` (listComplianceTasks): List the compliance tasks
@@ -630,6 +641,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/installation/health` (getPlatformHealth): Read the platform's health
 - `GET /v1/installation/private-endpoints` (listPrivateEndpoints): List the registered private endpoints
 - `POST /v1/installation/private-endpoints` (registerPrivateEndpoint): Register, change or retire a private endpoint
+- `POST /v1/installation/sandbox-organisations` (createSandboxOrganisation): Make a sandbox organisation
+- `POST /v1/installation/sandbox-organisations/{organisation_id}/sample-company` (loadSandboxSampleCompany): Load the sample company into a sandbox organisation
 - `GET /v1/installation/sign-in-methods` (listSignInMethods): List the sign-in providers and their switches
 - `PATCH /v1/installation/sign-in-methods/{provider}` (changeSignInMethod): Turn a sign-in provider on or off, or set its domains
 - `GET /v1/installation/super-admins` (listSuperAdmins): List the Super admins
@@ -1182,6 +1195,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/tasks` (createIntegrationTask): Make a task as an integration
 - `GET /v1/tasks/{task_id}` (getIntegrationTask): Read a task an integration made
 - `PATCH /v1/tasks/{task_id}` (updateIntegrationTask): Update a task an integration made
+- `POST /v1/tasks/{task_id}/close` (closeIntegrationTask): Finish a task an integration made, as a person
 - `GET /v1/tax/bad-debt-relief` (getBadDebtRelief): The GST bad debt relief queue
 - `POST /v1/tax/bad-debt-relief/claims` (claimBadDebtRelief): Claim GST bad debt relief for a write-off
 - `GET /v1/tax/bad-debt-relief/claims/{claim_id}` (getBadDebtReliefClaim): Get a claim of GST bad debt relief

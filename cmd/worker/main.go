@@ -17,6 +17,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
+	"github.com/cognizhi/fyniq/internal/chatroute"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/security"
@@ -92,8 +93,9 @@ func main() {
 			kinds[email.FetchKind] = fetcher.Work()
 			kinds[bankingest.Kind] = kit.BankReports(deps.Clock).Work() // FR-BNK-17: an accepted bank report, imported
 		}
-		kinds[paymentlinkjob.Kind] = paymentlinkjob.Maker{Store: kit.Store, Runtime: kit.Runtime(deps.Clock), Clock: deps.Clock}.Work() // FR-AR-13: a payment link asked for when an invoice was issued
-		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()                                                                         // FR-BNK-15: an early sync a bank's verified webhook asked for
+		kinds[paymentlinkjob.Kind] = paymentlinkjob.Maker{Store: kit.Store, Runtime: kit.Runtime(deps.Clock), Clock: deps.Clock}.Work()            // FR-AR-13: a payment link asked for when an invoice was issued
+		kinds[chatroute.Kind] = chatroute.Maker{Store: kit.Store, Messaging: chatroute.Runtime(kit.Runtime(deps.Clock)), Clock: deps.Clock}.Work() // FR-NTF-04: a chat message the routing rules asked for
+		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work()                                                                                    // FR-BNK-15: an early sync a bank's verified webhook asked for
 		events := kit.PSPEvents(deps.Clock)
 		kinds[pspevents.Kind] = events.Work()
 		kinds[psp.Kind] = kit.PSPRunner(deps.Clock).Work()       // FR-PSP-06: a provider's sweep, after its events                       // FR-PSP-01: a provider's event worked: its object fetched and posted

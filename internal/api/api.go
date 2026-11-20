@@ -57,9 +57,11 @@ type Deps struct {
 	LinkLog      LinkLog
 	Store        storage.Store
 	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
-	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
-	KBCompiler   bool                 // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
-	Clock        ports.Clock
+	// Sandbox is the deployment's sandbox setting (FR-INT-18): off unless the operator turns it on.
+	Sandbox    SandboxConfig
+	Outbox     *outbox.Dispatcher // queues background work, such as token revocations; nil when there is none
+	KBCompiler bool               // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
+	Clock      ports.Clock
 	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil when none is connected: sending answers "not available here".
 	AccessPoint ports.AccessPoint
 	// IRASFiler files returns with IRAS (FR-TAX-03); nil when IRAS's API is not connected. No operation calls it until the GST F5 caller exists (p1-gst 7.2).
@@ -283,6 +285,7 @@ func Config(version string) huma.Config {
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Automation", Description: "Workflow rules without code (FR-AUT-03): a fixed trigger, typed conditions and one fixed action, to tell members when a document of a kind is posted. A rule never posts, approves, pays or files anything, and never reaches the AI or MCP."},
 		{Name: "Tasks", Description: "Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI."},
 		{Name: "Connected apps", Description: "AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6)."},
 		{Name: "Help", Description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."},
@@ -431,6 +434,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSavedItems(a)
 	registerRecordComments(a)
 	registerPractice(a)
+	registerSandbox(a)
 	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
@@ -450,6 +454,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAIProposalReads(a)
 	registerComplianceTasks(a)
 	registerWebhooks(a)
+	registerApprovalDelegations(a)
+	registerAutomationRules(a)
 	registerIntegrationTasks(a)
 	registerThirdPartyApps(a)
 	registerCompanySecretary(a)
@@ -526,6 +532,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
 	registerRetentionHolds(a)
+	registerSecurityAssessments(a)
+	registerReadiness(a)
 	registerShredding(a)
 	registerFeasibility(a)
 	registerSignInMethods(a)

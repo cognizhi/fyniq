@@ -69,9 +69,14 @@ func Posted(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org,
 	if name == "" {
 		name = "Someone"
 	}
-	_, err := Emit(ctx, d, u, org, Event{Type: "ledger.posted", RecordType: "document", RecordID: &doc.ID, Title: name + " " + verb + " " + what,
-		Link: link, At: d.Clock.Now(), Audience: Audience{Capability: approval.Rows[k.object], Need: "A", Except: []uuid.UUID{actor}}})
-	return err
+	if _, err := Emit(ctx, d, u, org, Event{Type: "ledger.posted", RecordType: "document", RecordID: &doc.ID, Title: name + " " + verb + " " + what,
+		Link: link, At: d.Clock.Now(), Audience: Audience{Capability: approval.Rows[k.object], Need: "A", Except: []uuid.UUID{actor}}}); err != nil {
+		return err
+	}
+	if verb == "posted" || verb == "issued" { // workflow rules watch postings, not voids (FR-AUT-03)
+		return fireRules(ctx, d, u, org, actor, doc, entry, what, link)
+	}
+	return nil
 }
 
 // periodPeople are those who close a month or approve its reopening, and those who post to it: C or A on its row.

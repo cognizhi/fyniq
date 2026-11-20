@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/asset"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/automation"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/banktransaction"
@@ -180,6 +181,9 @@ const (
 	CodeNotSuperAdmin     = "API-AUTHZ-06"       // the operation is for a Super admin
 	CodeCodeRefused       = "API-SUPERADMIN-01"  // an invitation, recovery or confirmation code is not valid, used or expired
 	CodeSuperAdminRefused = "API-SUPERADMIN-02"  // at most two Super admins, never none; nobody confirms their own recovery
+	CodeSandboxOff        = "API-SANDBOX-01"     // sandbox organisations are not enabled on this deployment (FR-INT-18)
+	CodeSandboxRefused    = "API-SANDBOX-02"     // a sandbox organisation sends nothing outside Fyniq, and does not do this
+	CodeSandboxLoad       = "API-SANDBOX-03"     // the sandbox organisation was made but its sample company is not loaded (yet)
 	CodeRateLimited       = "API-RATE-01"        // the client's requests this minute reached its limit (429)
 	CodeSecondFactor      = "API-AUTHZ-07"       // the session passed no second factor (SEC-01)
 	CodeCoolingOff        = "API-AUTHZ-08"       // held during the cooling-off after the caller's account recovery (SEC-35)
@@ -220,6 +224,9 @@ var codeFacts = map[string]struct {
 	CodeNotSuperAdmin:             {403, "Not a Super admin"},
 	CodeCodeRefused:               {409, "Code refused"},
 	CodeSuperAdminRefused:         {409, "Super admin change refused"},
+	CodeSandboxOff:                {409, "Sandbox organisations are not enabled here"},
+	CodeSandboxRefused:            {409, "A sandbox organisation does not do that"},
+	CodeSandboxLoad:               {503, "The sandbox organisation's sample company is not loaded"},
 	CodeRateLimited:               {429, "Too many requests"},
 	CodeSecondFactor:              {403, "A second factor is required"},
 	CodeCoolingOff:                {403, "Held while your account cools off after its recovery"},
@@ -422,6 +429,7 @@ var codeFacts = map[string]struct {
 	CodeThirdPartyField:           {422, "A field of the registration is not acceptable"},
 	CodeIntegrationTaskClient:     {403, "Only an integration API client makes these tasks"},
 	CodeIntegrationTaskFinished:   {409, "The task is finished"},
+	CodeIntegrationTaskPerson:     {403, "Only a person finishes a task this way"},
 	CodeWebhookNotFound:           {404, "No such webhook endpoint or delivery"},
 	CodeProposalRevises:           {422, "Not a proposal this one may revise"},
 	semantic.CodeDimension:        {422, "The measure is not split so"},
@@ -445,6 +453,7 @@ var codeFacts = map[string]struct {
 	storage.CodeHeartbeatDrill:    {409, "A heartbeat drill, once recorded, never changes"},
 	storage.CodeHold:              {409, "That hold is already in force, or was lifted already"},
 	storage.CodeHeld:              {409, "A legal hold keeps that: lift the hold with a reason first"},
+	storage.CodeAssessment:        {409, "The register of security assessments is only added to, and a finding's steps follow each other"},
 	storage.CodeTransfer:          {409, "A transfer's versions follow each other and keep the flow they cover"},
 	storage.CodeShredding:         {409, "Personal data is shredded only in its approved run, after its retention"},
 	CodeCheckOwner:                {422, "That person cannot own the check"},
@@ -628,6 +637,11 @@ var codeFacts = map[string]struct {
 	approval.CodeRules:            {422, "The policy's rules cannot be applied"},
 	approval.CodeFixed:            {409, "This approval policy is fixed"},
 	approval.CodeAuthority:        {409, "An earlier approver no longer holds the right: nothing was changed"},
+	automation.CodeRule:           {422, "The workflow rule cannot be saved that way"},
+	automation.CodeOff:            {409, "Workflow rules are off"},
+	automation.CodeNotFound:       {404, "No such workflow rule"},
+	approval.CodeDelegation:       {422, "The delegation cannot be made that way"},
+	approval.CodeDelegationNotFor: {409, "That delegation cannot be ended by you, or has ended"},
 	approval.CodeNotYourStep:      {403, "The request's current step needs someone else"},
 	approval.CodeNotYours:         {403, "Only the person who asked for it withdraws it"},
 	approval.CodeReviewOwn:        {403, "Another person reviews what you did"},
@@ -1081,6 +1095,7 @@ var codeFacts = map[string]struct {
 	storage.CodeClaim:                {409, "The expense claim record does not allow that"},
 	storage.CodePractice:             {403, "A practice organisation is not yours to open"},
 	storage.CodePracticeHeld:         {409, "You hold a practice organisation already"},
+	storage.CodeSandbox:              {409, "A sandbox organisation is made new and stays a sandbox"},
 	claim.CodeCategoryName:           {422, "The category's name does not fit"},
 	claim.CodeCategoryAccount:        {422, "A claim cannot cost that account"},
 	claim.CodeCategoryLimit:          {422, "A limit of the category does not fit"},

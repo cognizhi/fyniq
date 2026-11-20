@@ -90,13 +90,17 @@ var fyCodes = map[string]string{
 	"FYP32": storage.CodeInvalid,
 	"FYP33": storage.CodeInvalid,
 	"FYP34": storage.CodeInvalid,
-	"FYT01": storage.CodeInvalid, // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
-	"FYT02": storage.CodeInvalid, // a write-off with a live claim of relief reversed (001120)
-	"FYW01": storage.CodeInvalid, // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
-	"FYW02": storage.CodeInvalid, // a webhook delivery changed beyond its rules (001151)
-	"FYM01": storage.CodeInvalid, // a third-party AI app changed beyond noting its removal, or deleted (001153)
-	"FYK01": storage.CodeInvalid, // a task made by an integration changed beyond its rules, or deleted (001152)
-	"FYW03": storage.CodeInvalid, // a recorded webhook attempt changed or deleted (001151)
+	"FYT01": storage.CodeInvalid,  // a claim of GST bad debt relief for a write-off that is not posted or is claimed already (001120)
+	"FYT02": storage.CodeInvalid,  // a write-off with a live claim of relief reversed (001120)
+	"FYW01": storage.CodeInvalid,  // a webhook endpoint changed beyond its rules, or a webhook record deleted (001151)
+	"FYW02": storage.CodeInvalid,  // a webhook delivery changed beyond its rules (001151)
+	"FYM01": storage.CodeInvalid,  // a third-party AI app changed beyond noting its removal, or deleted (001153)
+	"FYA01": storage.CodeInvalid,  // a workflow rule changed out of its course, or deleted (001202)
+	"FYD01": storage.CodeApproval, // a delegation of approval authority changed beyond being ended, or deleted (001200)
+	"FYD02": storage.CodeApproval, // a signature on behalf of someone without a live delegation, or twice for one person (001200)
+	"FYD03": storage.CodeApproval, // a recorded approval reminder changed or deleted (001200)
+	"FYK01": storage.CodeInvalid,  // a task made by an integration changed beyond its rules, or deleted (001152)
+	"FYW03": storage.CodeInvalid,  // a recorded webhook attempt changed or deleted (001151)
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,
@@ -149,6 +153,8 @@ var fyCodes = map[string]string{
 	"FY712": storage.CodePracticeHeld,
 	"FY713": storage.CodePractice,
 	"FY714": storage.CodeAmount,
+	"FY960": storage.CodeSandbox, // a sandbox flag changed, removed or given to an organisation that existed (001250)
+	"FY961": storage.CodeSandbox, // a sandbox organisation's name or currency refused (001250)
 	"FY234": storage.CodeClaim,
 	"FY235": storage.CodeAsset,
 	"FY236": storage.CodeAsset,
@@ -249,6 +255,7 @@ var fyCodes = map[string]string{
 	"FY315": storage.CodeBreach,             // a breach's step out of order, prescribed data decided not notifiable, or any change (000306)
 	"FY360": storage.CodeHold,               // a hold outside its rules, changed, deleted or lifted twice (001300)
 	"FY361": storage.CodeHeld,               // a delete of a row a hold covers, or a hold asked about for another organisation (001300)
+	"FY362": storage.CodeAssessment,         // the register of security assessments changed or deleted, or a finding's step out of order (001301)
 	"FY316": storage.CodeTransfer,           // a transfer's version out of order, a changed flow, or any change (000307)
 	"FY317": storage.CodeShredding,          // a person key changed, or deleted outside its approved run (000308, 000309)
 	"FY318": storage.CodeShredding,          // a shredding run out of order, or an anonymisation not recorded first (000309)

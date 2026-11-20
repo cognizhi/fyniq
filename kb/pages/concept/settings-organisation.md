@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, InvoiceNow, cash buffer, numbering, features, AI, terms, banking, claims, thresholds, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:60fb4ca321ed09be14e60712bc7c88259bfc15831003b6533a577982acb9f79c
+  - docs/user-guide/organisation-settings.md sha256:e8de601d48baff4f1f63e77dd202bdb5f2563539ffb168f604dc6f8ef319100a
 data_class: general
 taint: trusted
 status: draft
@@ -175,6 +175,21 @@ The calendar itself: [[compliance.calendar]].
 
 (src: docs/user-guide/organisation-settings.md#features)
 
+## Approval reminders
+
+- **Remind approvers every** (24 hours recommended, 1 to 72) and **Escalate a waiting approval after** (72 hours recommended, 2 to 168) time the reminders of a waiting approval.
+- A reminder goes to those who may sign its current step, up to three times; the escalation tells the Owners and the person who asked and ends the reminders. Neither changes who may sign or when it expires ([[approvals.decide]]).
+- Either can be changed without a second approver.
+
+(src: docs/user-guide/organisation-settings.md#approval-reminders)
+
+## Offline receipts
+
+- **Keep an offline receipt for** (72 hours recommended, 1 to 168) is how long a receipt captured with no signal waits on the phone before it is removed ([[app.mobile]]).
+- It is kept sealed on the device, removed at sign-out, never kept on a device marked as shared, and checked by Fyniq when it uploads; a change needs no second approver.
+
+(src: docs/user-guide/organisation-settings.md#offline-receipts)
+
 ## Motion
 
 - Short transitions help people follow what changed: a page or panel fading in, rows entering, a count changing.
@@ -226,6 +241,15 @@ The calendar itself: [[compliance.calendar]].
 - Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
 
 (src: docs/user-guide/organisation-settings.md#ai-task-types)
+
+## Workflow rules
+
+- A workflow rule tells members when a document is posted, such as "when a bill of S$5,000 or more is posted, tell the Controller".
+- An Owner turns on **Workflow rules** under **Features** with a second approver; then **Settings → Workflow rules** (Expert) makes one: a name, the kind of document or any, an amount in the base currency (empty for any) and the members to tell.
+- Each member named is told in their notification centre, and by email as their preferences say, when a matching document is posted by someone else; each must hold the right to see the document, checked every time.
+- A rule only tells people: it cannot post, approve, pay or file anything, and its list of actions is fixed. **Pause** and **Resume** switch it; **Archive** ends it for good. It watches postings, not voids, and a rule's own notice never sets another off. Turning the feature off stops every rule.
+
+(src: docs/user-guide/organisation-settings.md#workflow-rules)
 
 ## AI apps through MCP
 

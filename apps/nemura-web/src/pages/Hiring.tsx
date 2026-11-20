@@ -4,6 +4,7 @@ import type { components } from "../api/schema";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
+import { Pipeline } from "./Pipeline";
 
 type Requisition = components["schemas"]["Requisition"];
 type Finding = components["schemas"]["WordingFinding"];
@@ -12,7 +13,7 @@ type Note = { ok: boolean; text: string } | null;
 const problem = (e: unknown): string => (e as { detail?: string } | undefined)?.detail ?? t("hiring.failed");
 const exemptions = ["fewer_than_10_employees", "ep_salary_22500", "role_one_month_or_less", "transferee", "s_pass_exempt"] as const;
 type Change = React.ChangeEvent<HTMLInputElement | HTMLSelectElement>;
-const blank = { title: "", department: "", reason: "new" as "new" | "replacement", replaces: "", min: "", max: "", start: "", pass: false };
+const blank = { title: "", department: "", reason: "new" as "new" | "replacement", replaces: "", min: "", max: "", start: "", pass: false, manager: "" };
 
 // Hiring is nm-hiring, first slice (NM-REC-01 to NM-REC-03): requisitions the Owner approves, a job post for each with the fair-wording check, and the Fair Consideration Framework's advert dates. The Recruiter, the HR administrator and the Owner ask
 // and write (rev 0.69); the HR officer reads; the Owner approves, even a requisition they asked for. The candidate pipeline, interview kits and offers come later. The candidate pipeline, interview kits and offers come later.
@@ -53,7 +54,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
   const set = (k: keyof typeof blank) => (e: Change) => setF({ ...f, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
   const ask = async (e: React.FormEvent) => {
     e.preventDefault();
-    const body = { title: f.title, department: f.department, reason: f.reason, replaces_person_id: f.reason === "replacement" ? f.replaces || people[0]?.id : undefined, salary_min: f.min, salary_max: f.max, target_start: f.start, pass_needed: f.pass };
+    const body = { title: f.title, department: f.department, reason: f.reason, replaces_person_id: f.reason === "replacement" ? f.replaces || people[0]?.id : undefined, salary_min: f.min, salary_max: f.max, target_start: f.start, pass_needed: f.pass, hiring_manager_id: f.manager || undefined };
     if (done((await api.POST("/v1/requisitions", { body })).error, t("hiring.asked"))) setF(blank);
   };
   const check = async (text: string) => setFound((await api.POST("/v1/fair-wording-check", { body: { text } })).data?.findings ?? []);
@@ -85,6 +86,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                   <span className="fy-secondary">{t("hiring.line", { min: r.salary_min, max: r.salary_max, start: r.target_start, plan: t(`hiring.plan.${r.plan_status}`) })}</span>
                   {r.replaces && <span className="fy-secondary">{t("hiring.replaces", { name: r.replaces })}</span>}
                   {r.pass_needed && <span className="fy-secondary">{t("hiring.pass")}</span>}
+                  {r.hiring_manager && <span className="fy-secondary">{t("hiring.managerIs", { name: r.hiring_manager })}</span>}
                   {r.decision_reason && <span className="fy-secondary">{t("hiring.decision", { by: r.decided_by ?? "", reason: r.decision_reason })}</span>}
                   {owner && r.state === "requested" && (
                     <span className="fy-row" style={{ gap: "var(--space-2)" }}>
@@ -151,6 +153,7 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                           <button className="fy-btn fy-btn--secondary" type="submit">{t("hiring.recordExemption")}</button>
                         </form>
                       )}
+                      {r.state === "approved" && <Pipeline requisition={r.id} canWrite={recruiter} canHire={owner || roles.includes("hr_admin")} />}
                       {post(r)?.state === "published" && <button className="fy-btn fy-btn--secondary" type="button" onClick={async () => done((await api.POST("/v1/requisitions/{id}/job-post/closing", { params: { path: { id: r.id } } })).error, t("hiring.closed"))}>{t("hiring.close")}</button>}
                     </div>
                   )}
@@ -189,6 +192,10 @@ export function Hiring({ roles }: { roles: readonly string[] }) {
                 <label className="fy-field"><span>{t("hiring.min")}</span><input className="fy-input" required inputMode="decimal" pattern="[0-9]{1,9}(\.[0-9]{1,2})?" value={f.min} onChange={set("min")} /></label>
                 <label className="fy-field"><span>{t("hiring.max")}</span><input className="fy-input" required inputMode="decimal" pattern="[0-9]{1,9}(\.[0-9]{1,2})?" value={f.max} onChange={set("max")} /></label>
                 <label className="fy-field"><span>{t("hiring.start")}</span><input className="fy-input" type="date" required value={f.start} onChange={set("start")} /></label>
+                <label className="fy-field"><span>{t("hiring.manager")}</span>
+                  <select className="fy-input" value={f.manager} onChange={set("manager")}><option value="">{t("hiring.managerNone")}</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                </label>
+                <p className="fy-secondary">{t("hiring.managerLead")}</p>
                 <label className="fy-field fy-row" style={{ gap: "var(--space-2)" }}><input type="checkbox" checked={f.pass} onChange={set("pass")} /><span>{t("hiring.needsPass")}</span></label>
                 <button className="fy-btn fy-btn--primary" type="submit">{t("hiring.send")}</button>
               </form>

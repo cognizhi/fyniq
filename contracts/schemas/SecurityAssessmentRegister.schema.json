@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The assessments, the latest ended first.",
+      "items": {
+        "$ref": "SecurityAssessmentView.schema.json"
+      },
+      "type": "array"
+    },
+    "last_independent_on": {
+      "description": "The day the last independent assessment ended.",
+      "examples": [
+        "2026-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "next_due_on": {
+      "description": "The day the next independent test is due: 12 months after the last.",
+      "examples": [
+        "2027-11-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "overdue_findings": {
+      "description": "How many Critical or High findings are past their day.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "items",
+    "overdue_findings"
+  ],
+  "title": "SecurityAssessmentRegister",
+  "type": "object"
+}

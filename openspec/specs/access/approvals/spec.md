@@ -204,6 +204,12 @@ Source: PRD-001 §6.5 · Priority S · Phase P2
 - **WHEN** a delegation is created, changed or used
 - **THEN** it is recorded in the audit trail
 
+#### Scenario: A delegation lends no right (rev 0.618)
+- **GIVEN** a delegate who holds no approval right on the request's row, or a request the delegator asked for, or a step that does not name the delegator
+- **WHEN** the delegate tries to sign under the delegation
+- **THEN** it is refused, and a signature made under a delegation records on whose behalf it was signed
+- **AND** the delegator and the delegate count once in a step's quorum, and the database refuses a signature on behalf of someone without a live delegation on the day it was signed
+
 ### Requirement: FR-APR-07 Approve from the Inbox, email and the mobile PWA
 The system SHALL let approvers approve or reject from the Inbox, from email (secure link plus sign-in) and from the mobile PWA.
 
@@ -221,6 +227,10 @@ Source: PRD-001 §6.5 · Priority S · Phase P1 (web) / P2 (email, PWA)
 - **WHEN** an approver opens an approval in the mobile PWA
 - **THEN** they can approve or reject it there
 
+#### Scenario: The email link decides nothing (rev 0.618)
+- **WHEN** a mail program or a person opens the link in an approval email
+- **THEN** no GET changes anything and signing stays the confirmation with the envelope hash and a fresh step-up
+
 ### Requirement: FR-APR-08 Escalation and reminders
 The system SHALL send reminders for pending approvals and escalate them.
 
@@ -231,6 +241,10 @@ Source: PRD-001 §6.5 · Priority S · Phase P2
 - **WHEN** it stays pending
 - **THEN** its approvers are reminded
 - **AND** the approval is escalated
+
+#### Scenario: Reminders and escalation only notify (rev 0.618)
+- **WHEN** a reminder or the escalation is sent
+- **THEN** no request is signed, decided or given more time, and a run that comes again repeats nothing
 
 ### Requirement: FR-APR-09 Approval policy changes are approval-gated and versioned
 Changes to approval policies SHALL themselves need approval (SOD-8) and SHALL be versioned.

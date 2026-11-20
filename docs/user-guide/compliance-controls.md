@@ -3,7 +3,7 @@ key: compliance.controls
 title: See whether the controls hold
 mode: expert
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02, NFR-OBS-02, CTL-RES-05]
+requirements: [CMP-01, FR-CTL-05, SEC-32, DR-06, CTL-RES-02, NFR-OBS-02, CTL-RES-05, SEC-25, CTL-CHG-12, CMP-08]
 ---
 
 # See whether the controls hold
@@ -111,3 +111,37 @@ last that passed; the review **Heartbeat drill** under **Reviews and attestation
 
 Drills are only ever added, each in the audit trail. The DPO keeps the register; the Owners, the Administrators, the
 Controller, the Accountant and the Auditor read it.
+
+## Security assessments
+
+The **Security assessments** tab is the register of the penetration tests and other assessments of the platform. The Owner
+selects **Record an assessment** and says what it was, who tested, whether they are independent (not the people who build
+and run Fyniq), what it covered, the first and last day, and what it concluded. The report stays outside Fyniq: record its
+SHA-256, so it can be shown to be the one received, and where it is kept. Findings can be added as the assessment is
+recorded, or later with **Add a finding**, such as at a retest.
+
+Each finding is due by its severity, from the day it was found: a Critical one in 7 days, a High one in 30, a Medium one in
+90 and a Low one in 180. **Record a step** says it was **fixed**, then **retested**; or the Owner **accepts** it, with
+the reason the risk is taken, before it is retested. A Critical or High finding past its day, or fixed and not retested
+30 days on, shows **Overdue**.
+
+An independent test is due every year: the review **Security assessments** under **Reviews and attestations**, and the
+control CTL-CHG-12, are due from 30 days before the 12 months after the last one ended, overdue after them, and overdue
+while a Critical or High finding is overdue. With nothing recorded yet it waits without failing, until the first external
+customer is onboarded: an independent test is needed before that.
+
+Entries are only ever added, each in the audit trail. The Owner keeps the register; the Administrators, the Controller, the
+Auditor and the DPO read it. The test itself is done by an outside firm, and the platform's staging is scanned each night.
+
+## Readiness by framework
+
+The **Readiness** tab shows, for each framework a control maps to, how far its controls hold: its stage on the way to a
+certificate, how many of its controls **pass**, fail, are overdue, are not assessed yet or do not apply to the
+organisation, and how many have a check still to arrive. Under each framework, the controls that are not passing are
+listed in plain words, the failing ones first.
+
+For ISO/IEC 27001:2022 Annex A the tab also lists the control numbers, of its 93, that no control maps to yet. They are
+gaps for the statement of applicability, whose wording waits for the certification body.
+
+This is readiness, never a certificate: nothing on it says Fyniq is certified by any body. Everyone with a right on the
+Compliance Center reads it.

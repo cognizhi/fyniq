@@ -60,8 +60,12 @@ func (k *Kit) EmailProviders(rt *connector.Runtime) email.Providers {
 	fallback := email.Static(k.Mail.Providers)
 	return func(ctx context.Context, org uuid.UUID) (email.ProviderSet, error) {
 		var mail connector.Mail
-		installed := false
+		installed, sandbox := false, false
 		if err := k.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			if sandbox, err = u.Sandboxes().Is(ctx); err != nil || sandbox { // FR-INT-18: a sandbox organisation's mail reaches a sink, whichever providers are installed
+				return err
+			}
 			all, err := u.Connectors().Installation(ctx)
 			if err != nil {
 				return err
@@ -81,6 +85,10 @@ func (k *Kit) EmailProviders(rt *connector.Runtime) email.Providers {
 			return err
 		}); err != nil {
 			return email.ProviderSet{}, err
+		}
+		if sandbox {
+			m := connector.SandboxMail()
+			return email.ProviderSet{Enabled: m.Enabled, ByName: m.Reconcile}, nil
 		}
 		if !installed {
 			return fallback(ctx, org)
@@ -285,7 +293,9 @@ func (k *Kit) WebhookKeys(cache *connector.SecretCache, clock ports.Clock) func(
 			}
 			return []string{static[provider]}, nil
 		}
-		i := slices.IndexFunc(all, func(c storage.InstalledConnector) bool { return c.Connector == provider && c.State != storage.ConnectorUninstalled })
+		i := slices.IndexFunc(all, func(c storage.InstalledConnector) bool {
+			return c.Connector == provider && c.State != storage.ConnectorUninstalled
+		})
 		b, known := k.Connectors.Get(provider)
 		if i < 0 || !known || (all[i].State != storage.ConnectorEnabled && all[i].State != storage.ConnectorPaused) {
 			return nil, mailhooks.ErrOff

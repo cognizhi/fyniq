@@ -58,10 +58,23 @@ and the data inventory. Deleting it removes it from Hydra at once. Nothing here 
 
 ## D7. Sandbox (FR-INT-18)
 
-An organisation made for sandbox use is a second organisation of the installation, flagged `sandbox`, created from the sample
-company through the seed loader, with credentials of its own and no member of the real organisation. Its flag is set only at
-creation and never changed; an integration client or token of one organisation is refused by the other (tenancy). The platform
-refuses a sandbox on a deployment that is production for the real organisation until the owner enables it `[owner to confirm]`.
+An organisation made for sandbox use is a second organisation of the installation, flagged `sandbox`, with credentials of its own. (Amended in building, the owner's
+decision of 21 Nov 2026, recorded `[owner to confirm]` in the details.) **Option A, a flagged organisation of the same installation, enabled per deployment,** is chosen:
+it reuses tenancy, row-level security and the seed loader, and the SDKs can run against it. It is not created from the Owner's organisation and holds only the synthetic sample company.
+
+- **Creation:** a Super admin only (an installation operation; step-up), with two Super admins as the other's approved installation change of step `sandbox` (the pattern of a private endpoint,
+  FR-ADM-07). The new organisation's creator is its Owner (as a practice organisation's). There is no way to flag an existing organisation or to unflag one: the flag is a row of a registry
+  no application role can write, inserted only by the creation function in the statement that makes the organisation (migration 001250, FY960), so "no way to turn a real organisation into a sandbox
+  or back" is the database's rule. The general organisation creation of FR-ADM-07 (P3) is not built: only the sandbox's.
+- **Per deployment:** `FYNIQ_SANDBOX=on` (off by default), the operator's, never a setting. `FYNIQ_SANDBOX_WEBHOOK_HOSTS` lists the only hosts a sandbox's webhooks may reach (none by default).
+- **The sample company** is loaded by the API right after the organisation commits (a job would need the worker to hold write rights on the ledger: a widened grant, so not chosen), through the same
+  posting engine as the seed; the vocabulary is embedded in the binary (`internal/seed/vocabulary.json`, a test keeps it equal to the screens' sample data). A failed load leaves an organisation with
+  no chart that `loadSandboxSampleCompany` fills.
+- **Every outbound path respects the flag**, read in each piece of work's own unit of work: `connector.Runtime` refuses every adapter (bank data, payment provider, payment links, inbound email, AI
+  model) and gives outbound email a sink (the deployment's providers are never used); the outbox handler runs only an allow-list of kinds for a sandbox, default-deny, so a new outbound kind is blocked
+  until listed; webhooks reach only the operator's hosts (at creation, at verification and at delivery, dead at once otherwise); InvoiceNow sends, refreshes and polls nothing; the API refuses a
+  connector, a practice organisation and, as for any organisation, anything its role does not allow. The IRAS filer has no caller yet: the rule is that the one that gets it asks `Sandboxes().Is` first.
+- **Not built:** a scripted model for a sandbox's AI chat (the AI is refused); the Super admin console screen for making one (API only, `[left]`); a list of sandboxes.
 
 ## D8. SDKs
 

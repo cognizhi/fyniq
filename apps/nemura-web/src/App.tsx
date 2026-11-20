@@ -9,6 +9,10 @@ import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
 import { VerifyLetter } from "./pages/VerifyLetter";
 import { Careers } from "./pages/Careers";
+import { MyApplication } from "./pages/MyApplication";
+import { MyInterviews } from "./pages/MyInterviews";
+import { MyRoles } from "./pages/MyRoles";
+import { PersonGoals } from "./pages/PersonGoals";
 import { LeaverHome } from "./pages/LeaverHome";
 import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
@@ -83,6 +87,7 @@ export function App() {
 
   const body = (() => {
     if (route?.id === "careers") return <Careers slug={matchRoute(path)?.params.slug ?? ""} />; // public: no sign-in (NM-REC-02)
+    if (route?.id === "my-application") return <MyApplication />; // public: a candidate's own link, no sign-in (NM-REC-05)
     if (route?.id === "verify-letter") return <VerifyLetter />; // public: no sign-in, no session wait (NM-LTR-05)
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
     if (path === "/join") return <Join kind={joinKind()} />;
@@ -106,6 +111,8 @@ export function App() {
     if (state.status === "in" && route.id === "payslip") return <Payslip id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payrun-approval") return <PayRunApproval id={matched?.params.id ?? ""} roles={state.session.roles ?? []} member={state.session.member_id} />;
     if (state.status === "in" && route.id === "my-concerns") return <Concerns roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "my-interviews") return <MyInterviews roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "my-hiring-roles") return <MyRoles roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-goals") return <Goals roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "hiring") return <Hiring roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "grievances") return <Grievances roles={state.session.roles ?? []} />;
@@ -119,6 +126,7 @@ export function App() {
     if (state.status === "in" && route.id === "government-leave") return <GovernmentLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "team-leave") return <TeamLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-leave") return <MyLeave roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "person-goals") return <PersonGoals roles={state.session.roles ?? []} personId={matched?.params.id ?? ""} />;
     if (state.status === "in" && route.id === "person-leave") return <MyLeave roles={state.session.roles ?? []} personId={matched?.params.id ?? ""} />;
     if (state.status === "in" && route.id === "person") return <Person id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;
