@@ -18,6 +18,7 @@ import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
 import { Careers } from "./pages/Careers";
+import { Pipeline } from "./pages/Pipeline";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -2035,5 +2036,29 @@ describe("careers page", () => {
     answer("GET /v1/careers/nobody", { status: 200, body: { found: false, posts: [] } });
     render(<Careers slug="nobody" />);
     expect(await screen.findByText("There is no careers page at this address.")).toBeTruthy();
+  });
+});
+
+// req: NM-REC-04, NM-REC-05, QA-UI-05
+describe("pipeline", () => {
+  it("shows a requisition's candidates with their stage and consent, adds one, and moves one with the reason of a decision", async () => {
+    const cand = { id: "c1", requisition_id: "r1", name: "Chen Yu", email: "chen.yu@example.com", stage: "screening", stage_at: "2026-11-02T10:00:00Z", applied_via: "careers_page", applied_at: "2026-11-01T10:00:00Z", consent_future: true };
+    answer("GET /v1/requisitions/r1/candidates", { status: 200, body: { candidates: [cand] } });
+    answer("GET /v1/requisitions/r1/interview-kit", { status: 200, body: { exists: true, questions: ["Walk us through a forecast you built."], criteria: ["Analytical skill"], findings: [] } });
+    answer("POST /v1/candidates/c1/moves", { status: 200, body: { ...cand, stage: "interview" } });
+    answer("POST /v1/requisitions/r1/candidates", { status: 201, body: cand });
+    const { container } = render(<Pipeline requisition="r1" canWrite />);
+    expect(await screen.findByText("Chen Yu: Screening")).toBeTruthy();
+    expect(screen.getByText("Consented to be kept for future roles")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Move Chen Yu to Interview" }));
+    expect(await screen.findByText("The candidate is moved.")).toBeTruthy();
+    expect(bodies.get("POST /v1/candidates/c1/moves")).toEqual({ to: "interview" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Mei Tan" } });
+    fireEvent.change(screen.getByLabelText("Email address"), { target: { value: "mei.tan@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the candidate" }));
+    expect(await screen.findByText("The candidate is added.")).toBeTruthy();
+    expect(bodies.get("POST /v1/requisitions/r1/candidates")).toMatchObject({ name: "Mei Tan", email: "mei.tan@example.com", consent_future: false });
+    expect(await violations(container)).toEqual([]);
   });
 });

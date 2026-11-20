@@ -140,6 +140,13 @@ var Categories = []Category{
 		Columns:    []string{"grievance.summary", "grievance.subject_people", "grievance.outcome", "grievance_entry.body", "grievance_entry.subject_people"},
 	},
 	{
+		Key: "candidates", What: "A person who applied for a role: their name, email address and CV, where they are on the board and why a decision was made, the hiring team's notes, the interviewers' scores, and their separate consent to be kept for future roles",
+		Purpose:    "To assess applications fairly and keep a record of how each was decided (NM-REC-04); applying is deemed consent to assessing the application, and keeping a candidate for future roles needs their own consent (NM-REC-05)",
+		Capability: "Hiring (P2)",
+		Retention:  Rule{MinMonths: 6, After: "the decision not to progress, or the withdrawal of the consent to be kept", Reason: "Unsuccessful candidates' data is listed for review six months after the decision and deleted with its notes and scores unless they consented to be kept for future roles; a legal hold keeps it (NM-REC-05, NM-SEC-05)"},
+		Columns:    []string{"candidate.full_name", "candidate.email", "candidate.stage_reason", "candidate_move.reason", "candidate_note.body", "interview_kit.requirement_note"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",

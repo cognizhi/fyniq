@@ -196,7 +196,7 @@ func init() {
 func (a *API) registerHiring() {
 	available := func() error { return Err(CodeUnavailable, "Hiring is not set up in this deployment.") }
 	// who is what the caller may do on Hiring (P2) in Appendix B: Create (the Recruiter, the HR administrator and the Owner), View (the HR officer) and Approve (the Owner).
-	type rights struct{ create, view, approve bool }
+	type rights struct{ create, view, approve, interviewer bool }
 	rightsOf := func(ctx context.Context, s Session) (rights, error) {
 		held, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, a.d.Clock.Now())
 		if err != nil {
@@ -204,6 +204,9 @@ func (a *API) registerHiring() {
 		}
 		var r rights
 		for _, h := range held {
+			if h == authz.Interviewer {
+				r.interviewer = true // an interviewer reads the candidates assigned to them and scores them: the database scopes it (migration 000069)
+			}
 			if h == authz.LineManager || h == authz.Interviewer {
 				continue // their rights are View with a condition (own roles; assigned candidates only) that needs the pipeline and the line: until it exists they read nothing here
 			}
@@ -244,6 +247,13 @@ func (a *API) registerHiring() {
 	writer := func(ctx context.Context, c string) (Session, error) {
 		return gate(ctx, c, func(r rights) bool { return r.create }, "Only the Recruiter, the HR administrator and the Owner ask for a requisition or write a job post.")
 	}
+	hiringOrInterviewer := func(ctx context.Context, c string) (Session, error) {
+		return gate(ctx, c, func(r rights) bool { return r.view || r.interviewer }, "Only the Recruiter, the HR officer, the HR administrator, the Owner and an interviewer read candidates.")
+	}
+	interviewer := func(ctx context.Context, c string) (Session, error) {
+		return gate(ctx, c, func(r rights) bool { return r.interviewer }, "Only an interviewer scores a candidate, and only one assigned to them.")
+	}
+	defer func() { a.registerPipeline(hiringOrInterviewer, writer, interviewer) }()
 	id := func(raw string) (uuid.UUID, error) {
 		u, err := uuid.Parse(raw)
 		if err != nil {

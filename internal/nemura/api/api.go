@@ -170,6 +170,8 @@ type Deps struct {
 	Hiring Hiring
 	// Careers is the public careers page and its settings (NM-REC-02); nil: the deployment has none.
 	Careers Careers
+	// Pipeline is the candidates, interview kits and their consent (NM-REC-04, NM-REC-05); nil: the deployment has none.
+	Pipeline Pipeline
 	// Plans is onboarding plans (NM-ONB-01); nil: the deployment has none.
 	Plans Plans
 	// Grievances is the confidential grievance channel (NM-SEC-06); nil: the deployment has none.

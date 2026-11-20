@@ -148,6 +148,15 @@ classes:
     protection: "Row-level security with a restrictive policy that hides it from the people it is about and from everyone with no acting person; the inquiry record is append-only; a decided grievance never changes; every read by a handler is audited; the audit events carry identities and states, never the words or the names"
     transfers: "None"
     columns: [grievance.summary, grievance.subject_people, grievance.outcome, grievance_entry.body, grievance_entry.subject_people]
+  - key: candidates
+    what: "A person who applied for a role: their name, email address and CV, where they are on the board and why a decision was made, the hiring team's notes, the interviewers' scores, and their separate consent to be kept for future roles"
+    why: "To assess applications fairly and keep a record of how each was decided (NM-REC-04); applying is deemed consent to assessing the application, and keeping a candidate for future roles needs their own consent (NM-REC-05)"
+    where: "Nemura's database, in Singapore"
+    who: "The Recruiter, the HR officer, the HR administrator and the Owner read a candidate; an interviewer only a candidate assigned to them, without the team's notes; the notes and scores are opinions formed to evaluate the candidate and are not released on an access request; never the assistant or the read-only role"
+    retention: "Unsuccessful candidates' data is listed for review six months after the decision and deleted with its notes and scores unless they consented to be kept for future roles; a legal hold keeps it (NM-REC-05, NM-SEC-05)"
+    protection: "Row-level security with a restrictive policy: the hiring team, or an interviewer assigned to the candidate; the team's notes are the team's alone; moves, notes and scores are append-only; what a candidate gave never changes; deletion only through the retention report, review and proof; the audit events carry identities and stages, never a name, an address or a word"
+    transfers: "None"
+    columns: [candidate.full_name, candidate.email, candidate.stage_reason, candidate_move.reason, candidate_note.body, interview_kit.requirement_note]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
