@@ -400,29 +400,29 @@ var (
 		Note: "Needs a view of the record's own row; only a member who may see the record is mentioned, and only they are told."}
 	ListRecordMentionable = Policy{Operation: "listRecordMentionable", Capability: OwnNotifications, Need: View, ByRecord: true,
 		Note: "Lists only the members who may see the record: a name is never offered for a record its owner may not open."}
-	GetMyPreferences           = Policy{Operation: "getMyPreferences", Capability: OwnNotifications, Need: View}                  // the mode, view, look, shortcuts and formats (FR-UX-23)
-	SetMyPreferences           = Policy{Operation: "setMyPreferences", Capability: OwnNotifications, Need: Create}                // presentation only
-	RegisterOAuthClient        = Policy{Operation: "registerOAuthClient", Capability: Session, Need: Create, Public: true}        // an AI app asks to register (AI-90)
-	GetOAuthConsent            = Policy{Operation: "getOAuthConsent", Capability: Session, Need: View, NoOrganisation: true}      // the consent screen's first step (AI-37)
-	AnswerOAuthConsent         = Policy{Operation: "answerOAuthConsent", Capability: Session, Need: Create, NoOrganisation: true} // its second: the person's own answer
-	GetConnectedApps           = Policy{Operation: "getConnectedApps", Capability: OwnMCPConnection, Need: View}                  // the Connected apps page (AI-44)
-	RevokeMyConnection         = Policy{Operation: "revokeMyConnection", Capability: OwnMCPConnection, Need: Create}              // a person disconnects their own app
-	ListMCPActivity            = Policy{Operation: "listMCPActivity", Capability: OwnMCPConnection, Need: View}                   // the trail: one's own, or all for those who see Connected apps
-	ListMCPRegistrations       = Policy{Operation: "listMCPRegistrations", Capability: ConnectedApps, Need: View}                 // registrations waiting for an Owner (AI-90)
-	DenyMCPRegistration        = Policy{Operation: "denyMCPRegistration", Capability: ConnectedApps, Need: Approve}               // an Owner denies one, at once
-	ListMCPConnections         = Policy{Operation: "listMCPConnections", Capability: ConnectedApps, Need: View}                   // what everyone allowed AI apps (AI-44)
-	RevokeMemberConnection     = Policy{Operation: "revokeMemberConnection", Capability: ConnectedApps, Need: Approve}            // an Owner revokes any person's app, at once (AI-44)
-	GetMyMCP                   = Policy{Operation: "getMyMCP", Capability: OwnMCPConnection, Need: View}                          // a person's opt-in to AI apps over MCP (AI-35)
-	SetMyMCP                   = Policy{Operation: "setMyMCP", Capability: OwnMCPConnection, Need: Create}                        // never an AI's, a client's or an Employee's
-	ListEmailMessages          = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
-	ListBanners                = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
-	DismissBanner              = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
-	ListAnnouncements          = Policy{Operation: "listAnnouncements", Capability: Announcements, Need: View}
-	PublishAnnouncement        = Policy{Operation: "publishAnnouncement", Capability: Announcements, Need: Create}
-	WithdrawAnnouncement       = Policy{Operation: "withdrawAnnouncement", Capability: Announcements, Need: Create}
-	ListMembers                = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
-	ListMemberInvitations      = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
-	CreateMemberInvitation     = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+	GetMyPreferences       = Policy{Operation: "getMyPreferences", Capability: OwnNotifications, Need: View}                  // the mode, view, look, shortcuts and formats (FR-UX-23)
+	SetMyPreferences       = Policy{Operation: "setMyPreferences", Capability: OwnNotifications, Need: Create}                // presentation only
+	RegisterOAuthClient    = Policy{Operation: "registerOAuthClient", Capability: Session, Need: Create, Public: true}        // an AI app asks to register (AI-90)
+	GetOAuthConsent        = Policy{Operation: "getOAuthConsent", Capability: Session, Need: View, NoOrganisation: true}      // the consent screen's first step (AI-37)
+	AnswerOAuthConsent     = Policy{Operation: "answerOAuthConsent", Capability: Session, Need: Create, NoOrganisation: true} // its second: the person's own answer
+	GetConnectedApps       = Policy{Operation: "getConnectedApps", Capability: OwnMCPConnection, Need: View}                  // the Connected apps page (AI-44)
+	RevokeMyConnection     = Policy{Operation: "revokeMyConnection", Capability: OwnMCPConnection, Need: Create}              // a person disconnects their own app
+	ListMCPActivity        = Policy{Operation: "listMCPActivity", Capability: OwnMCPConnection, Need: View}                   // the trail: one's own, or all for those who see Connected apps
+	ListMCPRegistrations   = Policy{Operation: "listMCPRegistrations", Capability: ConnectedApps, Need: View}                 // registrations waiting for an Owner (AI-90)
+	DenyMCPRegistration    = Policy{Operation: "denyMCPRegistration", Capability: ConnectedApps, Need: Approve}               // an Owner denies one, at once
+	ListMCPConnections     = Policy{Operation: "listMCPConnections", Capability: ConnectedApps, Need: View}                   // what everyone allowed AI apps (AI-44)
+	RevokeMemberConnection = Policy{Operation: "revokeMemberConnection", Capability: ConnectedApps, Need: Approve}            // an Owner revokes any person's app, at once (AI-44)
+	GetMyMCP               = Policy{Operation: "getMyMCP", Capability: OwnMCPConnection, Need: View}                          // a person's opt-in to AI apps over MCP (AI-35)
+	SetMyMCP               = Policy{Operation: "setMyMCP", Capability: OwnMCPConnection, Need: Create}                        // never an AI's, a client's or an Employee's
+	ListEmailMessages      = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
+	ListBanners            = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
+	DismissBanner          = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
+	ListAnnouncements      = Policy{Operation: "listAnnouncements", Capability: Announcements, Need: View}
+	PublishAnnouncement    = Policy{Operation: "publishAnnouncement", Capability: Announcements, Need: Create}
+	WithdrawAnnouncement   = Policy{Operation: "withdrawAnnouncement", Capability: Announcements, Need: Create}
+	ListMembers            = Policy{Operation: "listMembers", Capability: UsersAndRoles, Need: View}
+	ListMemberInvitations  = Policy{Operation: "listMemberInvitations", Capability: UsersAndRoles, Need: View}
+	CreateMemberInvitation = Policy{Operation: "createMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
 		Note: "Role changes fall under FM-1: until a second member joins, the Owner acts alone (FR-ADM-01, rev 0.35); after that they wait for another Owner to approve them, and the request needs step-up (rev 0.36)."}
 	WithdrawMemberInvitation = Policy{Operation: "withdrawMemberInvitation", Capability: UsersAndRoles, Need: Create, OwnerMay: true}
 	AssignRole               = Policy{Operation: "assignRole", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
@@ -625,6 +625,21 @@ var (
 	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
 	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
 	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
+	// The payment lines of a posted pay run arrive as payroll.payments.ready from the link's client alone (FR-PAY-11, FR-PPL-12, FR-PPL-14).
+	ReceivePayrollPayments = Policy{Operation: "receivePayrollPayments", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.payments.submit"}
+	// A salary payment batch (FR-PAY-11, FR-PPL-17; p1-payroll-link task 6), under Appendix D's "Pay runs, employee data" row: read under any right of it (Owner, Payroll administrator, the
+	// Payment releaser, and the masked views of the Controller, Accountant and Auditor see the batch's total, count and state; whoever may create or approve on the row sees the lines too), prepared
+	// and asked for under C (the Payroll administrator), approved through the approval engine by another person who holds A (the Owner), released and downloaded under R (the Payment releaser,
+	// stepped up: "R (salaries)" of the row).
+	ListSalaryBatches          = Policy{Operation: "listSalaryBatches", Capability: PayRuns, Need: View, Unqualified: true, Qualified: []string{"salaries"}}
+	GetSalaryBatch             = Policy{Operation: "getSalaryBatch", Capability: PayRuns, Need: View, Unqualified: true, Qualified: []string{"salaries"}}
+	PrepareSalaryBatch         = Policy{Operation: "prepareSalaryBatch", Capability: PayRuns, Need: Create, Unqualified: true}
+	RequestSalaryBatchApproval = Policy{Operation: "requestSalaryBatchApproval", Capability: PayRuns, Need: Create, Unqualified: true}
+	CancelSalaryBatch          = Policy{Operation: "cancelSalaryBatch", Capability: PayRuns, Need: Create, Unqualified: true}
+	ReleaseSalaryBatch         = Policy{Operation: "releaseSalaryBatch", Capability: PayRuns, Need: Release, Unqualified: true, Qualified: []string{"salaries"},
+		Note: "A person stepped up in the last 5 minutes; never who prepared, asked for or approved the batch (SOD-2, FM-1), and in every team mode never who prepared or approved the pay run in Nemura (SOD-4). Break-glass reaches no salary."}
+	GetSalaryBatchFile = Policy{Operation: "getSalaryBatchFile", Capability: PayRuns, Need: Release, Unqualified: true, Qualified: []string{"salaries"},
+		Note: "A person stepped up in the last 5 minutes; each download is audited. The file holds names and accounts, so only the one who may release it gets it (FR-PPL-17; owner to confirm)."}
 	// Personal access tokens (FR-INT-02): a member makes, lists and revokes their own under "Own MCP connection"; an
 	// Administrator lists and revokes any, and asks to reclass one, under "Connected apps".
 	CreatePersonalAccessToken         = Policy{Operation: "createPersonalAccessToken", Capability: OwnMCPConnection, Need: Create}
@@ -2030,7 +2045,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, ReceivePayrollPayments, ListSalaryBatches, GetSalaryBatch, PrepareSalaryBatch, RequestSalaryBatchApproval, CancelSalaryBatch, ReleaseSalaryBatch, GetSalaryBatchFile, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

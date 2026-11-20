@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "method": {
+      "description": "FAST pays within minutes, up to the bank's limit; GIRO over the next working days.",
+      "enum": [
+        "fast",
+        "giro"
+      ],
+      "examples": [
+        "giro"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The SGD bank account the batch is paid from: the chart's money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payment_date": {
+      "description": "The day the bank pays it.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "money_account_id",
+    "payment_date",
+    "method"
+  ],
+  "title": "SalaryBatchPrepare",
+  "type": "object"
+}

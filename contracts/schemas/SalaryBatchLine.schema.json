@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account": {
+      "description": "The payee's bank and account, masked to its last four digits.",
+      "examples": [
+        "DBSSSGSG ••••4321"
+      ],
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What the line pays, in SGD."
+    },
+    "bank_detail_version": {
+      "description": "The version of the bank-detail record the line was made from (FR-PPL-14).",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "instruction_id": {
+      "description": "The instruction ID the release gave it.",
+      "examples": [
+        "SB0003-R1-L07"
+      ],
+      "type": "string"
+    },
+    "line_id": {
+      "description": "Nemura's ID of the payment line.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line_version": {
+      "description": "The line's version: a revised line is a new version, and the batch is approved again.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "person_id": {
+      "description": "The person of the employee projection.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "person_name": {
+      "description": "The person's display name in the projection.",
+      "examples": [
+        "Wei Jie Lim"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Where the payment is (FR-PPL-12): paid only from the bank feed matching the debit or a person's record with evidence.",
+      "enum": [
+        "scheduled",
+        "released",
+        "sent",
+        "accepted",
+        "paid",
+        "rejected",
+        "returned",
+        "unknown"
+      ],
+      "examples": [
+        "scheduled"
+      ],
+      "type": "string"
+    },
+    "waiting": {
+      "description": "Why the line is not released now: held for tax clearance, Nemura did not say whether it is held, the person's bank details changed, or an unknown outcome blocks a new instruction.",
+      "enum": [
+        "held",
+        "hold_unknown",
+        "bank_details",
+        "unknown_outcome"
+      ],
+      "examples": [
+        "held"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "line_id",
+    "person_id",
+    "amount",
+    "bank_detail_version",
+    "line_version",
+    "state"
+  ],
+  "title": "SalaryBatchLine",
+  "type": "object"
+}

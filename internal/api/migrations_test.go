@@ -351,7 +351,8 @@ var pastPolicy = map[string]string{"getAIApprovalQuality": CodeQualityNotReader,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
 	"prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
-	"addExpenseClaimEvidenceFromMessage": CodeMessageFile} // the matrix member has no mail at an address of their own
+	"addExpenseClaimEvidenceFromMessage": CodeMessageFile,
+	"getSalaryBatch":                     CodeNotFound, "prepareSalaryBatch": CodeNotFound, "requestSalaryBatchApproval": CodeNotFound, "releaseSalaryBatch": CodeNotFound, "getSalaryBatchFile": CodeNotFound, "cancelSalaryBatch": CodeNotFound} // the matrix member has no mail at an address of their own; a salary batch is made by Nemura's lines, which the matrix sends none of
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample

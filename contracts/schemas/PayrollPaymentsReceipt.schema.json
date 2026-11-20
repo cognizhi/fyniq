@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "batch_id": {
+      "description": "The salary batch.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "event_id": {
+      "description": "The event's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "lines": {
+      "description": "How many lines are new or revised by this submission.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "number": {
+      "description": "Its number.",
+      "examples": [
+        "SB-0003"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "received: a salary batch was made for the run; revised: lines were replaced by newer versions and the batch must be approved again; unchanged: the submission states what Fyniq holds, or is older; duplicate: the event was received before.",
+      "enum": [
+        "received",
+        "revised",
+        "unchanged",
+        "duplicate"
+      ],
+      "examples": [
+        "received"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "outcome"
+  ],
+  "title": "PayrollPaymentsReceipt",
+  "type": "object"
+}

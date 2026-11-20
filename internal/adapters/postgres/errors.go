@@ -253,6 +253,7 @@ var fyCodes = map[string]string{
 	"FY420": storage.CodeAPIClient,          // an API client removed, rewritten, revoked twice or changed after its revocation (000432)
 	"FY900": storage.CodePeopleLink,         // the link deleted, started out of epoch order, moved between states it may not, or a person moved to an older version (000900)
 	"FY901": storage.CodePayrollRun,         // a payroll entry with no receipt from its own transaction (000903)
+	"FY912": storage.CodeSalaryBatch,        // a salary batch's line, event or release changed, a batch moved back, approved or released by its run's preparer or approver, or unapproved (000912)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

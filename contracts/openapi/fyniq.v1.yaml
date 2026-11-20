@@ -42552,6 +42552,46 @@ components:
       required:
         - entries
       type: object
+    PayrollPaymentsReceipt:
+      additionalProperties: false
+      properties:
+        batch_id:
+          description: The salary batch.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        event_id:
+          description: The event's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        lines:
+          description: How many lines are new or revised by this submission.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        number:
+          description: Its number.
+          examples:
+            - SB-0003
+          type: string
+        outcome:
+          description: "received: a salary batch was made for the run; revised: lines were replaced by newer versions and the batch must be approved again; unchanged: the submission states what Fyniq holds, or is older; duplicate: the event was received before."
+          enum:
+            - received
+            - revised
+            - unchanged
+            - duplicate
+          examples:
+            - received
+          type: string
+      required:
+        - event_id
+        - outcome
+      type: object
     PayrollRunReceipt:
       additionalProperties: false
       properties:
@@ -50804,6 +50844,367 @@ components:
           type: string
       required:
         - items
+      type: object
+    SalaryBatch:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approval request it waits for or was last approved under.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20
+          format: uuid
+          type: string
+        cancel_reason:
+          description: Why it was cancelled.
+          examples:
+            - The run was withdrawn
+          type: string
+        checks:
+          description: What stops it being asked for or released now (✖), without a name or an amount.
+          items:
+            $ref: "#/components/schemas/BillCheck"
+          type: array
+        id:
+          description: The batch's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+          format: uuid
+          type: string
+        line_count:
+          description: How many people it pays.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        lines:
+          description: Each person's line; present only with the salary-payments right.
+          items:
+            $ref: "#/components/schemas/SalaryBatchLine"
+          type:
+            - array
+            - "null"
+        lines_version:
+          description: The latest payments.ready object version received.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        lines_visible:
+          description: Whether the caller holds the salary-payments right and so sees the lines (FR-PPL-17).
+          examples:
+            - false
+          type: boolean
+        method:
+          description: How the bank pays it, once prepared.
+          enum:
+            - fast
+            - giro
+          examples:
+            - giro
+          type: string
+        money_account_id:
+          description: The SGD bank account it is paid from, once prepared.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        number:
+          description: Its number.
+          examples:
+            - SB-0003
+          type: string
+        paid:
+          description: How many lines are paid.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        payment_date:
+          description: The day the bank pays it, once prepared.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        reapproval_needed:
+          description: "Approved: a line or a bank detail changed since its latest approval, so it is not released until it is approved again (FR-PPL-14)."
+          examples:
+            - false
+          type: boolean
+        released:
+          description: How many lines a release has taken.
+          examples:
+            - 11
+          format: int64
+          type: integer
+        releases:
+          description: Its releases, oldest first.
+          items:
+            $ref: "#/components/schemas/SalaryBatchRelease"
+          type: array
+        run_id:
+          description: The pay run in Nemura.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5d01
+          format: uuid
+          type: string
+        run_version:
+          description: The version of the run it pays.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        state:
+          description: "What a person reads: from its lines' states. A batch is paid only when every line is paid (FR-PPL-12)."
+          enum:
+            - received
+            - prepared
+            - approved
+            - released_in_part
+            - released
+            - paid_in_part
+            - paid
+            - cancelled
+          examples:
+            - approved
+          type: string
+        status:
+          description: "open: waiting for preparation or approval; approved: ready to release; cancelled: before any release, with a reason."
+          enum:
+            - open
+            - approved
+            - cancelled
+          examples:
+            - approved
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What it pays in all, in SGD.
+        version:
+          description: The batch's version; with its status it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        wage_month:
+          description: The wage month, YYYY-MM.
+          examples:
+            - 2026-11
+          type: string
+        waiting:
+          description: How many lines are not free to release now (held, new bank details, unknown outcome).
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - number
+        - run_id
+        - run_version
+        - wage_month
+        - status
+        - state
+        - line_count
+        - total
+        - released
+        - paid
+        - waiting
+        - reapproval_needed
+        - releases
+        - lines_visible
+        - checks
+        - version
+        - lines_version
+      type: object
+    SalaryBatchCancel:
+      additionalProperties: false
+      properties:
+        reason:
+          description: "Why it is cancelled: its lines are not paid in this batch."
+          examples:
+            - The run was withdrawn in Nemura
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
+      type: object
+    SalaryBatchLine:
+      additionalProperties: false
+      properties:
+        account:
+          description: The payee's bank and account, masked to its last four digits.
+          examples:
+            - DBSSSGSG ••••4321
+          type: string
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: What the line pays, in SGD.
+        bank_detail_version:
+          description: The version of the bank-detail record the line was made from (FR-PPL-14).
+          examples:
+            - 3
+          format: int64
+          type: integer
+        instruction_id:
+          description: The instruction ID the release gave it.
+          examples:
+            - SB0003-R1-L07
+          type: string
+        line_id:
+          description: Nemura's ID of the payment line.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c11
+          format: uuid
+          type: string
+        line_version:
+          description: "The line's version: a revised line is a new version, and the batch is approved again."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        person_id:
+          description: The person of the employee projection.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c12
+          format: uuid
+          type: string
+        person_name:
+          description: The person's display name in the projection.
+          examples:
+            - Wei Jie Lim
+          type: string
+        state:
+          description: "Where the payment is (FR-PPL-12): paid only from the bank feed matching the debit or a person's record with evidence."
+          enum:
+            - scheduled
+            - released
+            - sent
+            - accepted
+            - paid
+            - rejected
+            - returned
+            - unknown
+          examples:
+            - scheduled
+          type: string
+        waiting:
+          description: "Why the line is not released now: held for tax clearance, Nemura did not say whether it is held, the person's bank details changed, or an unknown outcome blocks a new instruction."
+          enum:
+            - held
+            - hold_unknown
+            - bank_details
+            - unknown_outcome
+          examples:
+            - held
+          type: string
+      required:
+        - line_id
+        - person_id
+        - amount
+        - bank_detail_version
+        - line_version
+        - state
+      type: object
+    SalaryBatchPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/SalaryBatch"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - MTI
+          type: string
+      required:
+        - items
+      type: object
+    SalaryBatchPrepare:
+      additionalProperties: false
+      properties:
+        method:
+          description: FAST pays within minutes, up to the bank's limit; GIRO over the next working days.
+          enum:
+            - fast
+            - giro
+          examples:
+            - giro
+          type: string
+        money_account_id:
+          description: "The SGD bank account the batch is paid from: the chart's money account."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          format: uuid
+          type: string
+        payment_date:
+          description: The day the bank pays it.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+      required:
+        - money_account_id
+        - payment_date
+        - method
+      type: object
+    SalaryBatchRelease:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approval it was released under.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20
+          format: uuid
+          type: string
+        file_name:
+          description: The file's name.
+          examples:
+            - SB-0003-R1-payment-list.csv
+          type: string
+        id:
+          description: The release.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c13
+          format: uuid
+          type: string
+        lines:
+          description: How many people it pays; only with the salary-payments right, since a release of one person would state their pay (FR-PPL-17).
+          examples:
+            - 11
+          format: int64
+          type: integer
+        released_at:
+          description: When it was released.
+          examples:
+            - "2026-11-30T09:30:00+08:00"
+          format: date-time
+          type: string
+        released_by:
+          $ref: "#/components/schemas/Person"
+          description: Who released it.
+        sha256:
+          description: The SHA-256 of the file as written, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What it pays in all; only with the salary-payments right (FR-PPL-17).
+        writer:
+          description: The file's format and version.
+          examples:
+            - payment-list@1
+          type: string
+      required:
+        - id
+        - released_by
+        - released_at
+        - approval_id
+        - writer
+        - file_name
+        - sha256
       type: object
     SalesGSTCode:
       additionalProperties: false
@@ -203021,6 +203422,135 @@ paths:
       x-fyniq-permission:
         capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
         right: C
+  /v1/people-link/payroll-payments:
+    post:
+      description: "Nemura's `payroll.payments.ready` (PRD-002 Appendix E): the link's envelope carrying one payment line per person for a run Fyniq posted: the person, the amount, the payee's bank and account (sealed here, never in an audit, a log or an outbox row) and the bank-detail record, version and digest each came from (FR-PPL-14). It needs the link's client and the scope payroll.payments.submit. Fyniq checks the link's signature and epoch, that the version is the one it posted last under the same preparer and approver, that each person is in the projection, that no unknown outcome blocks the person in this run and that the lines pay no more than the run's net pay on 2100; it then makes the run's salary batch, which a person prepares, another approves and the Payment releaser releases (FR-PAY-11). A later submission for the same run version with a higher object version revises lines (each a new version, and the batch is approved again); a line that was released is not changed. Side effects: the batch with its sealed lines and the inbox row, each audited with counts and IDs only. Idempotent on the event ID (a repeat answers duplicate). Only the link's client may call it; on the never-list for the AI and MCP (§9.6)."
+      operationId: receivePayrollPayments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeopleLinkEvent"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayrollPaymentsReceipt"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `PPL-07` The organisation has no active link to the people platform; `PPL-24` Fyniq has not posted this version of the run, or has posted a newer one; `PPL-26` A payment line is for a person the projection does not hold; `PPL-27` A released line is not changed, and a cancelled batch takes no line; `PPL-28` An unknown outcome blocks a new instruction for the person in this run; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E); `PPL-23` The payment lines are not those of the run's approval, or are not well formed; `PPL-25` The payment lines pay more than the run's net pay."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Receive the payment lines of a posted pay run from Nemura
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PAYEE-15
+        - PPL-01
+        - PPL-02
+        - PPL-03
+        - PPL-04
+        - PPL-05
+        - PPL-06
+        - PPL-07
+        - PPL-08
+        - PPL-09
+        - PPL-23
+        - PPL-24
+        - PPL-25
+        - PPL-26
+        - PPL-27
+        - PPL-28
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SALARY-BATCH-01
+      x-fyniq-exempt:
+        Idempotency-Key: "The event's ID is its idempotency key: the inbox receives each ID once and a repeat answers duplicate (FR-PPL-15, NM-INT-10)."
+        Prefer: "A pay run is a signed, approved message between the apps, not a person's command: a preview of it would prove nothing (FR-INT-14)."
+      x-fyniq-permission:
+        capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+        right: C
   /v1/people-link/payroll-runs:
     post:
       description: "Nemura's `payroll.run.approved` (PRD-002 Appendix E, NM-INT-06): the link's envelope carrying the approval envelope over the run's canonical figures, its SHA-256 and the approver's signed record. It needs the link's client and the scope payroll.journal.submit. Before anything posts, Fyniq verifies in one transaction the link's signature and epoch, the approval envelope's digest, the linked organisation, that the preparer is not the approver and the approver held the right, the approver's passkey assertion against a passkey they enrolled in Fyniq, the account-mapping version, that the envelope is unused and the version newer than any posted; each failure has its own code (PPL-11 to PPL-19), posts nothing, creates nothing and is audited. It then posts the difference from what the run's earlier versions posted (payroll_run@1) under the period locks and checks of any posting: department salary expense, employer CPF, SDL, 2110, 2100, deductions and claims paid with salary, no per-person line, attributed to the approver via Nemura; a closed wage month's difference posts in the current open month. Side effects: the entry, the receipt and the inbox row, with their audit events. Idempotent on the event ID (a repeat answers duplicate). Only the link's client may call it; on the never-list for the AI and MCP (§9.6)."
@@ -223240,6 +223770,1147 @@ paths:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         note: Another person approves it, stepped up.
         right: C
+  /v1/salary-batches:
+    get:
+      description: "The salary payment batches, newest first, a page at a time, narrowed by status (FR-PAY-11): each with its run, state, total and counts. Names, accounts and amounts of lines are never in a list, and appear in a batch only for the roles with the salary-payments right (FR-PPL-17). Read-only; no side effects."
+      operationId: listSalaryBatches
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only batches with this status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only batches with this status.
+            enum:
+              - open
+              - approved
+              - cancelled
+            examples:
+              - approved
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryBatchPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List salary batches
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: V
+  /v1/salary-batches/{batch_id}:
+    get:
+      description: "One salary batch: its run, state, money account, payment date, method, total, counts, releases and what stops it now (FR-PAY-11). With the salary-payments right it also lists each line (the person, the amount, the account masked to its last four digits, the line's state and why it waits); without it the lines are not in the answer (FR-PPL-17). Read-only; no side effects."
+      operationId: getSalaryBatch
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryBatch"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Get a salary batch
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: V
+  /v1/salary-batches/{batch_id}/approval:
+    post:
+      description: "Asks for another person's approval of a prepared salary batch at the version read, or for its approval again after a line or a bank detail changed (FR-PAY-11, FR-PPL-14, FM-1), in every team mode. The answer is 202 with the request, which a person who holds A on \"Pay runs, employee data\", did not ask for it and did not prepare or approve the run in Nemura (SOD-4), and passed step-up, approves; its envelope holds the batch's total and a digest of its lines (each person's amount and bank-detail record, version and digest), never a name or an account, so the approval is for exactly these lines. Needs a person signed in who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing."
+      operationId: requestSalaryBatchApproval
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `SB-01` The salary batch has no money account, payment date and method yet; `SB-04` The salary batch is not in the state the command needs; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask for approval of a salary batch
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APR-06
+        - SB-01
+        - SB-02
+        - SB-04
+        - STORAGE-APPROVAL-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: C
+  /v1/salary-batches/{batch_id}/cancel:
+    post:
+      description: "Cancels a salary batch with no line released, with a reason (FR-PAY-11): it pays nothing. A batch with a line released is never cancelled: record what became of each payment (recordSalaryLineState). Side effects: the batch cancelled and its audit event with the reason. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: cancelSalaryBatch
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalaryBatchCancel"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryBatch"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-09` Cancelling a salary batch needs a reason."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Cancel a salary batch
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - SB-04
+        - SB-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SALARY-BATCH-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: C
+  /v1/salary-batches/{batch_id}/prepare:
+    post:
+      description: "Names the SGD bank account the batch is paid from, the payment date and the method (FAST or GIRO) at the version read (FR-PAY-11). It raises the batch's version, so an earlier approval of it is stale and the batch is approved again. A cancelled batch, or one that has a line released, is not prepared again. Side effects: the batch's version and its audit event. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: prepareSalaryBatch
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalaryBatchPrepare"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryBatch"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `SB-04` The salary batch is not in the state the command needs; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SB-02` The money account is not an open SGD bank account; `SB-10` The payment date is not a date, or is before the wage month; `SB-11` The method is not FAST or GIRO."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Prepare a salary batch
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - SB-02
+        - SB-04
+        - SB-10
+        - SB-11
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SALARY-BATCH-01
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        right: C
+  /v1/salary-batches/{batch_id}/release:
+    post:
+      description: "Releases an approved salary batch (FR-PAY-11, FR-PPL-13): the Payment releaser, a person stepped up in the last 5 minutes, who neither asked for, approved nor prepared the batch (SOD-2) and did not prepare or approve the pay run in Nemura (SOD-4, in every team mode). The latest approval must still hold the lines and the total (else SB-05: ask again). It asks Nemura, the hold's authority, within five seconds whether each person is held (PPL-21, PPL-22), and releases the lines that are free to go: a person held, one whose bank details changed, or one with an unknown outcome in the run waits while the others are paid, and goes in a later release (SB-03 when none can go). Side effects, in one transaction: the payment file the money account is set to, sealed (SEC-11) with its SHA-256, an instruction ID per line, each line recorded as released (never paid: that comes from the bank feed or a person's record with evidence), and the audit event with counts and the file's hash only. No break-glass releases a salary. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing."
+      operationId: releaseSalaryBatch
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryBatch"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The batch's version and status, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `SB-06` The person prepared, asked for or approved the batch, or prepared or approved the pay run in Nemura; `TEAM-04` Your roles conflict for this action."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `SB-03` No line of the salary batch can be released now; `SB-04` The salary batch is not in the state the command needs; `SB-05` The salary batch needs approving again; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-SALARY-BATCH-01` A salary batch's lines, events and releases are kept, and it is approved and released only by others than the run's preparer and approver."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `SB-02` The money account is not an open SGD bank account."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `PAYEE-15` Bank details cannot be kept here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Release the free lines of a salary batch
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PAYEE-15
+        - PAYFILE-01
+        - PAYFILE-02
+        - PPL-21
+        - PPL-22
+        - SB-02
+        - SB-03
+        - SB-04
+        - SB-05
+        - SB-06
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-SALARY-BATCH-01
+        - TEAM-04
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        note: A person stepped up in the last 5 minutes; never who prepared, asked for or approved the batch (SOD-2, FM-1), and in every team mode never who prepared or approved the pay run in Nemura (SOD-4). Break-glass reaches no salary.
+        right: R
+  /v1/salary-batches/{batch_id}/releases/{release_id}/file:
+    get:
+      description: "Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-PAY-11): the payment list or the bank's own file its money account was set to. For the Payment releaser, a person stepped up in the last 5 minutes. It holds names and full account numbers: key it into the bank or upload it there, then delete it. Side effects: an audit event of the download, with the file's hash and no name. Never cached."
+      operationId: getSalaryBatchFile
+      parameters:
+        - description: The salary batch's ID.
+          in: path
+          name: batch_id
+          required: true
+          schema:
+            description: The salary batch's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c10
+            format: uuid
+            type: string
+        - description: The release's ID.
+          in: path
+          name: release_id
+          required: true
+          schema:
+            description: The release's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c13
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentBatchFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `PAYEE-15` Bank details cannot be kept here."
+      summary: Download a salary release's payment file
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PAYEE-15
+      x-fyniq-permission:
+        capability: Pay runs, employee data
+        note: A person stepped up in the last 5 minutes; each download is audited. The file holds names and accounts, so only the one who may release it gets it (FR-PPL-17; owner to confirm).
+        right: R
   /v1/sales-reminders:
     get:
       description: "The reminders due as at the organisation's today, earliest first, a page at a time (FR-AR-08; PRD-001 rev 0.137): each issued invoice with something still open whose customer's schedule (its group's, else 3 days before the due date, on it, and 7 and 30 days after) has reached a step not yet sent or skipped, and each sent quote or order not answered within 3 days of its validity date. Only the latest step due is listed; deciding it settles the earlier ones. While receipts are recorded by hand, nothing is sent by itself: the Inbox shows these for a person to send or skip. Read-only; no side effects."

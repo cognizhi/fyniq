@@ -65,6 +65,25 @@ relying-party ID; Fyniq verifies it against a passkey the approver enrolled in F
 Fyniq once and enrols one. Fyniq posts the figures of this envelope and nothing else. The refusals are `PPL-11` to `PPL-19` (`contracts/openapi/fyniq.v1.yaml`,
 `submitPayrollRun`); a ledger refusal (a locked period, an unmapped department) comes back with its own code.
 
+## The payment lines (`payroll.payments.ready`; Fyniq's side is `receivePayrollPayments`, p1-payroll-link task 6.1)
+
+`POST /v1/people-link/payroll-payments`, scope `payroll.payments.submit`, the link's envelope as above with `object_type` `payroll_run`, `object_id` the run's ID and **`object_version` the lines' version** (1, then higher for a revision).
+Send it **after** Fyniq answered `posted` or `unchanged` for the run's version: Fyniq accepts lines only for the version it posted last, for the people of its projection, and for no more than the run's net pay on 2100.
+The payload (only these fields; a field not listed is refused with `PPL-01`):
+
+| Field | Meaning |
+|---|---|
+| `run_id`, `run_version` | the run and the version Fyniq posted last |
+| `pay_date` | `YYYY-MM-DD`, the day Nemura intends the money to arrive (Fyniq's Payroll administrator confirms or changes it when preparing the batch) |
+| `preparer`, `approver` | `{issuer, subject}` of the run's preparer and approver: they must be the ones the run was posted under (`PPL-23`) |
+| `lines[]` | at most 500: `line_id` (Nemura's ID of the payment line, stable across revisions), `person_id`, `payee_name`, `bank_bic` (8 or 11 characters), `account_name`, `account_number` (5 to 34 characters), `amount` (dollars and cents, above zero), `bank_detail_id`, `bank_detail_version`, `bank_detail_digest` (lower-case hex SHA-256) |
+
+- Fyniq seals each line's payee, bank, account name and number on arrival; none of them is in an audit event, log, outbox row or error. Its answer names a batch number and counts, never a person.
+- A repeat of the event ID answers `duplicate`; a submission at a lines version no higher than the batch's answers `unchanged`; a higher one **revises**: each line that changed (amount or bank-detail record, version or digest) is a new version of that `line_id`, the batch's version rises, and an approval of the old one is stale (`revised`). A line that already went in a release is never changed (`PPL-27`).
+- Send a revised line when a person's bank details changed (`people.bank_details.changed` raises the projection's version; Fyniq blocks the line whose version is older until the new line is approved: FR-PPL-14).
+- Refusals: `PPL-23` (lines not well formed, or another preparer or approver), `PPL-24` (Fyniq has not posted that run version, or a newer one is posted), `PPL-25` (more than the net pay), `PPL-26` (a person not in the projection: send the people events first), `PPL-27` (a released line, or a cancelled batch), `PPL-28` (an unknown outcome of the person in this run: resolve it first).
+- Fyniq answers back with `payroll.payments.status` (the vocabulary below) when a line is released and when the bank feed or a person with evidence records what became of it (p1-payroll-link task 6.2).
+
 ## The inbox for `payroll.payments.status` (Nemura's side; the table and the function exist, the inbox is `p1-nemura-fyniq-link` 2.3)
 
 PRD-002 NM-PAY-10 is the vocabulary. **Do not add a second table or a second list of states.** Nemura keeps a person's payment in a pay run as append-only events in
