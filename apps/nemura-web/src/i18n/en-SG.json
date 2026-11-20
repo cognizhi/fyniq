@@ -954,6 +954,26 @@
     "link.eventState.sent": "Sent",
     "link.repair": "Send the current state to Fyniq again",
     "link.repaired": "Queued {n} events: Fyniq ignores what it holds and applies what it missed.",
+    "verify.title": "Verify a letter",
+    "verify.lead": "Enter the reference and the verification code printed on the letter. This shows only whether the company issued it and it stands, what kind of letter it is, the day it was issued and the company. It shows nothing of the person or the letter's words.",
+    "verify.reference": "Reference",
+    "verify.code": "Verification code",
+    "verify.button": "Verify",
+    "verify.failed": "That could not be checked just now. Try again in a while.",
+    "verify.notFound": "Nothing matches that reference and code. Check them against the letter, exactly as printed.",
+    "verify.valid": "Valid",
+    "verify.withdrawn": "Withdrawn: do not rely on this letter",
+    "verify.facts": "{type}, issued {on} by {company}.",
+    "verify.type.employment_confirmation": "Employment confirmation",
+    "verify.type.certificate_of_employment": "Certificate of employment",
+    "verify.type.service_letter": "Service letter",
+    "verify.type.release_letter": "Release letter",
+    "verify.type.probation_confirmation": "Probation confirmation",
+    "verify.type.offer_letter": "Offer letter",
+    "verify.type.salary_certificate": "Salary certificate",
+    "verify.type.pay_change_letter": "Pay change letter",
+    "verify.type.kets": "Key employment terms",
+    "verify.type.other": "Letter",
     "erasure.title": "Erase a former employee's data",
     "erasure.denied": "Only an Owner or an HR administrator sees erasures.",
     "erasure.lead": "A former employee's personal data is erased once the retention periods have run: one year after leaving for the employment records and five years from the relevant Year of Assessment for the payroll records. An Owner or an HR administrator asks, and a second one approves, each with a passkey.",
@@ -1297,6 +1317,10 @@
     "link.repair": {
       "label": "Send the current state again",
       "tooltip": "Repairs a gap: sends each person's present record, bank-detail version and hold again and what failed. Fyniq ignores a version it already holds, so it is safe to repeat."
+    },
+    "verify.page": {
+      "label": "Verify a letter",
+      "tooltip": "Enter the reference and the verification code printed on a letter to learn whether the company issued it and it stands. It shows only the kind of letter, the day and the company."
     },
     "erasure.page": {
       "label": "Erase a former employee's data",

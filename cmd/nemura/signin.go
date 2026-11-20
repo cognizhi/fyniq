@@ -124,6 +124,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	// A pay run is approved with the approver's passkey over the approval envelope, answered at Nemura's own origin for the relying party the two apps share (NM-INT-06).
 	d.RunLink = nemura.RunLinkService{Store: store, Clock: deps.Clock, Origin: origin, RPID: relyingPartyID(origin, getenv("NEMURA_RP_ID"))}
 	d.LinkOps = nemura.LinkOpsService{Store: store, Clock: deps.Clock}
+	d.LetterVerify = nemura.LetterVerifyService{Store: store, Clock: deps.Clock}                                          // the public look-up of an issued letter (NM-LTR-05)
 	d.Erasure = nemura.ErasureOpsService{Store: store, Clock: deps.Clock}                                                 // asking and approving an erasure; the worker erases (NM-SEC-08)
 	d.Workspace = nemura.WorkspaceService{Store: store, FinanceOrigin: getenv("NEMURA_FYNIQ_WEB_ORIGIN")}                 // where the Finance | People switch leads; none: it does not show
 	d.LinkAdmin = nemura.LinkAdminService{LinkService: nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}} // an Owner proposes and another approves; approving needs the OAuth server

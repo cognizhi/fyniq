@@ -951,3 +951,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | invoices: the provider's credit notes mirrored and issued at the provider's total (FR-PSP-07, rev 0.601)
 
 ## [2026-11-20] compile | nemura-erasure: new payslips sealed under a per-person key
+
+## [2026-11-20] compile | nemura-verify-letter: verify an issued letter (NM-LTR-05)

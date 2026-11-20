@@ -163,7 +163,7 @@ func TestALetterIsIssuedInTwoStepsAndTheEvidenceCannotChange(t *testing.T) {
 	// A byte changed in the store: it is neither signed nor served.
 	var blobPath string
 	_ = filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && strings.HasSuffix(p, id.String()+".pdf") {
+		if err == nil && !info.IsDir() && strings.Contains(p, id.String()) && strings.HasSuffix(p, ".pdf") {
 			blobPath = p
 		}
 		return nil

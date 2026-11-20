@@ -25,6 +25,7 @@ import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { Erasures } from "./pages/Erasures";
+import { VerifyLetter } from "./pages/VerifyLetter";
 import { FyniqLink } from "./pages/FyniqLink";
 import { Shell } from "./pages/Shell";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
@@ -1761,5 +1762,24 @@ describe("erasures", () => {
   it("shows nothing to a role that may not see erasures", async () => {
     render(<Erasures roles={["employee"]} />);
     expect(await screen.findByText("Only an Owner or an HR administrator sees erasures.")).toBeTruthy();
+  });
+});
+
+// part of NM-LTR-05
+describe("verifying a letter", () => {
+  it("needs no sign-in, shows the kind, the day and the company of a valid letter and says nothing matches for the rest", async () => {
+    answer("POST /v1/letter-verification", { status: 200, body: { found: true, status: "valid", type: "employment_confirmation", issued_on: "2026-11-20", company: "Acme Pte. Ltd." } });
+    const { container } = render(<VerifyLetter />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Reference"), { target: { value: "EC-2026-0001" } });
+    fireEvent.change(screen.getByLabelText("Verification code"), { target: { value: "K7QX-2M4D-9WTB-HP3R" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Valid")).toBeTruthy();
+    expect(screen.getByText(/Employment confirmation, issued 2026-11-20 by Acme Pte\. Ltd\./)).toBeTruthy();
+    expect(bodies.get("POST /v1/letter-verification")).toEqual({ reference: "EC-2026-0001", code: "K7QX-2M4D-9WTB-HP3R" });
+    expect(await violations(container)).toEqual([]);
+    answer("POST /v1/letter-verification", { status: 200, body: { found: false } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText(/Nothing matches that reference and code/)).toBeTruthy();
   });
 });

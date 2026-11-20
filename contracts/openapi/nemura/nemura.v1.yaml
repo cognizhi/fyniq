@@ -3968,6 +3968,73 @@ components:
         - types
         - fields
       type: object
+    LetterVerificationView:
+      additionalProperties: false
+      properties:
+        company:
+          description: The company that issued it.
+          examples:
+            - Acme Pte. Ltd.
+          type: string
+        found:
+          description: False for a wrong code, an unknown reference and a letter not issued yet, all alike.
+          examples:
+            - true
+          type: boolean
+        issued_on:
+          description: The day it was issued.
+          examples:
+            - "2026-11-20"
+          format: date
+          type: string
+        status:
+          description: "valid: the company issued this letter and it stands; withdrawn: the verification was withdrawn, so do not rely on the letter."
+          enum:
+            - valid
+            - withdrawn
+          examples:
+            - valid
+          type: string
+        type:
+          description: The kind of letter.
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - found
+      type: object
+    LetterVerifyInputBody:
+      additionalProperties: false
+      properties:
+        code:
+          description: The verification code printed on the letter.
+          examples:
+            - K7QX-2M4D-9WTB-HP3R
+          maxLength: 40
+          minLength: 8
+          type: string
+        reference:
+          description: The reference printed on the letter.
+          examples:
+            - EC-2026-0001
+          maxLength: 60
+          minLength: 3
+          type: string
+      required:
+        - reference
+        - code
+      type: object
+    LetterWithdrawOutputBody:
+      additionalProperties: false
+      properties:
+        withdrawn:
+          description: True once the letter's verification is withdrawn.
+          examples:
+            - true
+          type: boolean
+      required:
+        - withdrawn
+      type: object
     LinkApproveInputBody:
       additionalProperties: false
       properties:
@@ -11681,6 +11748,50 @@ paths:
       summary: Download a letter by its expiring link
       tags:
         - Letters
+  /v1/letter-verification:
+    post:
+      description: "PRD-002 NM-LTR-05. With no sign-in: the reference and the verification code printed on a letter. The answer is whether the company issued it and it stands or was withdrawn, its type, the day it was issued and the company, and nothing of the person or the words. A wrong code, an unknown reference and a letter not issued yet answer alike. At most 10 tries for a reference in an hour and 300 in all in a minute (NM_RATE_LIMITED); every look-up of a found letter is audited. It is on the never-list for the AI and MCP surfaces."
+      operationId: verifyLetter
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LetterVerifyInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterVerificationView"
+          description: OK
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Too Many Requests
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Verify an issued letter
+      tags:
+        - Letters
   /v1/letters:
     get:
       description: The caller's own requests; the HR officer, the HR administrator and the Owner read everyone's, those still open first by due day. It changes nothing.
@@ -14167,6 +14278,75 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: Ask for a letter
+      tags:
+        - Letters
+  /v1/me/letters/{id}/verification/withdrawal:
+    post:
+      description: "The person the letter is about withdraws its verification: a recipient who looks it up is told it is withdrawn. It never withdraws the letter, which stays as issued. Audited. It is on the never-list for the AI and MCP surfaces."
+      operationId: withdrawLetterVerification
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The issued letter.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The issued letter.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterWithdrawOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Withdraw the verification of your own letter
       tags:
         - Letters
   /v1/me/overtime:

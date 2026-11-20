@@ -3,8 +3,10 @@
 Nemura's migrations are in `db/nemura/migrations` (continue from the highest number at the time). Tick a task only when fully built; add a "Built:" note and a "**Left:**" note. Each task names the requirement and the test.
 
 ## 1. Letter verification (NM-LTR-05)
-- [ ] 1.1 A verification code printed on each issued letter and a public, rate-limited operation answering valid, revoked or not found; the employee revokes. `// req: NM-LTR-05`
-- [ ] 1.2 The page `nm-verify-letter`, help keys, guide page and kb page. `// req: QA-UI-05`
+- [x] 1.1 A verification code printed on each issued letter and a public, rate-limited operation answering valid, revoked or not found; the employee revokes. `// req: NM-LTR-05`
+  (Built, 21 Nov 2026, PRD-002 rev 0.61: migration 000061 (a global directory of hashes behind definer functions), `CheckLetter` prints an 80-bit code and `SignLetter` makes it valid, `VerifyLetter`, `POST /v1/letter-verification` (10 tries a reference an hour, 300 a minute, in process), `POST /v1/me/letters/{id}/verification/withdrawal`; `TestALetterIsVerifiedByItsReferenceAndCodeAndShowsOnlyItsOwnFacts`. **Left:** the upload-and-compare-hash look-up and the employee's disclosure link; a button to withdraw on My letters; a shared limiter for several API instances.)
+- [x] 1.2 The page `nm-verify-letter`, help keys, guide page and kb page. `// req: QA-UI-05`
+  (Built: `/verify`, help key `verify.page`, the guide `nemura.verify-letter` and its kb page; the design fragment `NmVerifyLetter` already existed.)
 
 ## 2. Grievances (NM-SEC-06)
 - [ ] 2.1 Inquiries with restricted access, routing away from a handler who is the subject, a written outcome; data-inventory class, Appendix B row, attack tests. `// req: NM-SEC-06`
