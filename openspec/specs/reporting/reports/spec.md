@@ -144,6 +144,10 @@ Source: PRD-001 §8.12 · Priority S · Phase P2
 - **THEN** a Board viewer reads it only after signing in, and no link opens it without their sign-in
 - **AND** the commentary is the text a person wrote or accepted, and a correction is a new version that supersedes the first
 
+#### Scenario: The PDF of a published pack (rev 0.593)
+- **WHEN** a published pack's PDF is asked for
+- **THEN** the render service lays out the month's statements each beside the period before, the key figures and the texts as frozen, the same file each time, and the export is audited with its hash
+- **AND** a draft has no PDF, and a month that was not closed says so on the page
 
 ### Requirement: FR-RPT-07 Scheduled reports
 The system SHALL email reports or post them to Slack on a schedule, checking permissions at send time.

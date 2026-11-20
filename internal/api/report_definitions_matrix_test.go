@@ -328,6 +328,9 @@ var matrixBoardPacks = map[string]func(e *env, tok string) (response, func() boo
 	"getGrantedCapTable": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/cap-table/granted", asMatrixMember(e, tok), nil), nil
 	},
+	"exportBoardPack": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/board-packs/"+matrixPublishedPack(e)+"/pdf", asMatrixMember(e, tok), nil), nil
+	},
 	"getDeferralRollForward": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/reports/deferral-roll-forward?from=2026-10&to=2026-10", asMatrixMember(e, tok), nil), nil
 	},
