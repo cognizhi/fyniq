@@ -471,6 +471,8 @@ fyniq_api       INSERT    payroll_mapping_entry (account_id, key, mapping_id)
 fyniq_api       SELECT    payroll_mapping_entry
 fyniq_api       INSERT    payroll_run_receipt (approver_issuer, approver_subject, entry_id, envelope_sha256, epoch, link_id, mapping_version, preparer_issuer, preparer_subject, received_at, run_id, source_system, totals, version, wage_month)
 fyniq_api       SELECT    payroll_run_receipt
+fyniq_api       INSERT    payroll_run_refusal (code, link_id, refused_at, run_id, version)
+fyniq_api       SELECT    payroll_run_refusal
 fyniq_api       INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reason, register, request_id)
 fyniq_api       SELECT    pd_anonymisation
 fyniq_api       INSERT    pd_breach (assessment_due_on, aware_at, classes, description, individuals, prescribed, recorded_at, recorded_by, title)
@@ -1014,6 +1016,7 @@ fyniq_readonly  SELECT    payroll_import
 fyniq_readonly  SELECT    payroll_mapping
 fyniq_readonly  SELECT    payroll_mapping_entry
 fyniq_readonly  SELECT    payroll_run_receipt
+fyniq_readonly  SELECT    payroll_run_refusal
 fyniq_readonly  SELECT    pd_anonymisation
 fyniq_readonly  SELECT    pd_breach
 fyniq_readonly  SELECT    pd_breach_exercise
@@ -1380,6 +1383,7 @@ fyniq_worker    SELECT    payroll_import
 fyniq_worker    SELECT    payroll_mapping
 fyniq_worker    SELECT    payroll_mapping_entry
 fyniq_worker    SELECT    payroll_run_receipt
+fyniq_worker    SELECT    payroll_run_refusal
 fyniq_worker    INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reapplied, reason, register, request_id)
 fyniq_worker    SELECT    pd_anonymisation
 fyniq_worker    SELECT    pd_breach

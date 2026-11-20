@@ -2179,6 +2179,13 @@ payroll_run_receipt | entry_id | uuid | null |
 payroll_run_receipt | totals | jsonb | not null | 
 payroll_run_receipt | received_at | timestamp with time zone | not null | 
 payroll_run_receipt | created_xact | bigint | not null | ((pg_current_xact_id())::text)::bigint
+payroll_run_refusal | organisation_id | uuid | not null | current_org()
+payroll_run_refusal | id | uuid | not null | uuidv7()
+payroll_run_refusal | link_id | uuid | not null | 
+payroll_run_refusal | run_id | uuid | not null | 
+payroll_run_refusal | version | integer | not null | 
+payroll_run_refusal | code | text | not null | 
+payroll_run_refusal | refused_at | timestamp with time zone | not null | 
 pd_anonymisation | organisation_id | uuid | not null | current_org()
 pd_anonymisation | id | uuid | not null | uuidv7()
 pd_anonymisation | contact_id | uuid | not null | 
@@ -6616,6 +6623,18 @@ payroll_run_receipt | payroll_run_receipt_version_positive | CHECK (((version >=
 payroll_run_receipt | payroll_run_receipt_wage_month | CHECK ((wage_month = (date_trunc('month'::text, (wage_month)::timestamp with time zone))::date))
 payroll_run_receipt | payroll_run_receipt_wage_month_not_null | NOT NULL wage_month
 payroll_run_receipt | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payroll_run_refusal | payroll_run_refusal_code | CHECK ((code ~ '^[A-Za-z0-9_.-]{3,80}$'::text))
+payroll_run_refusal | payroll_run_refusal_code_not_null | NOT NULL code
+payroll_run_refusal | payroll_run_refusal_id_not_null | NOT NULL id
+payroll_run_refusal | payroll_run_refusal_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+payroll_run_refusal | payroll_run_refusal_link_id_not_null | NOT NULL link_id
+payroll_run_refusal | payroll_run_refusal_organisation_id_not_null | NOT NULL organisation_id
+payroll_run_refusal | payroll_run_refusal_pkey | PRIMARY KEY (organisation_id, id)
+payroll_run_refusal | payroll_run_refusal_refused_at_not_null | NOT NULL refused_at
+payroll_run_refusal | payroll_run_refusal_run_id_not_null | NOT NULL run_id
+payroll_run_refusal | payroll_run_refusal_version | CHECK ((version >= 1))
+payroll_run_refusal | payroll_run_refusal_version_not_null | NOT NULL version
+payroll_run_refusal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pd_anonymisation | pd_anonymisation_anonymised_at_not_null | NOT NULL anonymised_at
 pd_anonymisation | pd_anonymisation_anonymised_by_not_null | NOT NULL anonymised_by
 pd_anonymisation | pd_anonymisation_by_format | CHECK ((anonymised_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -8401,6 +8420,7 @@ CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING 
 CREATE INDEX payment_link_invoice ON fyniq.payment_link USING btree (organisation_id, invoice_id, created_at)
 CREATE INDEX payment_link_payment_link ON fyniq.payment_link_payment USING btree (organisation_id, link_id)
 CREATE INDEX payroll_arrangement_item ON fyniq.payroll_arrangement USING btree (organisation_id, item, effective_from DESC, recorded_at DESC)
+CREATE INDEX payroll_run_refusal_run ON fyniq.payroll_run_refusal USING btree (organisation_id, run_id, version)
 CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (organisation_id, contact_id)
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
@@ -8794,6 +8814,7 @@ CREATE UNIQUE INDEX payroll_mapping_version_key ON fyniq.payroll_mapping USING b
 CREATE UNIQUE INDEX payroll_run_receipt_envelope_key ON fyniq.payroll_run_receipt USING btree (organisation_id, envelope_sha256)
 CREATE UNIQUE INDEX payroll_run_receipt_pkey ON fyniq.payroll_run_receipt USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payroll_run_receipt_run_key ON fyniq.payroll_run_receipt USING btree (organisation_id, source_system, run_id, version)
+CREATE UNIQUE INDEX payroll_run_refusal_pkey ON fyniq.payroll_run_refusal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_anonymisation_pkey ON fyniq.pd_anonymisation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_exercise_pkey ON fyniq.pd_breach_exercise USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_pkey ON fyniq.pd_breach USING btree (organisation_id, id)
@@ -9046,6 +9067,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_arrangemen
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_import DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_import', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_mapping', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_run_receipt DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_run_receipt', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_run_refusal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_run_refusal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_anonymisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_anonymisation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_exercise DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach_exercise', 'id')
@@ -9560,6 +9582,8 @@ CREATE TRIGGER payroll_mapping_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapp
 CREATE TRIGGER payroll_mapping_slot_account BEFORE INSERT ON fyniq.payroll_mapping_entry FOR EACH ROW EXECUTE FUNCTION payroll_mapping_slot_account()
 CREATE TRIGGER payroll_run_receipt_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_run_receipt FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_run_receipt_no_truncate BEFORE TRUNCATE ON fyniq.payroll_run_receipt FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payroll_run_refusal_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_run_refusal FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER payroll_run_refusal_no_truncate BEFORE TRUNCATE ON fyniq.payroll_run_refusal FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER pd_anonymisation_immutable BEFORE DELETE OR UPDATE ON fyniq.pd_anonymisation FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_anonymisation_no_truncate BEFORE TRUNCATE ON fyniq.pd_anonymisation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_breach_exercise_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach_exercise FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
@@ -9893,6 +9917,7 @@ payroll_import | tenant_isolation | * | (organisation_id = current_org()) | (org
 payroll_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payroll_mapping_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payroll_run_receipt | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payroll_run_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_anonymisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach_exercise | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10169,6 +10194,7 @@ payroll_import | enabled | forced
 payroll_mapping | enabled | forced
 payroll_mapping_entry | enabled | forced
 payroll_run_receipt | enabled | forced
+payroll_run_refusal | enabled | forced
 pd_anonymisation | enabled | forced
 pd_breach | enabled | forced
 pd_breach_exercise | enabled | forced

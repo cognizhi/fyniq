@@ -436,6 +436,11 @@ func (a *API) submitPayrollRun(ctx context.Context, in *payrollRunInput) (*payro
 				if strings.HasPrefix(code, "PPL-") {
 					message = pr.Detail
 				}
+				if l, lerr := u.PeopleLinks().Live(ctx); lerr == nil { // kept, so C.1 #19 lists the run until a version posts
+					if err := u.PayrollRuns().RecordRefusal(ctx, l.ID, id, env.Header.ObjectVersion, code, now); err != nil {
+						return err
+					}
+				}
 				_, err := linksend.Queue(ctx, u, linksend.TypeRunPosted, "payroll_run", id.String(), env.Header.ObjectVersion,
 					linksend.RunPosted{RunID: id.String(), Version: env.Header.ObjectVersion, Status: "refused", Code: code, Message: message})
 				return err

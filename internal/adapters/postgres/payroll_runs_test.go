@@ -131,3 +131,50 @@ func TestAttackAPayrollEntryNeedsItsReceipt(t *testing.T) {
 		wantState(t, x.what, err, x.state)
 	}
 }
+
+// A pay run Fyniq refused is kept once and for good (C.1 #19): a refusal is append-only, the organisation's own, written only by the API, and it is open until a version of the run posts.
+// req: FR-PPL-09
+// asvs: V8.2.1, V4.2.1
+func TestAttackAPayRunRefusalIsKeptAppendOnlyAndPerOrganisation(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Payroll refusals Pte Ltd")
+	other := books(t, "Payroll refusals elsewhere Pte Ltd")
+	now := time.Date(2026, time.November, 2, 3, 0, 0, 0, time.UTC)
+	run := uuid.New()
+	var link storage.PeopleLinkRow
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		link, err = u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.New(), LinkKey: make([]byte, 32), ApprovalID: uuid.New(), CreatedBy: "user:x", CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		return u.PayrollRuns().RecordRefusal(ctx, link.ID, run, 2, "PPL-12", now)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	open := func(org uuid.UUID, role string) []storage.PayrollRunRefusal {
+		var out []storage.PayrollRunRefusal
+		if err := store(t, role).Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.PayrollRuns().OpenRefusals(ctx)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if got := open(b.Org, "fyniq_worker"); len(got) != 1 || got[0].RunID != run || got[0].Version != 2 || got[0].Code != "PPL-12" {
+		t.Errorf("the open refusals: %+v", got)
+	}
+	if got := open(other.Org, "fyniq_api"); len(got) != 0 {
+		t.Errorf("another organisation sees a refusal: %+v", got)
+	}
+	for _, x := range []struct{ role, what, stmt, state string }{
+		{"fyniq_migrator", "change a refusal", "UPDATE fyniq.payroll_run_refusal SET code = 'X-1'", "FY189"},
+		{"fyniq_migrator", "delete a refusal", "DELETE FROM fyniq.payroll_run_refusal", "FY189"},
+		{"fyniq_api", "delete a refusal as the API", "DELETE FROM fyniq.payroll_run_refusal", "42501"},
+		{"fyniq_api", "change a refusal as the API", "UPDATE fyniq.payroll_run_refusal SET code = 'X-1'", "42501"},
+		{"fyniq_worker", "write a refusal as the worker", "INSERT INTO fyniq.payroll_run_refusal (link_id, run_id, version, code, refused_at) SELECT id, gen_random_uuid(), 1, 'PPL-12', now() FROM fyniq.people_link LIMIT 1", "42501"},
+	} {
+		err := asOrg(ctx, conn(t, x.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.state)
+	}
+}

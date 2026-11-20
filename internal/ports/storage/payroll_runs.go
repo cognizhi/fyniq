@@ -50,8 +50,20 @@ type PayrollRuns interface {
 	LatestReceipt(ctx context.Context, source string, run uuid.UUID) (PayrollRunReceipt, error)
 	// ReceiptMonths are the wage months a pay run was posted for, earliest first.
 	ReceiptMonths(ctx context.Context) ([]time.Time, error)
+	// RecordRefusal keeps that Fyniq refused a run's version with a code, audited as payroll_run_refusal.recorded (the run, version and code: never a figure or a person).
+	RecordRefusal(ctx context.Context, link, run uuid.UUID, version int, code string, at time.Time) error
+	// OpenRefusals are the runs whose newest refusal no posted version has followed: the pay runs that cannot post (C.1 #19).
+	OpenRefusals(ctx context.Context) ([]PayrollRunRefusal, error)
 	// EnvelopeUsed reports whether an approval envelope's digest was received before.
 	EnvelopeUsed(ctx context.Context, sha string) (bool, error)
 	// Receive records a receipt, audited as payroll_run.received. CodePayrollRun when the database refuses it.
 	Receive(ctx context.Context, r PayrollRunReceipt) (PayrollRunReceipt, error)
+}
+
+// PayrollRunRefusal is a run Fyniq refused and that nothing posted since.
+type PayrollRunRefusal struct {
+	RunID     uuid.UUID
+	Version   int
+	Code      string
+	RefusedAt time.Time
 }

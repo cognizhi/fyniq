@@ -28,3 +28,12 @@ RETURNING id;
 
 -- name: PayrollReceiptMonths :many
 SELECT DISTINCT wage_month FROM fyniq.payroll_run_receipt ORDER BY wage_month;
+
+-- name: InsertPayrollRunRefusal :one
+INSERT INTO fyniq.payroll_run_refusal (link_id, run_id, version, code, refused_at)
+VALUES (sqlc.arg(link_id), sqlc.arg(run_id), sqlc.arg(version), sqlc.arg(code), sqlc.arg(refused_at)) RETURNING id;
+
+-- name: OpenPayrollRunRefusals :many
+SELECT DISTINCT ON (r.run_id) r.run_id, r.version, r.code, r.refused_at FROM fyniq.payroll_run_refusal r
+WHERE NOT EXISTS (SELECT 1 FROM fyniq.payroll_run_receipt p WHERE p.run_id = r.run_id AND p.version >= r.version)
+ORDER BY r.run_id, r.version DESC, r.refused_at DESC;
