@@ -17,8 +17,10 @@
 - [x] 3.1 The eligibility dates (D3), pinned from IRAS's rule. `// req: FR-AR-11`
   (Built: `pack.BadDebtRelief` and the pack `sg-tax-filings@2026.1`, ten pinned cases and five more by hand. The last day to claim is the day before the anniversary `[accountant to confirm]`.)
 
-- [ ] 3.2 The claim and its posting, with the oracle's half and the differential scenario. `// req: FR-AR-11`, `// req: ENG-04`
-- [ ] 3.3 Screen `bad-debt-relief`. `// req: QA-UI-05`
+- [x] 3.2 The claim and its posting, with the oracle's half and the differential scenario. `// req: FR-AR-11`, `// req: ENG-04`
+  (Built, rev 0.607, 21 Nov 2026: the rule `bad_debt_relief@1` (`ledger.PostBadDebtRelief`: Dr the GST control account, Cr the account the write-off took the debt to, in the base currency) over the new policy `RND-BDR` (`rounding.BadDebtGST`: the invoice's output tax x the amount written off / the amount owed, half away from zero, capped at what earlier claims left, the completing write-off taking the rest); hand-worked cases in `bad_debt_relief_test.go`, `TestBadDebtGSTPinnedCases` and a property that the parts add up; the oracle's half written from the rules (`sources/sales.py` `bad_debt_relief`, `money.rnd_bdr`), hand-worked in `oracle/tests/test_sales.py`; the scenario type, `golden/bad-debt-relief.json`, the generator `strategies_relief.py` and the differential source `relief`. The document `bad_debt_relief` (migration 001110) with two database backstops (one live claim per write-off, FYT01; no reversal of a write-off with a live claim, FYT02), `journal.ReliefClaims` (claim, check, void, replay), the operations `claimBadDebtRelief`, `getBadDebtReliefClaim`, `voidBadDebtReliefClaim` with matrix rows, and the claim on the queue's row. Decisions (D3, owner-to-confirm): the claim posts at once with no second approval, an invoice a credit note credits is refused, deposits are handled by taking the output tax and the amount owed from the invoice's own entry. **Left:** an insolvent debtor's date, evidence files on the claim, recovering relief when the debt is repaid, and an invoice with credit notes.)
+- [x] 3.3 Screen `bad-debt-relief`. `// req: QA-UI-05`
+  (Built: Sales > Bad debts has the claim form and the claimed chip; the design fragment, the guide page and the knowledge-base page say how.)
 
 ## 4. Pack updates
 - [ ] 4.1 `pack.update_available` with its diff and `pack.correction_assessment` (D4). `// req: ENG-33`

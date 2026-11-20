@@ -474,6 +474,12 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** the relief is read on 10 Mar 2027
 - **THEN** a claim may be made from 10 Mar 2027 and until 14 Jan 2031, and a debtor insolvent before 15 Jan 2027 would not wait for the twelve months
 
+#### Scenario: The relief is claimed and posted (rev 0.607)
+- **GIVEN** an eligible bad-debt write-off of S$10.00 of an invoice of S$10.90 with S$0.90 of GST
+- **WHEN** the tax agent claims the relief with a date, the F5 period and a note
+- **THEN** the claim posts at once: Dr GST control S$0.83, Cr the account the write-off took the debt to, and shows on the queue's row
+- **AND** it is refused before the eligible date, after today, for a write-off claimed already and for an invoice a credit note credits, and a void reverses it so the write-off can be claimed again
+
 #### Scenario: The queue shows the GST in the part written off (rev 0.546)
 - **GIVEN** an invoice of S$10.90 with S$0.90 of GST, written off for S$10.00
 - **WHEN** the relief queue is read

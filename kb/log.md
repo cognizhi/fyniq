@@ -963,3 +963,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/statutory-calendar.md → compliance.calendar (a holder with no member is Not assessed; nothing due before the rules start, FR-EQ-28)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/verify-letter.md -> nemura.verify-letter (the file look-up, the disclosure link, the withdraw button)
+
+## [2026-11-20] compile | sales.bad-debts: how GST bad debt relief is claimed, posted and voided (FR-AR-11)

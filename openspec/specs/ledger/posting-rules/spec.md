@@ -316,7 +316,13 @@ Source: PRD-001 §10.2
 #### Scenario: Built as write_off@1 (rev 0.122)
 - **WHEN** an approved write-off of an invoice posts
 - **THEN** it posts Dr the reason's account with the carrying amount cleared and Cr 1100 with the amount at the invoice's stored rate, with the residual RND-FX left on a base-only 1100 line when it takes all that is open
-- **AND** the GST relief leg waits for FR-AR-11 (P2)
+- **AND** the GST relief leg is its own document and rule, bad_debt_relief@1 (rev 0.607)
+
+#### Scenario: GST bad debt relief claimed (rev 0.607)
+- **GIVEN** a posted bad-debt write-off of S$10.00 of an invoice that owed S$10.90 and posted S$0.90 of output tax
+- **WHEN** the relief is claimed on a day within the pack's dates
+- **THEN** it posts, in the base currency, Dr GST control and Cr the account the write-off took the debt to, for RND-BDR of the output tax: S$0.83
+- **AND** a write-off is claimed once while a claim of it lives, an invoice a credit note credits is not claimed, and the independent oracle posts the same figure
 
 ### Requirement: Founder loans, directors' fees and repayments
 Money a founder lends, an approved director's fee and a repayment to a director SHALL post to that director's 2500 or 2120 balance.

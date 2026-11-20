@@ -550,6 +550,22 @@ Source: PRD-001 §10.4
 - **WHEN** a use takes all that is left of a deposit
 - **THEN** it takes all that is left of its base amount and GST, so the uses add up to the deposit exactly, whatever order they are made and voided in
 
+### Requirement: RND-BDR The GST of a bad debt written off
+The output tax of an invoice that a write-off of part of what the customer owed brings into GST bad debt relief SHALL be round(the output tax the invoice posted × the amount written off ÷ the amount the invoice made the customer owe, the base currency's minor units), half away from zero, at most what earlier claims left of the output tax, a write-off that completes the debt taking all that is left (rev 0.607; provisional, accountant to confirm).
+
+Source: PRD-001 §10.4
+
+#### Scenario: A part's share of the output tax
+- **GIVEN** an invoice of USD 109.00 that posted S$12.15 of output tax at 1.35
+- **WHEN** USD 54.50 of it is written off and claimed
+- **THEN** the relief is 12.15 × 54.50 ÷ 109.00 = 6.075, which rounds half away from zero to S$6.08
+- **AND** an invoice of S$10.90 with S$0.90 of output tax, written off for S$10.00, claims S$0.83
+
+#### Scenario: The claims add up to the output tax
+- **GIVEN** an invoice of S$1.09 with S$0.09 of output tax written off in three parts of 0.30, 0.30 and 0.49
+- **WHEN** each is claimed
+- **THEN** they claim 0.02, 0.02 and, the last completing the debt, the 0.05 that is left, so the claims add up to the output tax exactly, never above it
+
 ### Requirement: RND-DISCOUNT Early-payment discount
 An early-payment discount a supplier offers on a bill (FR-AP-13) SHALL be round(total × percent ÷ 100, the currency's minor units), half away from zero, computed exactly before its one rounding, the percent above 0 and below 100 with at most two decimals (rev 0.93; provisional).
 
