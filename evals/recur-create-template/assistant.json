@@ -1,0 +1,91 @@
+{
+  "id": "recur-create-template",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "asker": "accountant",
+  "description": "recur.create_template's proposal cases (QA-AI-02; p1-ai-proposals task 4.1): a person asks for a recurring accrual or prepayment, and the right proposal names ordinary accounts by their codes, balancing signed amounts, the schedule and the first start date, and waits for a person; it never names a bank account, an auto-post or a recurring invoice.",
+  "company": {
+    "seed": 1,
+    "journals": 24
+  },
+  "task_types": [
+    "recur.create_template"
+  ],
+  "cases": [
+    {
+      "id": "monthly-software-accrual",
+      "question": "Set up a recurring monthly journal named \"Software accrual\" with the memo \"Software subscriptions accrued\": debit 6120 Software 800.00 and credit 2050 Accrued expenses 800.00 on day 28 of every month from 1 February 2027, reversing on the first day of the next month.",
+      "expect": {
+        "proposal": {
+          "task_type": "recur.create_template",
+          "payload": {
+            "name": "Software accrual",
+            "memo": "Software subscriptions accrued",
+            "reverses": true,
+            "every_months": 1,
+            "day_of_month": 28,
+            "starts_on": "2027-02-01",
+            "lines": [
+              {
+                "account": "6120",
+                "amount": "800.00",
+                "description": "Software"
+              },
+              {
+                "account": "2050",
+                "amount": "-800.00",
+                "description": "Accrued software"
+              }
+            ]
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Software",
+            "kind": "accounts"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quarterly-prepayment",
+      "question": "Add a quarterly recurring journal \"Insurance reclass\" on day 15 from 15 January 2027 that moves 900.00 from 2050 Accrued expenses to 6120 Software; no reversal.",
+      "expect": {
+        "proposal": {
+          "task_type": "recur.create_template",
+          "payload": {
+            "name": "Insurance reclass",
+            "every_months": 3,
+            "day_of_month": 15,
+            "starts_on": "2027-01-15",
+            "lines": [
+              {
+                "account": "6120",
+                "amount": "900.00",
+                "description": "Software"
+              },
+              {
+                "account": "2050",
+                "amount": "-900.00",
+                "description": "Accrued expenses"
+              }
+            ]
+          }
+        }
+      },
+      "solution": [
+        {
+          "tool": "records.search",
+          "input": {
+            "q": "Software",
+            "kind": "accounts"
+          }
+        }
+      ]
+    }
+  ]
+}

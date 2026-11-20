@@ -74,6 +74,8 @@ var fyCodes = map[string]string{
 	"FY623": storage.CodeInvalid,
 	"FY624": storage.CodeInvalid,
 	"FY625": storage.CodeInvalid,
+	"FYP01": storage.CodeInvalid,
+	"FYP02": storage.CodeInvalid,
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,

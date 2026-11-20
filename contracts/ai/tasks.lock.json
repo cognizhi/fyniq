@@ -7,9 +7,25 @@
     "version": 1,
     "sha256": "57846e3eb6946df1dc4fe03f2b1287522bae1176e888832236d28fd8aedac83b"
   },
+  "bank.rule_upsert": {
+    "version": 1,
+    "sha256": "e1d9d7d0b6c6831ec2aa4b64d447cb24dff21f8b0b9300199ef8043c6cf2f74d"
+  },
+  "ct.update_contact": {
+    "version": 2,
+    "sha256": "b686fd9e702bf0459a66dcb05b14c42187e8d34c3eded351be8a9f735d1a0def"
+  },
   "exp.draft_claim": {
     "version": 1,
     "sha256": "f8f8991af93b01d5262f8f93f2dd3029441365cf2b6429af8d9575919d1ca4fd"
+  },
+  "plan.propose_budget": {
+    "version": 1,
+    "sha256": "64aae13138610dfebe98ce3df97d3047d62e5e7673e2cee69d2ee0144574db95"
+  },
+  "recur.create_template": {
+    "version": 1,
+    "sha256": "01ac521fc420ba19695832a05ef3938746d97c509aa790c592a09fd0d8be94bb"
   },
   "sec.create_task": {
     "version": 1,

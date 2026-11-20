@@ -52,6 +52,7 @@ const (
 	LeftNoRate    = "no_rate"   // a line in another currency with no rate to size it
 	LeftRefused   = "refused"   // the posting rules or the documents refused it
 	LeftNotQueued = "not_queued"
+	LeftLink      = "link_mismatch" // a charge made under a payment link that does not settle its invoice exactly (FR-PSP-02)
 )
 
 // Reconciled is a line the system reconciled: how (the match's basis), by which rule, and the match.
@@ -199,6 +200,18 @@ func decide(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, ru
 	}
 	if step != nil {
 		return plan{basis: storage.BasisExact, provider: step}, "", nil
+	}
+
+	// A charge made under an invoice's payment link, as the sweep recorded it, settling exactly what the invoice has open (FR-PSP-02).
+	linked, mismatch, err := linkPlan(ctx, u, line, amount)
+	if err != nil {
+		return plan{}, "", err
+	}
+	if mismatch {
+		return plan{}, LeftLink, nil
+	}
+	if linked != nil {
+		return plan{basis: storage.BasisExact, doc: linked}, "", nil
 	}
 
 	// Exactly one open document: its amount, its number named exactly, and its contact named by the counterparty.

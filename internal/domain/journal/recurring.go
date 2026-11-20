@@ -176,6 +176,17 @@ func noOccurrence() error {
 // CreateRecurring adds a recurring journal, active, whose first draft is for the schedule's first occurrence on or
 // after its start: one in the past is made by the next run.
 func (s Service) CreateRecurring(ctx context.Context, org uuid.UUID, in RecurringInput) (storage.RecurringJournal, error) {
+	var out storage.RecurringJournal
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		out, err = CreateRecurringIn(ctx, u, in)
+		return err
+	})
+	return out, err
+}
+
+// CreateRecurringIn adds a recurring journal in a unit of work that does more, such as an approved proposal's: the same function a person's
+// create runs.
+func CreateRecurringIn(ctx context.Context, u storage.UnitOfWork, in RecurringInput) (storage.RecurringJournal, error) {
 	next := FirstOn(in.Schedule, in.Schedule.StartsOn)
 	if next == nil {
 		return storage.RecurringJournal{}, noOccurrence()
@@ -184,13 +195,8 @@ func (s Service) CreateRecurring(ctx context.Context, org uuid.UUID, in Recurrin
 	if err != nil {
 		return storage.RecurringJournal{}, err
 	}
-	var out storage.RecurringJournal
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		out, err = u.RecurringJournals().Create(ctx, storage.RecurringJournalDetails{Name: in.Name, Status: storage.RecurringActive,
-			Schedule: in.Schedule, NextOn: next, Content: b})
-		return err
-	})
-	return out, err
+	return u.RecurringJournals().Create(ctx, storage.RecurringJournalDetails{Name: in.Name, Status: storage.RecurringActive,
+		Schedule: in.Schedule, NextOn: next, Content: b})
 }
 
 func sameSchedule(a, b storage.Schedule) bool {
@@ -257,31 +263,39 @@ func (s Service) ResumeRecurring(ctx context.Context, org, id uuid.UUID, version
 
 func (s Service) setRecurring(ctx context.Context, org, id uuid.UUID, version int, to storage.RecurringStatus, today time.Time) (storage.RecurringJournal, error) {
 	var out storage.RecurringJournal
-	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		cur, err := u.RecurringJournals().Lock(ctx, id)
-		if err != nil {
-			return err
-		}
-		if cur.Status == to || cur.NextOn == nil {
-			state := "ended"
-			if cur.NextOn != nil {
-				state = string(cur.Status)
-			}
-			return &Error{CodeRecurringPaused, "the recurring journal is " + state, "Pause an active recurring journal, or resume a paused one"}
-		}
-		next := cur.NextOn
-		if to == storage.RecurringActive {
-			from := today
-			if cur.LastOn != nil && !cur.LastOn.Before(from) {
-				from = cur.LastOn.AddDate(0, 0, 1)
-			}
-			next = FirstOn(cur.Schedule, from)
-		}
-		out, err = u.RecurringJournals().Update(ctx, id, version, storage.RecurringJournalDetails{Name: cur.Name, Status: to,
-			Schedule: cur.Schedule, NextOn: next})
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		out, err = setRecurringIn(ctx, u, id, version, to, today)
 		return err
 	})
 	return out, err
+}
+
+// PauseRecurringIn pauses a recurring journal in a unit of work that does more: what an undo of an approved proposal does, as a person's pause.
+func PauseRecurringIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, version int) (storage.RecurringJournal, error) {
+	return setRecurringIn(ctx, u, id, version, storage.RecurringPaused, time.Time{})
+}
+
+func setRecurringIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, version int, to storage.RecurringStatus, today time.Time) (storage.RecurringJournal, error) {
+	cur, err := u.RecurringJournals().Lock(ctx, id)
+	if err != nil {
+		return storage.RecurringJournal{}, err
+	}
+	if cur.Status == to || cur.NextOn == nil {
+		state := "ended"
+		if cur.NextOn != nil {
+			state = string(cur.Status)
+		}
+		return storage.RecurringJournal{}, &Error{CodeRecurringPaused, "the recurring journal is " + state, "Pause an active recurring journal, or resume a paused one"}
+	}
+	next := cur.NextOn
+	if to == storage.RecurringActive {
+		from := today
+		if cur.LastOn != nil && !cur.LastOn.Before(from) {
+			from = cur.LastOn.AddDate(0, 0, 1)
+		}
+		next = FirstOn(cur.Schedule, from)
+	}
+	return u.RecurringJournals().Update(ctx, id, version, storage.RecurringJournalDetails{Name: cur.Name, Status: to, Schedule: cur.Schedule, NextOn: next})
 }
 
 // RecurringStatuses evaluates recurring journals as the workbook's checks did (Appendix C.1 #28, #29; ENG-20, ENG-21):

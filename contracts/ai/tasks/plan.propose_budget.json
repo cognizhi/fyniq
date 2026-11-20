@@ -1,0 +1,79 @@
+{
+  "id": "plan.propose_budget",
+  "version": 1,
+  "name": "Draft a budget version",
+  "description": "Drafts a budget version for a financial year, exactly as a person's Draft a budget does: a name, whether it is the year's original or a revised version (naming the recorded budget it revises), the financial year by its first day, and for each income or expense account, by its code, the twelve monthly amounts of the year as decimal strings, signed as the profit and loss shows them (income and costs both above zero for what is expected). It is a draft for the whole company: it posts nothing and moves no money, and it is not approved or recorded; a person asks for its approval, which records and locks it. Give the figures the person gave you or that a read tool returned; never invent one. A line for one department or project is a person's.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "kind",
+      "financial_year",
+      "lines"
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "maxLength": 80,
+        "description": "The version's name, such as FY2027 budget."
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "original",
+          "revised"
+        ],
+        "description": "original: the year's first budget; revised: a later version that revises a recorded one."
+      },
+      "financial_year": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "description": "The financial year's first day, YYYY-MM-DD, such as 2027-01-01."
+      },
+      "revises": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        "description": "For a revised version, the ID of the recorded budget it revises."
+      },
+      "lines": {
+        "type": "array",
+        "maxItems": 100,
+        "description": "One line per account.",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "account",
+            "amounts"
+          ],
+          "properties": {
+            "account": {
+              "type": "string",
+              "pattern": "^[0-9]{4,6}$",
+              "description": "The code of an active income or expense account that takes postings."
+            },
+            "amounts": {
+              "type": "array",
+              "maxItems": 12,
+              "description": "One amount for each month of the year, in order, as decimal strings such as 2500.00.",
+              "items": {
+                "type": "string",
+                "pattern": "^-?(0|[1-9][0-9]{0,14})(\\.[0-9]{1,4})?$"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "command": "CreateBudgetVersion",
+  "tier": 2,
+  "limits": {
+    "items": 100
+  },
+  "approvers": [
+    "accountant"
+  ],
+  "expiry_hours": 72
+}

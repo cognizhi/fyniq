@@ -177,6 +177,39 @@ func (r contacts) Update(ctx context.Context, id uuid.UUID, version int, d stora
 	return after, nil
 }
 
+func (r contacts) UpdateAIFields(ctx context.Context, id uuid.UUID, version int, f storage.ContactAIFields) (storage.Contact, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Contact{}, err
+	}
+	t, err := terms(f.PaymentTermsDays)
+	if err != nil {
+		return storage.Contact{}, err
+	}
+	cur, err := r.u.q.LockContact(ctx, id)
+	if err != nil {
+		return storage.Contact{}, mapError(err)
+	}
+	before := toContact(contactRow(cur))
+	if before.Version != version {
+		return storage.Contact{}, &storage.Error{Code: storage.CodeVersion,
+			Message: fmt.Sprintf("the contact changed since it was read: it is at version %d, not %d", before.Version, version)}
+	}
+	row, err := r.u.q.UpdateContactAIFields(ctx, sqlcdb.UpdateContactAIFieldsParams{ID: id, Version: small(version),
+		SetBillingEmail: f.SetBillingEmail, BillingEmail: opt(f.BillingEmail), SetPhone: f.SetPhone, Phone: opt(f.Phone), SetAddress: f.SetAddress, Address: opt(f.Address),
+		SetPaymentTermsDays: f.SetPaymentTerms, PaymentTermsDays: t, SetDefaultAccountID: f.SetDefaultCategory, DefaultAccountID: f.DefaultAccountID,
+		SetDefaultGstCode: f.SetDefaultGSTCode, DefaultGstCode: opt(f.DefaultGSTCode)})
+	if err != nil {
+		return storage.Contact{}, mapError(err)
+	}
+	after := toContact(contactRow(row))
+	changes := contactChanges(before, after)
+	changes["version"] = [2]any{before.Version, after.Version}
+	if err := r.u.event(ctx, "contact.updated", "contact", after.ID, &after.Version, changes); err != nil {
+		return storage.Contact{}, err
+	}
+	return after, nil
+}
+
 func (r contacts) Search(ctx context.Context, text string, limit int) ([]storage.Contact, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

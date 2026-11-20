@@ -132,7 +132,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["kind", "trigger", "trigger_rule", "on_pause", "on_disable", "in_flight"],
       "properties": {
-        "kind": {"enum": ["sign-in", "outbound-email", "inbound-email", "messaging", "ticketing", "payment-provider", "bank-data", "e-invoicing", "document-ai", "model-provider"]},
+        "kind": {"enum": ["sign-in", "outbound-email", "inbound-email", "messaging", "ticketing", "payment-provider", "payment-link", "bank-data", "e-invoicing", "document-ai", "model-provider"]},
         "trigger": {"enum": ["human-authority", "system-rule", "none"], "description": "Who may make it act (FR-INT-27): a completed human authority, a system rule, or nobody."},
         "trigger_rule": {"type": "string", "minLength": 1, "maxLength": 300, "description": "The authority or rule, in plain words."},
         "on_pause": {"const": "hold", "description": "Pause holds queued work (FR-INT-26)."},

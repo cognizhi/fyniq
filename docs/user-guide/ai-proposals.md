@@ -3,7 +3,7 @@ key: ai.proposals
 title: Approve a change the AI proposed
 mode: basic
 roles: [owner, admin, controller, accountant, bookkeeper, company_secretary, dpo]
-requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-32, AI-89, AI-65]
+requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-31, AI-32, AI-89, AI-91, AI-65]
 status: draft
 ---
 
@@ -115,6 +115,61 @@ status: draft
 - A bill is marked out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active
   supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not one of your
   claim categories are refused with the reason.
+
+## Review a contact change the AI proposed
+
+- **Update a contact's details** (`ct.update_contact`, tier 2) changes up to six details of a customer or supplier company, as
+  **Change a contact** does: the billing email, phone, address, payment terms, default category and default GST code. The
+  review shows each detail before and after.
+- It never changes a legal name, UEN or tax ID, Peppol ID, remittance email, country, tax residence, currency, discount terms,
+  customer group or any bank detail, and never the record of a person (an individual, a director, a shareholder, an investor
+  or a member who signs in): a person makes those changes. A detail cannot be cleared by the AI.
+- It is tier 2, so someone other than the person who asked approves it, and that person must be someone who may change contacts
+  themselves, such as the AR or AP specialist or the accountant. If the contact changed after the review, nothing is changed:
+  the proposal is marked out of date.
+
+## Undo a change the AI made
+
+- A change that **changes or posts a record** can be undone from the proposal's review, with **Undo this change**: you say why,
+  and Fyniq puts back what it replaced, as you, and keeps who, when and why in the audit trail. You need the right the change
+  itself needs, so someone who could not have made it cannot undo it.
+- It works once, and only while nobody has changed the same record since. If a person or another change has touched the contact
+  after, the undo is refused and says so: correct it by hand. For a posted entry the undo is a reversing entry, never an edit,
+  and needs the period to be open.
+- A **draft** the AI made is not undone: it posts nothing, so you edit it or ignore it. A message that was sent cannot be unsent.
+  The proposal itself stays **Executed**, and the review then says **Undone**, when and why.
+
+## Review a recurring journal the AI proposed
+
+- **Add a recurring journal** (`recur.create_template`, tier 2) adds a recurring journal, as **Add a recurring journal** does: a name,
+  the memo and balancing lines, whether each draft reverses on the first day of the next month, and a schedule of every 1, 3, 6 or 12
+  months on a day of the month. The scheduler then makes a draft journal on each occurrence, which a person posts under the usual
+  approvals: nothing recurring posts by itself.
+- Its lines keep to income, cost, prepayment, deferred revenue and depreciation accounts in your base currency: never a bank, equity,
+  sub-ledger, tax, payroll or director's account. Its monthly equivalent (the debits over the months between occurrences) is limited to
+  S$5,000. A recurring bill or invoice is made by a person.
+- It is tier 2: an Accountant other than the person who asked approves it. If an account it names changed after the review, nothing is
+  made and the proposal is out of date. **Undo this change** pauses the template; drafts the scheduler already made stay for a person to
+  post or ignore.
+
+## Review a budget the AI drafted
+
+- **Draft a budget version** (`plan.propose_budget`, tier 2) drafts a budget for a financial year, as **Draft a budget** does: income
+  and expense accounts with the twelve monthly amounts, for the whole company. It is only a draft: it is not approved or recorded, and a
+  person asks for its approval, which records and locks it. A line for one department or project is a person's.
+- An Accountant other than the person who asked approves it. A budget draft cannot be undone, since no function deletes one: you edit it
+  or leave it.
+
+## Review a bank rule the AI proposed
+
+- **Create or change a bank rule** (`bank.rule_upsert`, tier 1) saves a bank rule, as **Create a bank rule** and **Change a bank rule** do: a name, its
+  place in the order, what a line must meet (a text or pattern in the description, the direction, an amount range, the currency, the counterparty) and
+  the ordinary account it codes lines to, with an optional contact, GST code and reference.
+- The review shows the rule's **back-test**: how many of the lines held its conditions would have matched, by their status. A rule only suggests a coding,
+  which you accept. The AI cannot make a rule apply by itself, and cannot code lines to a bank, receivables or payables account: letting a rule apply by itself
+  needs another person's approval after its back-test, and changing a rule stops it applying meanwhile. A rule the AI proposed is marked as such.
+- Someone who may keep bank rules, such as the bookkeeper or the accountant, approves it. **Undo this change** switches a new rule off, or puts a changed
+  rule back as it was, while nobody has changed it since.
 
 ## Approval quality
 
