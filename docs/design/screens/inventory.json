@@ -5355,7 +5355,7 @@
    "roles": [
     "Owner",
     "Controller",
-    "Board viewer"
+    "Accountant"
    ],
    "mode": "expert",
    "requirements": [

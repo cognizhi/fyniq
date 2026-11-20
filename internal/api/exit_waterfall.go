@@ -77,7 +77,7 @@ const CodeWaterfallRefused = equity.CodeWaterfall
 
 func registerExitWaterfall(a *API) {
 	register(a, authz.GetExitWaterfall, huma.Operation{
-		OperationID: "getExitWaterfall", Method: http.MethodGet, Path: "/v1/exit-waterfall", Tags: []string{"Cap table"},
+		OperationID: "getExitWaterfall", Method: http.MethodGet, Path: "/v1/exit-waterfall", Tags: []string{"Equity"},
 		Summary: "Model what an exit pays each class and holder",
 		Description: "A sandbox (FR-EQ-29): for an exit value, what each share class and each holder would receive under the liquidation preferences the register records (a non-participating preference " +
 			"of a multiple of the money invested, which converts when that pays the class more; an uncapped participating preference; seniority between classes, classes of one seniority sharing pari " +

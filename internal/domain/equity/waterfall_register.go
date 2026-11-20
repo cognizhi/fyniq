@@ -57,7 +57,7 @@ func splitPro(total int64, weights []int64) []int64 {
 
 func wholeCount(d apd.Decimal, what string) (int64, error) {
 	var x apd.Decimal
-	if _, err := apd.BaseContext.Quantize(&x, &d, 0); err != nil || x.Cmp(&d) != 0 {
+	if _, err := apd.BaseContext.WithPrecision(40).Quantize(&x, &d, 0); err != nil || x.Cmp(&d) != 0 {
 		return 0, fmt.Errorf("%s: %s is not a whole number of shares", CodeWaterfall, what)
 	}
 	n, err := x.Int64()
@@ -155,7 +155,7 @@ func WaterfallFromRegister(ctx context.Context, u storage.UnitOfWork, day time.T
 			if is.EffectiveOn.After(day) {
 				continue
 			}
-			same := (g.class != uuid.Nil && is.ClassID != nil && *is.ClassID == g.class) || (g.class == uuid.Nil && is.ClassID == nil && is.ClassAccountID == g.acc)
+			same := (g.class != uuid.Nil && is.ClassID != nil && *is.ClassID == g.class) || (is.ClassID == nil && is.ClassAccountID == g.acc) // an issue made before its account had a class is of the account's class
 			if !same {
 				continue
 			}

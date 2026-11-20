@@ -929,3 +929,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | settings-people.md -> kb (move where a feature lives)
 
 ## [2026-11-20] compile | sales.invoices, settings.organisation: a payment link made when an invoice is issued (FR-AR-13)
+
+## [2026-11-20] compile | docs/user-guide/exit-waterfall.md → equity.exit-waterfall (the exit waterfall sandbox, FR-EQ-29)

@@ -14864,6 +14864,25 @@ Records the day ACRA's register of members shows an approved equity transaction,
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-15`, `EQUITY-02`, `EQUITY-05`, `EQUITY-06`, `EQUITY-07`, `EQUITY-08`, `EQUITY-09`, `LEDGER-01`, `LEDGER-16`, `LEDGER-41`, `LEDGER-48`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PARTY-01`, `STORAGE-RETRY-01`, `STORAGE-SHARE-01`, `STORAGE-SHARE-04`
 
+### `GET /v1/exit-waterfall`
+
+**Model what an exit pays each class and holder** (`getExitWaterfall`)
+
+A sandbox (FR-EQ-29): for an exit value, what each share class and each holder would receive under the liquidation preferences the register records (a non-participating preference of a multiple of the money invested, which converts when that pays the class more; an uncapped participating preference; seniority between classes, classes of one seniority sharing pari passu), next to every class converted with no preference. The money invested in a class is its issues up to the day, shared among its holders by shares. A capped participating preference and a cumulative dividend are refused by name (EQ-WF-01), never approximated, until a lawyer or accountant confirms them. Nothing is posted or saved. Read-only.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `exit_value` (query, required): What the shareholders receive, in the base currency, as a plain decimal.
+  - `on` (query): The day of the register to read; left out, the organisation's today.
+- **Responses:**
+  - `200` OK [`ExitWaterfall`](../../contracts/schemas/ExitWaterfall.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQ-WF-01` The waterfall does not model that structure.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `EQ-WF-01`
+
 ### `POST /v1/holder-records`
 
 **Draft a holder record** (`createHolderRecord`)

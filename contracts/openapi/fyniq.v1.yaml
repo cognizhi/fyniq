@@ -149853,7 +149853,7 @@ paths:
           description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
       summary: Model what an exit pays each class and holder
       tags:
-        - Cap table
+        - Equity
       x-fyniq-error-codes:
         - API-AUTH-01
         - API-AUTHZ-01

@@ -560,6 +560,16 @@
     "status": "published"
   },
   {
+    "file": "exit-waterfall.md",
+    "key": "equity.exit-waterfall",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "feasibility.md",
     "key": "planning.feasibility",
     "roles": [

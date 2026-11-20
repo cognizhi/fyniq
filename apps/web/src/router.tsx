@@ -136,6 +136,7 @@ const screens: Record<RouteId, RouteComponent> = {
   dashboards: lazyRouteComponent(() => import("./screens/reports/Dashboards"), "Dashboards"),
   "board-pack": lazyRouteComponent(() => import("./screens/reports/BoardPack"), "BoardPack"),
   "investor-updates": lazyRouteComponent(() => import("./screens/equity/InvestorUpdates"), "InvestorUpdates"),
+  "exit-waterfall": lazyRouteComponent(() => import("./screens/equity/ExitWaterfall"), "ExitWaterfall"),
   "auditor-engagement": lazyRouteComponent(() => import("./screens/auditor/AuditorEngagement"), "AuditorEngagement"),
   "board-portal": lazyRouteComponent(() => import("./screens/board/BoardPortal"), "BoardPortal"),
   "report-builder": lazyRouteComponent(() => import("./screens/reports/ReportBuilder"), "ReportBuilder"),

@@ -45,13 +45,14 @@ func (e *env) recordClass(account string, c equity.ShareClass) {
 // req: FR-EQ-29
 func TestTheExitWaterfallPaysThePreferenceOrTheConversionWhicheverIsMore(t *testing.T) {
 	e := newEnv(t)
+	e.booksFrom()
 	accountant := e.as(authz.Accountant)
 	ordinary, pref := e.shareCapitalIn(e.books.Org), e.shareCapital3020()
 	founder := e.call(http.MethodPost, "/v1/contacts", accountant, map[string]any{"legal_name": "Ah Kow", "director": true, "shareholder": true}).str("id")
 	investor := e.call(http.MethodPost, "/v1/contacts", accountant, map[string]any{"legal_name": "Seedling Ventures Pte. Ltd.", "investor": true, "shareholder": true}).str("id")
 	issue := func(holder, account, shares, price string) {
 		t.Helper()
-		if r := e.call(http.MethodPost, "/v1/share-issues", e.as(authz.Owner), map[string]any{"holder_id": holder, "class_account_id": account, "shares": shares, "price": price,
+		if r := e.call(http.MethodPost, "/v1/share-issues", steppedUp(e, e.as(authz.Owner)), map[string]any{"holder_id": holder, "class_account_id": account, "shares": shares, "price": price,
 			"consideration": "cash", "resolution_refs": "Allotment resolution", "effective_on": "2025-06-12"}); r.Status != http.StatusCreated {
 			t.Fatalf("issuing %s: %d %s", shares, r.Status, r.Raw)
 		}
@@ -102,8 +103,9 @@ func TestTheExitWaterfallPaysThePreferenceOrTheConversionWhicheverIsMore(t *test
 	}
 
 	// A cap on a participating preference is refused by name, never approximated.
-	e.recordClass(pref, equity.ShareClass{Name: "Series Capped", Kind: "preference", Series: "Capped", VotesPerShare: "1", Liquidation: equity.Liquidation{Multiple: "1", Participating: true, CapMultiple: "3", Seniority: 2},
-		Dividend: equity.Dividend{Kind: "none"}, AntiDilution: "none"})
+	seedID := uuid.MustParse(seed["class_id"].(string))
+	e.recordClass(pref, equity.ShareClass{ClassID: &seedID, Name: "Series Seed", Kind: "preference", Series: "Seed", VotesPerShare: "1",
+		Liquidation: equity.Liquidation{Multiple: "1", Participating: true, CapMultiple: "3", Seniority: 1}, Dividend: equity.Dividend{Kind: "none"}, AntiDilution: "none"})
 	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=5000000.00&on=2026-10-15", accountant, nil), "getExitWaterfall", 422, CodeWaterfallRefused)
 	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=abc", accountant, nil), "getExitWaterfall", 422, CodeInvalid)
 	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=5000000.00", e.as(authz.BoardViewer), nil), "getExitWaterfall", 403, "API-AUTHZ-01")
