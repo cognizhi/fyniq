@@ -884,6 +884,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | compliance.invoicenow: the exclusion form and the contingency approval button
 
+## [2026-11-20] compile | compliance.gst: aliases for the GST rate question, so the newer tax pages do not outrank it
+
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (the BIC from the bank code)
 
 ## [2026-11-20] compile | payroll-salary-payments.md -> kb (payroll in the books)
