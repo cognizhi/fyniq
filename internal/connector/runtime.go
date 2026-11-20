@@ -729,6 +729,21 @@ func (b guardedBankData) Transactions(ctx context.Context, account, cursor strin
 	return out, err
 }
 
+// IntradayReports passes the adapter's intraday reports through the same guard, when the adapter has any; an adapter with none answers none, so the type assertion on the guarded value
+// finds the method either way.
+func (b guardedBankData) IntradayReports(ctx context.Context, since time.Time) ([]ports.BankReport, error) {
+	rp, ok := b.BankData.(ports.BankReports)
+	if !ok {
+		return nil, nil
+	}
+	if err := b.g.begin(b.clock.Now()); err != nil {
+		return nil, err
+	}
+	out, err := rp.IntradayReports(ctx, since)
+	b.g.end(err != nil, b.clock.Now())
+	return out, err
+}
+
 // guardedPaymentLinks is a payment-link adapter behind its connector's guard: a call the guard holds reaches no provider.
 type guardedPaymentLinks struct {
 	ports.PaymentLinks

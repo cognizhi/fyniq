@@ -22,6 +22,7 @@
     "required": ["folder"],
     "properties": {
       "folder": { "type": "string", "title": "Folder", "description": "A folder on this machine the statement files are in.", "minLength": 1, "maxLength": 500 },
+      "intraday_folder": { "type": "string", "title": "Intraday reports folder (optional)", "description": "A folder on this machine the MT942 intraday reports are in.", "maxLength": 500 },
       "format": { "type": "string", "title": "File format", "description": "The format of the files.", "enum": ["mt940", "camt053", "ofx"], "default": "mt940" }
     }
   },

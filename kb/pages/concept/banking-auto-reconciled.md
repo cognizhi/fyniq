@@ -4,7 +4,7 @@ type: concept
 title: What Fyniq reconciled by itself, and undoing it
 summary: The Auto-reconciled list: exact matches, a batch's payments, transfers' other sides and approved rules' lines, why and by whom, and undo
 sources:
-  - docs/user-guide/banking.md sha256:bdc2177c8bb0f0a6ea043d0475036f8601fa128c0eeff0245f18f79ff8973159
+  - docs/user-guide/banking.md sha256:7236d356783239a6e775152324b8b6ebf951d28970208349fbc0d113aea621e8
 data_class: general
 taint: trusted
 status: draft

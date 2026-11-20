@@ -21,9 +21,9 @@ type ProjectRevenueElection struct {
 	// ExcludedCost is the running total of the project's posted costs left out of its progress, with why (the input method leaves out what does not show progress); zero and "" for none.
 	ExcludedCost   Decimal
 	ExcludedReason string
-	Version       int
-	SetBy         string
-	SetAt         time.Time
+	Version        int
+	SetBy          string
+	SetAt          time.Time
 }
 
 // ProjectRevenueRun is a month's proposed journal for a project: made once, never changed.

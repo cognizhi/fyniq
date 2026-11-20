@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -437,6 +438,63 @@ func TestStatementFilesInADropFolderFeedAMoneyAccount(t *testing.T) {
 		t.Errorf("the lines %d, the feed %+v", len(lines), e.feedOf(m))
 	}
 	if entries, _ := os.ReadDir(dir); len(entries) != 2 {
+		t.Errorf("the folder was changed: %d files", len(entries))
+	}
+}
+
+// MT942 intraday reports in a drop folder are pending signals and never statement lines (FR-BNK-16, FR-BNK-17; p2-bank-feeds-payments task 2.1): only the credits of the statement that
+// names the money account's identifier, each once by its bank reference, the same report read again adds none, another account's statement in the same file is left, and an
+// old file is not read; the folder is only read.
+// req: FR-BNK-16
+// req: FR-BNK-17
+func TestIntradayReportsInADropFolderAreSignalsNotLines(t *testing.T) {
+	e := newEnv(t)
+	statements, intraday := t.TempDir(), t.TempDir()
+	report := func(account, ref string) string {
+		return "{1:F01EXAMSGSGAXXX0000000000}{2:I942EXAMSGSGXXXXN}{4:\n:20:INTRADAY\n:25:EXAMSGSG/" + account + "\n:28C:00002/001\n:34F:SGD0,\n:13D:2610151030+0800\n:61:2610151015C250,00NTRFINV-0150//" + ref +
+			"\n:86:ACME ROBOTICS PTE LTD\nINVOICE INV-0150\n:61:2610151015D20,00NCHGNONREF//" + ref + "D\n:86:SERVICE CHARGE\n:90D:1SGD20,00\n:90C:1SGD250,00\n-}"
+	}
+	acct := "0" + strings.ReplaceAll(uuid.NewString()[:8], "-", "")[:7]
+	if err := os.WriteFile(filepath.Join(intraday, "r1.mt942"), []byte(report(acct, "BR1")+"\n"+report("9999999999", "BR9")), 0o600); err != nil { // another account's statement rides along
+		t.Fatal(err)
+	}
+	old := filepath.Join(intraday, "old.mt942")
+	if err := os.WriteFile(old, []byte(report(acct, "BROLD")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	longAgo := time.Now().AddDate(0, 0, -30)
+	if err := os.Chtimes(old, longAgo, longAgo); err != nil {
+		t.Fatal(err)
+	}
+	bankOverride = filedrop.Statements{Drop: local.Directory{Root: statements}, Intraday: local.Directory{Root: intraday}}
+	t.Cleanup(func() { bankOverride = nil })
+	c := e.enabledBankConnector()
+	m := e.fedAccount(acct, c)
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(worker.Close)
+	s := bankfeed.Syncer{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: clock.NewFrozen(time.Now())}
+	signals := func() []storage.BankSignal {
+		var out []storage.BankSignal
+		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			out, err = u.BankMatching().Signals(ctx)
+			return err
+		})
+		return out
+	}
+	if got, err := s.Sync(context.Background(), e.books.Org, c.ID); err != nil || len(got.Errors) != 0 || got.Added != 0 {
+		t.Fatalf("the sync: %+v, %v", got, err)
+	}
+	sg := signals()
+	if len(sg) != 1 || sg[0].Reference != "BR1" || sg[0].MoneyAccountID != m.ID || len(e.linesOf(m)) != 0 {
+		t.Fatalf("the signals %+v, the lines %d", sg, len(e.linesOf(m)))
+	}
+	if _, err := s.Sync(context.Background(), e.books.Org, c.ID); err != nil || len(signals()) != 1 {
+		t.Errorf("the same report read again: %d signals, %v", len(signals()), err)
+	}
+	if entries, _ := os.ReadDir(intraday); len(entries) != 2 {
 		t.Errorf("the folder was changed: %d files", len(entries))
 	}
 }

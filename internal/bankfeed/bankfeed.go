@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/bankfile"
+	"github.com/cognizhi/fyniq/internal/bankingest"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -158,8 +159,36 @@ func (s Syncer) Sync(ctx context.Context, org, id uuid.UUID) (Synced, error) {
 		if err != nil {
 			out.Errors = append(out.Errors, fmt.Sprintf("%s: %v", f.account.Name, err))
 		}
+		if err := s.signals(ctx, org, bd, f); err != nil {
+			out.Errors = append(out.Errors, fmt.Sprintf("%s: intraday reports: %v", f.account.Name, err))
+		}
 	}
 	return out, nil
+}
+
+// SignalDays is how far back an intraday report file may have changed and still be read: signals expire after a week at most, and a report is read again as it is sent again, a signal
+// being recorded once per bank reference (FR-BNK-16).
+const SignalDays = 3
+
+// signals reads a source's intraday reports as pending signals for one account: only the statements that name the account, only the credits, each once.
+func (s Syncer) signals(ctx context.Context, org uuid.UUID, bd ports.BankData, f fed) error {
+	rp, ok := bd.(ports.BankReports)
+	if !ok {
+		return nil
+	}
+	now := s.Clock.Now()
+	reports, err := rp.IntradayReports(ctx, now.AddDate(0, 0, -SignalDays))
+	if err != nil {
+		return err
+	}
+	for _, r := range reports {
+		if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return bankingest.IntradayOf(ctx, u, f.account, f.provider, nil, now, r.Data)
+		}); err != nil {
+			return fmt.Errorf("%s: %w", r.Name, err)
+		}
+	}
+	return nil
 }
 
 // pull pulls one account, at most MaxPages pages.
