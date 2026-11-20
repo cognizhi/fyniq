@@ -1458,6 +1458,45 @@ fx_rate | entered_at | timestamp with time zone | not null |
 fx_rate | withdrawn_by | text | null | 
 fx_rate | withdrawn_at | timestamp with time zone | null | 
 fx_rate | withdrawn_reason | text | null | 
+group_entity | organisation_id | uuid | not null | current_org()
+group_entity | id | uuid | not null | uuidv7()
+group_entity | label | text | not null | 
+group_entity | entity_org | uuid | null | 
+group_entity | entity_name | text | null | 
+group_entity | entity_currency | text | null | 
+group_entity | state | text | not null | 'invited'::text
+group_entity | invited_by | uuid | not null | 
+group_entity | invited_at | timestamp with time zone | not null | 
+group_entity | linked_by | uuid | null | 
+group_entity | linked_at | timestamp with time zone | null | 
+group_entity | ended_by | uuid | null | 
+group_entity | ended_at | timestamp with time zone | null | 
+group_entity | ended_reason | text | null | 
+group_entity | version | integer | not null | 1
+group_invitation | id | uuid | not null | uuidv7()
+group_invitation | kind | text | not null | 
+group_invitation | code_hash | bytea | not null | 
+group_invitation | parent_org | uuid | not null | 
+group_invitation | parent_row | uuid | not null | 
+group_invitation | created_by | uuid | not null | 
+group_invitation | created_at | timestamp with time zone | not null | 
+group_invitation | expires_at | timestamp with time zone | not null | 
+group_invitation | state | text | not null | 'open'::text
+group_invitation | consumed_org | uuid | null | 
+group_invitation | consumed_at | timestamp with time zone | null | 
+group_membership | organisation_id | uuid | not null | current_org()
+group_membership | id | uuid | not null | uuidv7()
+group_membership | parent_org | uuid | not null | 
+group_membership | parent_name | text | not null | 
+group_membership | parent_row | uuid | not null | 
+group_membership | scopes | text[] | not null | ARRAY['figures'::text, 'intercompany'::text]
+group_membership | state | text | not null | 'active'::text
+group_membership | accepted_by | uuid | not null | 
+group_membership | accepted_at | timestamp with time zone | not null | 
+group_membership | ended_by | uuid | null | 
+group_membership | ended_at | timestamp with time zone | null | 
+group_membership | ended_reason | text | null | 
+group_membership | version | integer | not null | 1
 gst_registration | organisation_id | uuid | not null | current_org()
 gst_registration | id | uuid | not null | uuidv7()
 gst_registration | registered_from | date | not null | 
@@ -5858,6 +5897,63 @@ fx_rate | fx_rate_withdrawn_by_format | CHECK ((withdrawn_by ~ '^[a-z][a-z_]{0,1
 fx_rate | fx_rate_withdrawn_reason_length | CHECK (((length(btrim(withdrawn_reason)) >= 1) AND (length(btrim(withdrawn_reason)) <= 500)))
 fx_rate | fx_rate_withdrawn_whole | CHECK ((((withdrawn_by IS NULL) = (withdrawn_at IS NULL)) AND ((withdrawn_by IS NULL) = (withdrawn_reason IS NULL))))
 fx_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+group_entity | group_entity_active_linked | CHECK (((state <> 'active'::text) OR (entity_org IS NOT NULL)))
+group_entity | group_entity_ended_whole | CHECK ((((state = 'ended'::text) = (ended_at IS NOT NULL)) AND ((state = 'ended'::text) = (ended_by IS NOT NULL)) AND ((state = 'ended'::text) = (ended_reason IS NOT NULL))))
+group_entity | group_entity_id_not_null | NOT NULL id
+group_entity | group_entity_invited_at_not_null | NOT NULL invited_at
+group_entity | group_entity_invited_by_not_null | NOT NULL invited_by
+group_entity | group_entity_invited_unlinked | CHECK (((state <> 'invited'::text) OR (entity_org IS NULL)))
+group_entity | group_entity_inviter_fkey | FOREIGN KEY (invited_by) REFERENCES app_user(user_id)
+group_entity | group_entity_label_length | CHECK (((length(btrim(label)) >= 1) AND (length(btrim(label)) <= 100)))
+group_entity | group_entity_label_not_null | NOT NULL label
+group_entity | group_entity_linked_whole | CHECK ((((entity_org IS NULL) = (linked_at IS NULL)) AND ((entity_org IS NULL) = (linked_by IS NULL)) AND ((entity_org IS NULL) = (entity_name IS NULL)) AND ((entity_org IS NULL) = (entity_currency IS NULL))))
+group_entity | group_entity_not_itself | CHECK ((entity_org IS DISTINCT FROM organisation_id))
+group_entity | group_entity_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+group_entity | group_entity_organisation_id_not_null | NOT NULL organisation_id
+group_entity | group_entity_pkey | PRIMARY KEY (organisation_id, id)
+group_entity | group_entity_reason_length | CHECK (((length(btrim(ended_reason)) >= 1) AND (length(btrim(ended_reason)) <= 500)))
+group_entity | group_entity_state_known | CHECK ((state = ANY (ARRAY['invited'::text, 'active'::text, 'ended'::text])))
+group_entity | group_entity_state_not_null | NOT NULL state
+group_entity | group_entity_version_not_null | NOT NULL version
+group_entity | group_entity_version_positive | CHECK ((version >= 1))
+group_entity | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+group_invitation | group_invitation_24_hours | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '24:00:00'::interval))))
+group_invitation | group_invitation_code_hash_not_null | NOT NULL code_hash
+group_invitation | group_invitation_code_key | UNIQUE (code_hash)
+group_invitation | group_invitation_consumed_whole | CHECK ((((state = 'consumed'::text) = (consumed_org IS NOT NULL)) AND ((consumed_org IS NULL) = (consumed_at IS NULL))))
+group_invitation | group_invitation_created_at_not_null | NOT NULL created_at
+group_invitation | group_invitation_created_by_not_null | NOT NULL created_by
+group_invitation | group_invitation_expires_at_not_null | NOT NULL expires_at
+group_invitation | group_invitation_hash_length | CHECK ((length(code_hash) = 32))
+group_invitation | group_invitation_id_not_null | NOT NULL id
+group_invitation | group_invitation_kind_known | CHECK ((kind = ANY (ARRAY['group'::text, 'firm'::text])))
+group_invitation | group_invitation_kind_not_null | NOT NULL kind
+group_invitation | group_invitation_parent_org_not_null | NOT NULL parent_org
+group_invitation | group_invitation_parent_row_not_null | NOT NULL parent_row
+group_invitation | group_invitation_pkey | PRIMARY KEY (id)
+group_invitation | group_invitation_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'consumed'::text, 'withdrawn'::text])))
+group_invitation | group_invitation_state_not_null | NOT NULL state
+group_invitation | group_invitation_user_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+group_membership | group_membership_accepted_at_not_null | NOT NULL accepted_at
+group_membership | group_membership_accepted_by_not_null | NOT NULL accepted_by
+group_membership | group_membership_acceptor_fkey | FOREIGN KEY (accepted_by) REFERENCES app_user(user_id)
+group_membership | group_membership_ended_whole | CHECK ((((state = 'ended'::text) = (ended_at IS NOT NULL)) AND ((state = 'ended'::text) = (ended_by IS NOT NULL)) AND ((state = 'ended'::text) = (ended_reason IS NOT NULL))))
+group_membership | group_membership_id_not_null | NOT NULL id
+group_membership | group_membership_not_itself | CHECK ((parent_org <> organisation_id))
+group_membership | group_membership_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+group_membership | group_membership_organisation_id_not_null | NOT NULL organisation_id
+group_membership | group_membership_parent_name_not_null | NOT NULL parent_name
+group_membership | group_membership_parent_org_not_null | NOT NULL parent_org
+group_membership | group_membership_parent_row_not_null | NOT NULL parent_row
+group_membership | group_membership_pkey | PRIMARY KEY (organisation_id, id)
+group_membership | group_membership_reason_length | CHECK (((length(btrim(ended_reason)) >= 1) AND (length(btrim(ended_reason)) <= 500)))
+group_membership | group_membership_scopes_known | CHECK (((scopes <@ ARRAY['figures'::text, 'intercompany'::text]) AND (cardinality(scopes) >= 1)))
+group_membership | group_membership_scopes_not_null | NOT NULL scopes
+group_membership | group_membership_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'ended'::text])))
+group_membership | group_membership_state_not_null | NOT NULL state
+group_membership | group_membership_version_not_null | NOT NULL version
+group_membership | group_membership_version_positive | CHECK ((version >= 1))
+group_membership | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gst_registration | gst_registration_accounting_basis_not_null | NOT NULL accounting_basis
 gst_registration | gst_registration_basis_known | CHECK ((accounting_basis = 'invoice'::text))
 gst_registration | gst_registration_dates | CHECK ((deregistered_from > registered_from))
@@ -9670,6 +9766,13 @@ CREATE UNIQUE INDEX fixed_asset_source_pkey ON fyniq.fixed_asset_source USING bt
 CREATE UNIQUE INDEX fx_feed_rate_pkey ON fyniq.fx_feed_rate USING btree (base_currency, currency, on_date)
 CREATE UNIQUE INDEX fx_rate_day_current ON fyniq.fx_rate USING btree (organisation_id, currency, on_date) WHERE ((kind = 'day'::text) AND (withdrawn_at IS NULL))
 CREATE UNIQUE INDEX fx_rate_pkey ON fyniq.fx_rate USING btree (organisation_id, id)
+CREATE UNIQUE INDEX group_entity_one_live ON fyniq.group_entity USING btree (organisation_id, entity_org) WHERE (state = 'active'::text)
+CREATE UNIQUE INDEX group_entity_pkey ON fyniq.group_entity USING btree (organisation_id, id)
+CREATE UNIQUE INDEX group_invitation_code_key ON fyniq.group_invitation USING btree (code_hash)
+CREATE UNIQUE INDEX group_invitation_one_open ON fyniq.group_invitation USING btree (parent_row) WHERE (state = 'open'::text)
+CREATE UNIQUE INDEX group_invitation_pkey ON fyniq.group_invitation USING btree (id)
+CREATE UNIQUE INDEX group_membership_one_live ON fyniq.group_membership USING btree (organisation_id) WHERE (state = 'active'::text)
+CREATE UNIQUE INDEX group_membership_pkey ON fyniq.group_membership USING btree (organisation_id, id)
 CREATE UNIQUE INDEX gst_registration_pkey ON fyniq.gst_registration USING btree (organisation_id, id)
 CREATE UNIQUE INDEX heartbeat_pkey ON fyniq.heartbeat USING btree (name)
 CREATE UNIQUE INDEX holding_movement_issue_once ON fyniq.holding_movement USING btree (organisation_id, share_issue_id)
@@ -10215,6 +10318,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.email_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('evidence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_asset_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'asset_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_entity DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_entity', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.group_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('group_membership', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.integration_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('integration_task', 'id')
@@ -10514,6 +10619,10 @@ CREATE TRIGGER fx_feed_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.fx_feed_r
 CREATE TRIGGER fx_feed_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_feed_rate FOR EACH STATEMENT EXECUTE FUNCTION fx_feed_rate_immutable()
 CREATE TRIGGER fx_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.fx_rate FOR EACH ROW EXECUTE FUNCTION fx_rate_guard()
 CREATE TRIGGER fx_rate_no_truncate BEFORE TRUNCATE ON fyniq.fx_rate FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER group_entity_guard BEFORE DELETE OR UPDATE ON fyniq.group_entity FOR EACH ROW EXECUTE FUNCTION group_row_guard()
+CREATE TRIGGER group_entity_no_truncate BEFORE TRUNCATE ON fyniq.group_entity FOR EACH STATEMENT EXECUTE FUNCTION group_row_guard()
+CREATE TRIGGER group_membership_guard BEFORE DELETE OR UPDATE ON fyniq.group_membership FOR EACH ROW EXECUTE FUNCTION group_row_guard()
+CREATE TRIGGER group_membership_no_truncate BEFORE TRUNCATE ON fyniq.group_membership FOR EACH STATEMENT EXECUTE FUNCTION group_row_guard()
 CREATE TRIGGER gst_forecast_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION gst_forecast_guard()
 CREATE TRIGGER holding_movement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.holding_movement FOR EACH ROW EXECUTE FUNCTION holding_movement_guard()
 CREATE TRIGGER holding_movement_no_truncate BEFORE TRUNCATE ON fyniq.holding_movement FOR EACH STATEMENT EXECUTE FUNCTION holding_movement_guard()
@@ -10997,6 +11106,8 @@ equity_step | tenant_isolation | * | (organisation_id = current_org()) | (organi
 evidence | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fixed_asset_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 fx_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+group_entity | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+group_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 gst_registration | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -11291,6 +11402,9 @@ evidence | enabled | forced
 fixed_asset_source | enabled | forced
 fx_feed_rate | disabled | not forced
 fx_rate | enabled | forced
+group_entity | enabled | forced
+group_invitation | disabled | not forced
+group_membership | enabled | forced
 gst_registration | enabled | forced
 heartbeat | disabled | not forced
 holding_movement | enabled | forced
@@ -11492,6 +11606,7 @@ webhook_endpoint | enabled | forced
 withholding_decision | enabled | forced
 
 ## functions
+accept_group_invitation(p_hash bytea, p_user uuid, p_at timestamp with time zone, OUT out_parent_org uuid, OUT out_parent_name text, OUT out_parent_row uuid, OUT out_membership uuid, OUT out_entity_name text, OUT out_entity_currency text) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e7f18e029e970082c323752424fe2e46
 accept_member_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone, OUT organisation_id uuid, OUT invitation_id uuid, OUT user_id uuid, OUT new_user boolean, OUT membership_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0a7ef4066d7183445a4c9e1fb7bd9ff0
 accept_super_admin_invitation(p_hash bytea, p_display_name text, p_issuer text, p_subject text, p_now timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 4faeccc286a9ab13de1e09c0b43816ef
 access_review_attestation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | bc80e0cced0dce827dfb83c2589ec831
@@ -11672,6 +11787,7 @@ email_message_guard() → trigger | security invoker | v | search_path=pg_catalo
 email_message_worker_purposes() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b6a284761fd3d84057f1716d568cfe8c
 email_sender_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 08f185782be71d4ec32e6b14d2daf500
 email_suppression_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 03e389c71cad64117c3be6fa82077158
+end_group_link(p_user uuid, p_other uuid, p_reason text, p_at timestamp with time zone, OUT out_role text, OUT out_entity_row uuid, OUT out_parent_row uuid, OUT out_membership uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 79ad2ac1bd6c25c5f8aa2952e30550fb
 end_session(p_hash bytea, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a61ce7a9958c9572e2522c12f9abb45a
 end_user_session(p_user uuid, p_hash bytea, p_now timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b349d69ee0308bbba7c1aca8c62af95f
 end_user_sessions(p_user uuid, p_keep_issuer text, p_keep_subject text, p_removed_subjects text[], p_now timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | e53e19f9fb118e4abd03ef536d8ce083
@@ -11690,6 +11806,12 @@ forecast_guard() → trigger | security invoker | v | search_path=pg_catalog, fy
 forecast_keys(o jsonb, allowed text[], required text[]) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | bf45b35efa4aff0fba5fbce55d7c9b5e
 fx_feed_rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 849c4b9702a2ace8fe0e241dba3da8ef
 fx_rate_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df1d5890f30041246e4b0ce50b864488
+group_caller_is_owner(p_user uuid, p_at timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 79bec6543c8a36fda80eafc7eacaf77a
+group_entity_figures(p_entity uuid, p_through date) → TABLE(account_code text, account_name text, account_type text, base_currency text, month date, net_base numeric) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a8f8a2d6bfdc257e88dd65d67097e512
+group_entity_periods(p_entity uuid, p_through date) → TABLE(period_month date, period_status text, ledger_revision bigint) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1a9a12c1ed90c1bd050662cfe1c20c85
+group_link_is_live(p_parent uuid, p_entity uuid, p_scope text) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b964524d048799a5ffd513f934e2a3bb
+group_organisation_is_ordinary(p_org uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 5a0f9851caaefdaeab77bb8c5564b426
+group_row_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5113872096fef321d09088250930b6b6
 gst_forecast_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4106a7d94950228ba1d88c55435a3672
 hold_covers_entry(p_org uuid, p_entry uuid, p_posting_date date, p_source_id text) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | a320175c85df7619139d5866c9ca547b
 hold_covers_event(p_org uuid, p_object_id uuid, p_occurred timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | bc7e2246a9c323a781f944e2fed3c772
@@ -11886,6 +12008,7 @@ recovery_cooling_off(p_user uuid, p_now timestamp with time zone, p_default inte
 recurring_bill_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78176a4c51f0d011b1ad10b5635a8e7
 recurring_invoice_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2276687a770939a7a49195de610ec237
 recurring_journal_version_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4998ee7053cefac747e643b32d1a0311
+register_group_invitation(p_row uuid, p_hash bytea, p_expires timestamp with time zone, p_user uuid, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | ac36f8e0b117267488d86b485c3c47b3
 register_private_endpoint(p_by uuid, p_change uuid, p_id uuid, p_version integer, p_address text, p_port integer, p_pin text, p_service text, p_serves uuid, p_credential uuid, p_retired boolean, p_reason text, p_at timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 6f97f5b6914a8244dc0db0544427c701
 release_join_domain(p_org uuid, p_domain text) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2eaf866e51b2dbac145aa151e2ef88e9
 remittance_allowed(p_payment uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 71486c98f030e272cb2b831b924e47d1
@@ -11990,6 +12113,7 @@ webauthn_credential_revoke(p_user uuid, p_credential uuid, p_now timestamp with 
 webauthn_credentials(p_user uuid, p_all boolean) → SETOF webauthn_credential | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1b6421434f028a41ac3647af4f1fd4f1
 webhook_attempt_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8996010f5dadd9cd5c9a25c56c2cae2c
 webhook_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9f8909a9a50e43e3ac6c780584b2caf
+withdraw_group_invitation(p_row uuid, p_user uuid, p_reason text, p_at timestamp with time zone) → boolean | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f0e84873780cddb053c11d29cb6a0c25
 withdraw_installation_announcement(p_by uuid, p_id uuid, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | caf961eaa1cce1a0fac2670193fc940f
 withholding_decision_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1b6bc116037949c933d0c5d75c0da1f0
 write_off_with_relief_stays() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | df16e7bcb4168d10edab98b3cf535795

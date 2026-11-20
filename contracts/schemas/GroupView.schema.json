@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entities": {
+      "description": "As a parent, every entity invited, oldest first, with its state.",
+      "items": {
+        "$ref": "GroupEntityItem.schema.json"
+      },
+      "type": "array"
+    },
+    "memberships": {
+      "description": "As an entity, this organisation's consent to the group, the live one and the ended ones, oldest first.",
+      "items": {
+        "$ref": "GroupMembershipItem.schema.json"
+      },
+      "type": "array"
+    },
+    "role": {
+      "description": "parent: this organisation has invited or holds entities and consolidates them; entity: it belongs to another's group; none: neither.",
+      "enum": [
+        "none",
+        "parent",
+        "entity"
+      ],
+      "examples": [
+        "parent"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "entities",
+    "memberships"
+  ],
+  "title": "GroupView",
+  "type": "object"
+}

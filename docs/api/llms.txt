@@ -584,6 +584,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/fx/rates/{rate_id}` (getFxRate): Get an exchange rate
 - `POST /v1/fx/rates/{rate_id}/withdraw` (withdrawFxRate): Withdraw an exchange rate
 - `POST /v1/fx/rates:bulk` (bulkCreateFxRates): Enter up to 250 exchange rates
+- `GET /v1/group` (getEntityGroup): Read this organisation's place in a group
+- `POST /v1/group/accept` (acceptGroupInvitation): Accept an invitation into a group, as the entity's Owner
+- `POST /v1/group/end` (endGroupLink): End a link of the group, as either Owner
+- `POST /v1/group/entities` (inviteGroupEntity): Invite an organisation to be an entity of this group
+- `POST /v1/group/entities/{entity_id}/withdraw` (withdrawGroupInvitation): Withdraw an invitation nobody accepted
 - `GET /v1/gst-forecasts` (listGSTForecasts): List the GST forecasts
 - `POST /v1/gst-forecasts` (createGSTForecast): Draft a GST forecast
 - `GET /v1/gst-forecasts/{forecast_id}` (getGSTForecast): Get a GST forecast
