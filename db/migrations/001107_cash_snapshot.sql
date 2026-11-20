@@ -51,8 +51,3 @@ REVOKE ALL ON fyniq.cash_snapshot FROM PUBLIC;
 GRANT SELECT ON fyniq.cash_snapshot TO fyniq_api, fyniq_worker, fyniq_readonly;
 -- Only the worker takes a snapshot; nobody changes one.
 GRANT INSERT (week_of, taken_on, currency, ledger_revision, projection, taken_at) ON fyniq.cash_snapshot TO fyniq_worker;
-
--- +goose Down
--- squawk-ignore ban-drop-table
-DROP TABLE fyniq.cash_snapshot;
-DROP FUNCTION fyniq.cash_snapshot_guard();

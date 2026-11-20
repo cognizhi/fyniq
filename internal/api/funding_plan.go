@@ -88,6 +88,10 @@ func registerFundingPlan(a *API) {
 			return nil, err
 		}
 		pr, _ := authn.From(ctx)
+		// It shows a forecast's funding rows beside every holder's ownership, so it needs the right to read the forecast as well as the whole cap table.
+		if !authz.Decide(authz.GetForecast, pr.Roles, pr.Class == authn.ClassAgent).Allowed {
+			return nil, problem(CodeForbidden, "Your roles may read the cap table but not forecasts, and the funding plan shows both.", "Ask the Owner, the Controller or the Accountant for the funding plan")
+		}
 		var out FundingPlan
 		err = a.deps.Store.Do(ctx, pr.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			doc, err := u.Documents().Get(ctx, id)

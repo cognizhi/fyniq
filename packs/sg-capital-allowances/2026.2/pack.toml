@@ -5,7 +5,7 @@ id = "sg-capital-allowances@2026.2"
 title = "Singapore capital allowances: sections 19, 19A(1), 19A(2) and 19A(10A), and the balancing allowance and charge on a sale"
 effective_from = "2026-01-01"
 review_date = "2027-03-31"
-verifier = "Claude Code against IRAS's page Capital Allowances, as its text came back on 20 Nov 2026 and again on 21 Nov 2026 (p2-reporting-planning); the tax agent's review is pending (FR-UX-41)"
+verifier = "Claude Code against IRAS's page Capital Allowances, as its text came back on 20 Nov 2026 and was fetched again for this version (p2-reporting-planning); the tax agent's review is pending (FR-UX-41)"
 conditions = "an asset that qualifies for capital allowances (owned by the company and used for its trade or business), acquired in a basis period relating to YA 2023 or later and bought for cash, sold whole or kept; hire purchase (its principal payments are not recorded), the two-year write-off of section 19A(1E) (acquisitions of the basis periods of YA 2021, 2022 and 2024 only), deferred claims, tax written down value brought forward into a one-year write-off, a part disposal, the Section 24 election and a conversion to trading stock are not worked by this version [accountant to confirm]; that an asset is a computer or prescribed automation equipment is the company's election for it [accountant to confirm]; whether the year of a sale takes an annual allowance as well as the balancing allowance or charge is not on IRAS's page, and none is given [accountant to confirm]"
 
 [[sources]]

@@ -4,7 +4,7 @@ type: task
 title: Record a filing, or that it is not required
 summary: Record an item of the statutory calendar as filed with its acknowledgement, as not required with the reason, or withdraw a wrong record
 sources:
-  - docs/user-guide/statutory-calendar.md sha256:60fbe0b1e73dfce8632712b8f3ee253f330868a67c9946bbe49804b1ce7b6fbe
+  - docs/user-guide/statutory-calendar.md sha256:d14144bf358995450ff80786ea612800c717cdbaa02f1b3113470c5f4d26c037
 data_class: general
 taint: trusted
 status: draft

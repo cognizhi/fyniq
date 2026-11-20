@@ -2318,7 +2318,7 @@ var Policies = index(ListWebhookEndpoints, GetWebhookEndpoint, CreateWebhookEndp
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
 	RemoveBrandFile, SetBrandAccent, ListEquityTransactions, GetEquityTransaction, CreateEquityTransaction, ReplaceEquityTransaction,
 	RequestEquityTransactionApproval, RecordEquityStep, RecordEquityTransactionEffective, AddEquityTransactionEvidence, ListEquityTransactionEvidence,
-	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence, GetCapTable, ExportCapTable, GetMyHolding, ListInstruments, GetInstrument,
+	GetEquityTransactionEvidence, RemoveEquityTransactionEvidence, GetCapTable, GetExitWaterfall, GetForecastFundingPlan, ExportCapTable, GetMyHolding, ListInstruments, GetInstrument,
 	CreateInstrument, ReplaceInstrument, RequestInstrumentApproval, AddInstrumentEvidence, ListInstrumentEvidence, GetInstrumentEvidence,
 	RemoveInstrumentEvidence, ListInstrumentTemplates, DraftInstrumentTemplateEnablement, RequestInstrumentTemplateApproval,
 	AddInstrumentTemplateEvidence, ListInstrumentTemplateEvidence, GetInstrumentTemplateEvidence, RemoveInstrumentTemplateEvidence,

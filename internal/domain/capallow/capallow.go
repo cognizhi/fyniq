@@ -26,6 +26,7 @@ const (
 	ReasonOverCap    = "over_cap"    // elected under section 19A(10A) but above S$5,000, or past the S$30,000 of the year
 	ReasonBadLife    = "bad_life"    // the working life elected is not one the pack allows for the prescribed life
 	ReasonNotSGD     = "not_sgd"     // the base currency is not Singapore dollars, the pack's currency
+	ReasonNotInPack  = "not_in_pack" // the method elected is not one the pack version in force works (section 19A(2) before sg-capital-allowances@2026.2)
 )
 
 // Asset is one registered asset as the schedule reads it. Cost is the cost it was bought for, in the base currency.
@@ -120,7 +121,7 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 		case base.Code != "SGD":
 			apart(ReasonNotSGD)
 			continue
-		case a.Disposed && a.Disposal == nil:
+		case a.Disposed && (a.Disposal == nil || !pack.HoldsBalancing(v)): // a version that works no balancing allowance lists a sold asset apart
 			apart(ReasonDisposed)
 			continue
 		case a.Election == nil:
@@ -142,6 +143,10 @@ func Work(v pack.Version, cal period.Calendar, base money.Currency, ya int, asse
 		}
 		if a.Election.Method == asset.TaxS19A10A && minor(a.Cost) > rules.LowValueMax {
 			apart(ReasonOverCap)
+			continue
+		}
+		if a.Election.Method == asset.TaxS19A2 && rules.S19A2Years != 1 {
+			apart(ReasonNotInPack)
 			continue
 		}
 		series, err := pack.CapitalAllowanceSeries(v, a.Election.Method, years, minor(a.Cost), first)
