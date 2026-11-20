@@ -187,6 +187,9 @@ type Sessions interface {
 	SignInCounts(ctx context.Context, since time.Time) (map[string]int, error)
 	// RecordSessionEmail keeps the verified email the provider gave a live session at sign-in, for joining by domain.
 	RecordSessionEmail(ctx context.Context, tokenHash []byte, email string) error
+	// EndSessionsOfUser ends every live session of a user and returns how many it ended: Nemura says the person was signed out of, or removed from, it (FR-PPL-18). The caller checks that the user is mapped to
+	// a person of the link first; sessions are the user's own, not an organisation's.
+	EndSessionsOfUser(ctx context.Context, userID uuid.UUID, now time.Time) (int, error)
 	// Identities are a user's sign-in identities: the one they joined or set up with first, then those linked, in order.
 	Identities(ctx context.Context, userID uuid.UUID) ([]Identity, error)
 }

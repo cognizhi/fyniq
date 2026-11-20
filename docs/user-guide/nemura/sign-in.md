@@ -47,7 +47,7 @@ When your company links Nemura to Fyniq and you hold a role in Fyniq's finance w
 ## Signing out
 
 Select **Sign out** at the top of any page. It ends the session on this device only; other devices stay
-signed in until you sign out on them.
+signed in until you sign out on them. When your company links Nemura to Fyniq and you are mapped to a person there, signing out here also signs you out of Fyniq on every device, and being removed from Nemura does the same, within a minute or so. Fyniq ends nothing for a person nobody mapped, and you stay a member there with your roles and passkeys. Being removed from Fyniq ends your Nemura sessions in the same way; signing out of Fyniq on its own does not yet.
 
 ## Common problems
 

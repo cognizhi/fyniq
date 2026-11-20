@@ -831,3 +831,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai.proposals: recurring journal and budget draft sections
 
 ## [2026-11-20] compile | ai.proposals: bank rule section
+
+## [2026-11-20] compile | nemura/sign-in.md -> kb (a Nemura sign-out or removal ends the mapped person's Fyniq sessions)

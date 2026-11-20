@@ -148,6 +148,8 @@ type Deps struct {
 	Link     LinkInbox
 	// LinkHolds answers Fyniq's ask at release; nil: the deployment has none.
 	LinkHolds LinkHolds
+	// LinkSync reads the link's event log by identity for Fyniq's read-only client; nil: the deployment has none.
+	LinkSync LinkSyncs
 	// LinkAdmin is how the people team proposes and approves the link; nil: the deployment has none.
 	LinkAdmin LinkAdmin
 	// RunLink is the pay run's door to the link: its approval envelope, the approval with proof and what became of the submission; nil: the deployment has none.
@@ -201,6 +203,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerRunLink()
 	a.registerLinkOps()
 	a.registerLinkHold()
+	a.registerLinkSync()
 	a.registerAssistant()
 	a.registerSignIn()
 	return a

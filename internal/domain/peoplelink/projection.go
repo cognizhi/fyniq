@@ -13,7 +13,17 @@ const (
 	TypeTaxHoldChanged    = "people.tax_hold.changed"
 	// TypeAccessChanged is what Nemura says of a sign-in identity (design D7; one sign-in across the apps): an issuer, a subject (never an email) and two yes or no answers. A door and a hint, never a grant.
 	TypeAccessChanged = "identity.access.changed"
+	// TypeSessionRevoked is what Nemura says when a person was signed out of, or removed from, Nemura (NM-INT-12, FR-PPL-18): Fyniq ends that person's sessions when they are mapped to a person of the link.
+	TypeSessionRevoked = "identity.session.revoked"
 )
+
+// SessionRevoked is the payload of identity.session.revoked from Nemura, and the whole of it: the identity by issuer and subject (never an email) and why. Its object version is 1: it is not version-ordered,
+// and a repeat of the same event ID does nothing.
+type SessionRevoked struct {
+	Issuer  string `json:"issuer"`
+	Subject string `json:"subject"`
+	Reason  string `json:"reason"` // signed_out, or removed (deactivated in Nemura)
+}
 
 // AccessChanged is the payload of identity.access.changed from Nemura, and the whole of it. PeopleAccess says the identity is an active member of the organisation in Nemura; PayrollApprover that it holds a
 // role that approves a pay run there, so Fyniq can ask the person to enrol the passkey the approval is signed with (PPL-19). The object version is the sending event's sequence.

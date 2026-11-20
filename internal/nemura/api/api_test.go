@@ -550,6 +550,15 @@ func (f fakeLinkAuth) Events(context.Context, string) (linkauth.Caller, error) {
 func (f fakeLinkAuth) Ask(context.Context, string) (linkauth.Caller, error) {
 	return linkauth.Caller{}, f.err
 }
+func (f fakeLinkAuth) Sync(context.Context, string) (linkauth.Caller, error) {
+	return linkauth.Caller{}, f.err
+}
+
+type fakeLinkSync struct{ err error }
+
+func (f fakeLinkSync) Sync(context.Context, linkauth.Caller, int64, int) (LinkSync, error) {
+	return LinkSync{Epoch: 1, HighestSequence: 3, Events: []LinkSyncEvent{{Sequence: 3, EventID: uuid.NewString(), Type: "people.tax_hold.changed", ObjectType: "tax_hold", ObjectID: uuid.NewString(), ObjectVersion: 1, State: "sent"}}}, f.err
+}
 
 type fakeLinkHolds struct{ err error }
 
@@ -601,7 +610,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }

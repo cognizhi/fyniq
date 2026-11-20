@@ -225,9 +225,9 @@ func PublicJWK(raw json.RawMessage, alg string) (json.RawMessage, error) {
 	return pub.MarshalJSON()
 }
 
-// LinkScopes are the scopes of the one client Nemura calls Fyniq with (PRD-002 Appendix E): the link registers it with these and no
+// LinkScopes are the scopes of the one client Nemura calls Fyniq with (PRD-002 Appendix E; identity.sessions.write is the owner's decision of 21 Nov 2026, for ending the sessions of a person mapped to Nemura's and no one else's): the link registers it with these and no
 // others, and no personal access token, integration client, agent-class client or MCP token can hold one (p1-payroll-link design D1).
-var LinkScopes = []string{"payroll.journal.submit", "payroll.payments.submit", "people.availability.write", "people.holds.read", "people.holds.write",
+var LinkScopes = []string{"identity.sessions.write", "payroll.journal.submit", "payroll.payments.submit", "people.availability.write", "people.holds.read", "people.holds.write",
 	"people.projection.write"}
 
 // LinkScope reports whether s is one of the link's scopes.
