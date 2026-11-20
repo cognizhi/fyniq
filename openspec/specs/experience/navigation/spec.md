@@ -675,6 +675,10 @@ Source: PRD-001 §7.2 · Priority C · Phase P3
 - **WHEN** they choose "all entities"
 - **THEN** the view covers all entities
 
+#### Scenario: Groups in the switcher (rev 0.622)
+- **WHEN** a person who is a member of a group's entities opens the organisation switcher
+- **THEN** the entities are grouped and an All entities row opens the consolidated view for an Owner, Controller, Accountant or Auditor of the parent
+
 ### Requirement: FR-UX-19 Live updates
 Open pages SHALL be notified of changes to the records and lists they show through a change feed, and conflicting edits SHALL be caught by ETag / `If-Match` (FR-INT-09).
 

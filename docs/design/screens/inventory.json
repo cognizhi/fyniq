@@ -3146,18 +3146,24 @@
    "mode": "expert",
    "requirements": [
     "FR-RPT-12",
-    "FR-ENT-01",
     "FR-ENT-02",
+    "FR-ENT-05",
+    "FR-ENT-06",
+    "FR-GL-13",
     "FR-UX-18"
    ],
    "purpose": "Report across several legal entities with eliminations and currency translation.",
    "content": [
-    "Entity columns, eliminations column, consolidated total",
-    "Currency translation rates and differences",
-    "Intercompany balances that do not agree flagged"
+    "Entity columns, eliminations column, consolidated total (a frozen run, with its ledger revisions)",
+    "Translation rates (closing and average) and the translation reserve",
+    "Intercompany balances that do not agree flagged, with the larger side and the difference; nothing is plugged",
+    "Provisional banner while an entity's period is not closed; link ended banner",
+    "Intercompany transactions and offers"
    ],
    "states": [
     "intercompany mismatch",
+    "provisional",
+    "link ended",
     "single entity (not applicable)"
    ]
   },
@@ -3177,17 +3183,20 @@
    "mode": "expert",
    "requirements": [
     "FR-ENT-03",
+    "FR-ENT-07",
     "FR-UX-18"
    ],
    "purpose": "Let an accounting firm see all client organisations and what needs attention in each.",
    "content": [
-    "Client list: organisation, books health, close status, filings due (GST F5, Form C-S, ECI), open queries",
-    "Per-client access scope and expiry",
-    "Switch into a client organisation"
+    "Client list: organisation, oldest open period, last closed month, checks failing, approvals waiting, next statutory deadline (counts, no money)",
+    "Per-client access: the caller's role there and its expiry",
+    "Switch into a client organisation (audited in the client)",
+    "Firm mode and client invitations (the firm's Owner)"
    ],
    "states": [
     "no clients",
-    "access expired"
+    "access expired",
+    "count not allowed for the role"
    ]
   },
   {
@@ -5771,11 +5780,11 @@
   {
    "id": "entity-setup",
    "file": "EntitySetup",
-   "title": "Add a legal entity",
+   "title": "Entities of the group",
    "canvas": "workflows",
    "module": "Settings",
-   "route": "/settings/entities/new",
-   "kind": "wizard",
+   "route": "/settings/entities",
+   "kind": "page",
    "phase": "P3",
    "roles": [
     "Owner",
@@ -5784,16 +5793,23 @@
    "mode": "expert",
    "requirements": [
     "FR-ENT-01",
-    "FR-ENT-02"
+    "FR-ENT-04",
+    "FR-ENT-05"
    ],
-   "purpose": "Add another legal entity to the organisation with its own base currency, account mapping, tax packs and periods.",
+   "purpose": "Link organisations in a group by the consent of both Owners: invite an entity, accept an invitation, see what the group may read, map accounts and end a link (an entity is an organisation, rev 0.622).",
    "content": [
-    "Wizard: entity name and UEN, country, base currency, chart of accounts mapping to the group, tax packs, financial periods",
-    "Intercompany settings",
-    "Review and create with dual approval"
+    "The group: parent, entities with their base currency, state (invited, linked, ended) and when",
+    "Invite an entity: a one-time code for the entity's Owner, valid 24 hours",
+    "Accept an invitation (in the entity's organisation): exactly what the group may read and may not, then step-up",
+    "Account mapping to the parent's chart with counterparty entity, suggested by equal code",
+    "End the link with a reason, from either side"
    ],
    "states": [
-    "draft"
+    "no group yet",
+    "invited",
+    "linked",
+    "ended",
+    "code expired"
    ]
   },
   {

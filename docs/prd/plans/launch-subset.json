@@ -200,6 +200,8 @@
     "access/roles-and-segregation: Permission matrix: Auditor engagement: open, confirm and close",
     "access/roles-and-segregation: Permission matrix: Auditor requests and samples: ask, answer, draw",
     "access/roles-and-segregation: Permission matrix: Tasks made by integrations: an API client's own tasks",
+    "access/roles-and-segregation: Permission matrix: Entity groups and consolidation",
+    "access/roles-and-segregation: Permission matrix: Accountant firm and client links",
     "access/roles-and-segregation: Super admin outside the permission matrix",
     "access/roles-and-segregation: Company secretary in the permission matrix",
     "FR-ADM-01",
