@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
 	"os"
 	"slices"
 	"strings"
