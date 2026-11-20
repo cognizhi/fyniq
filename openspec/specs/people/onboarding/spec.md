@@ -28,6 +28,11 @@ Source: PRD-002 §14 · Priority M · Phase P2
 - **WHEN** the person's KETs letter is issued by whoever signs it
 - **THEN** the task is marked done in the same transaction, once, with an audit event, and a person cannot mark it done by hand but may skip it when it does not apply
 
+#### Scenario: A plan started late closes what already happened (rev 0.77)
+- **GIVEN** a person who was invited to Fyniq before their plan started
+- **WHEN** the plan is started from a template with an invitation task
+- **THEN** that task is closed at once by its own check with a note that says so, and a task whose flow did not happen stays open
+
 ### Requirement: NM-ONB-02 Accounts
 Every joiner who may claim expenses SHALL be invited to Fyniq with the Employee role only, by a person with the right to invite, from a task raised when the person is added (until onboarding plans exist) or listed when the link starts; Nemura SHALL never grant Fyniq roles itself.
 

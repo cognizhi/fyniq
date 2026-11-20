@@ -37,3 +37,10 @@ Outside needs: none. Job boards (MyCareersFuture) are posted to by a person (NM-
 C/A for the Owner); approval stays with the Owner, and in founder mode the same Owner may ask and approve (the one exception to NM-ROLE-05, for requisitions only;
 the audit trail names the same person twice). Every member reads company and team goals; a personal goal stays private to the person, their line manager and the people team
 (Appendix B's row Performance gives the Employee "O; V (company and team goals)"). PRD-002 revision 0.69.
+
+## D9 The offer letter, the Recruiter's list and the late plan (rev 0.77, owner-away decisions, owner to confirm)
+- **Offer letter.** Options: (a) a candidate-keyed letter flow before there is a person; (b) the letter made for the person at the hire. **Chosen (b)**, the owner's: one letter flow, no second identity of a letter. (a) can follow.
+- **Recruiter.** Options: (a) a new Recruiter right over all proposals (wider); (b) a list filtered to the two hiring task types with the catalogue's approver roles deciding. **Chosen (b)**: no wider than Hiring: create.
+- **Title that reads as an instruction.** Options: (a) a longer deny-list only; (b) a word cap (six) plus a short list of command words. **Chosen (b)**; common words such as Assistant and System stay allowed.
+- **Consent on a hired candidate.** Refused (the record is final since migration 000072); not a database change.
+- **Late plan.** A flow that happened before the plan started closes its task at once by the same flow check.
