@@ -13,6 +13,7 @@ import { Icon, problemOf } from "../../ui";
 import { IncidentsTab } from "./Incidents";
 import { HeartbeatDrillsTab } from "./HeartbeatDrills";
 import { RestoreDrillsTab } from "./RestoreDrills";
+import { SecurityAssessmentsTab } from "./SecurityAssessments";
 import { useHingeSplit } from "../../shell/hinge";
 
 type Control = components["schemas"]["Control"];
@@ -84,7 +85,7 @@ export function Controls() {
   const [framework, setFramework] = useState("");
   const [status, setStatus] = useState<Status | "">("");
   const [open, setOpen] = useState<string | null>(null);
-  const [tab, setTab] = useState<"controls" | "incidents" | "drills" | "heartbeat">("controls");
+  const [tab, setTab] = useState<"controls" | "incidents" | "drills" | "heartbeat" | "assessments">("controls");
   const all = list.data?.items ?? [];
   const shown = all
     .filter((c) => (!framework || c.frameworks.includes(framework as Control["frameworks"][number])) && (!status || c.status === status))
@@ -107,7 +108,7 @@ export function Controls() {
           </p>
         </div>
       </div>
-      <div className="fy-tabs" role="tablist" aria-label="Controls, incidents and drills">
+      <div className="fy-tabs" role="tablist" aria-label="Controls, incidents, drills and assessments">
         <button type="button" role="tab" aria-selected={tab === "controls"} onClick={() => setTab("controls")}>
           Controls
         </button>
@@ -120,10 +121,14 @@ export function Controls() {
         <button type="button" role="tab" aria-selected={tab === "heartbeat"} onClick={() => setTab("heartbeat")} title={helpText("compliance.heartbeat-drills").tooltip}>
           {helpText("compliance.heartbeat-drills").label}
         </button>
+        <button type="button" role="tab" aria-selected={tab === "assessments"} onClick={() => setTab("assessments")} title={helpText("compliance.security-assessments").tooltip}>
+          {helpText("compliance.security-assessments").label}
+        </button>
       </div>
       {tab === "incidents" && <IncidentsTab />}
       {tab === "drills" && <RestoreDrillsTab />}
       {tab === "heartbeat" && <HeartbeatDrillsTab />}
+      {tab === "assessments" && <SecurityAssessmentsTab />}
       {tab === "controls" && list.isError && <Refusal problem={problemOf(list.error)} title="The controls could not be shown" />}
       {tab === "controls" && list.isPending && <p className="fy-small">Loading the controls…</p>}
       {tab === "controls" && list.data && !list.data.release && (
