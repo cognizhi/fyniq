@@ -159,6 +159,8 @@ var PlatformSchedules = []Schedule{
 	{Job: "assets.depreciation", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the saved reports that are due, each recipient's right checked again and told by a notification with no figure (FR-RPT-07).
 	// Daily at 08:30 Singapore time, after the month closes, the categories whose spend broke from their trend (FR-KPI-06).
+	// Hourly, a pending approval is reminded and, past the escalation time, escalated: it only notifies (FR-APR-08).
+	{Job: "approvals.remind", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "kpi.anomalies", Every: 24 * time.Hour, Offset: 0*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Daily at 01:00 Singapore time (17:00 UTC), the week's 13-week cash projection, kept once a week (FR-PLN-04).
 	{Job: "cash.snapshots", Every: 24 * time.Hour, Offset: 17 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},

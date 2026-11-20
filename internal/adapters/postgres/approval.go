@@ -80,7 +80,8 @@ func stepsJSON(steps []storage.ApprovalStep) ([]byte, error) {
 
 func toSignature(r sqlcdb.ApprovalSignaturesRow) storage.ApprovalSignature {
 	out := storage.ApprovalSignature{ID: r.ID, RequestID: r.RequestID, Step: int(r.Step), Signer: r.Signer, Decision: r.Decision,
-		EnvelopeHash: r.EnvelopeHash, MFAMethod: r.MfaMethod, MFAAt: r.MfaAt, SignedAt: r.SignedAt, Reason: str(r.Reason), VoidedAt: r.VoidedAt}
+		EnvelopeHash: r.EnvelopeHash, MFAMethod: r.MfaMethod, MFAAt: r.MfaAt, SignedAt: r.SignedAt, Reason: str(r.Reason), VoidedAt: r.VoidedAt,
+		OnBehalfOf: r.OnBehalfOf}
 	if r.PasskeyChallengeID != nil && r.PasskeyID != nil {
 		out.Passkey = &storage.PasskeyAssertion{ChallengeID: *r.PasskeyChallengeID, PasskeyID: *r.PasskeyID, AuthenticatorData: r.AuthenticatorData,
 			ClientData: r.ClientData, Signature: r.AssertionSignature}
@@ -200,7 +201,7 @@ func (r approvals) Sign(ctx context.Context, s storage.NewApprovalSignature) (st
 	}
 	params := sqlcdb.InsertApprovalSignatureParams{RequestID: s.RequestID, Step: int32(s.Step), // 1 to 20, checked above
 		Signer: s.Signer, Decision: s.Decision, EnvelopeHash: s.EnvelopeHash, MfaMethod: s.MFAMethod, MfaAt: s.MFAAt, SignedAt: s.SignedAt,
-		Reason: opt(s.Reason), SelectionSha256: opt(s.SelectionSHA256)}
+		Reason: opt(s.Reason), SelectionSha256: opt(s.SelectionSHA256), OnBehalfOf: s.OnBehalfOf}
 	if k := s.Passkey; k != nil {
 		params.PasskeyChallengeID, params.PasskeyID = &k.ChallengeID, &k.PasskeyID
 		params.AuthenticatorData, params.ClientData, params.AssertionSignature = k.AuthenticatorData, k.ClientData, k.Signature
@@ -218,7 +219,7 @@ func (r approvals) Sign(ctx context.Context, s storage.NewApprovalSignature) (st
 		"signature_id": {nil, sig.ID}, "step": {nil, sig.Step}, "signer": {nil, sig.Signer}, "decision": {nil, sig.Decision},
 		"envelope_hash": {nil, hex.EncodeToString(sig.EnvelopeHash)}, "mfa_method": {nil, sig.MFAMethod},
 		"mfa_at": {nil, sig.MFAAt}, "signed_at": {nil, sig.SignedAt}, "reason": {nil, nilIfEmpty(sig.Reason)}, "passkey_id": {nil, passkeyOfSignature(sig)},
-		"selection_sha256": {nil, nilIfEmpty(s.SelectionSHA256)}}); err != nil {
+		"selection_sha256": {nil, nilIfEmpty(s.SelectionSHA256)}, "on_behalf_of": {nil, s.OnBehalfOf}}); err != nil {
 		return storage.ApprovalSignature{}, err
 	}
 	return sig, nil

@@ -7521,6 +7521,39 @@
    "states": [
     "finance workspace user: back to Home"
    ]
+  },
+  {
+   "id": "approval-delegations",
+   "file": "ApprovalDelegations",
+   "title": "Delegate approvals",
+   "canvas": "workflows",
+   "module": "Inbox",
+   "route": "/delegations",
+   "kind": "list",
+   "phase": "P2",
+   "roles": [
+    "Approver",
+    "Controller",
+    "Owner",
+    "Accountant"
+   ],
+   "mode": "basic",
+   "requirements": [
+    "FR-APR-06"
+   ],
+   "purpose": "Hand your approvals to another member for some days, for example during leave, without lending any right.",
+   "content": [
+    "The delegations you made and those made to you, each with its days and whether it is in force today",
+    "Delegate my approvals: a member who holds an approval right, a first and a last day (at most 90 days) and a reason, with step-up",
+    "End now: ends it at once; what the delegate signed stays",
+    "Note: a delegation lends no right; the delegate signs as themselves and the approval says on whose behalf"
+   ],
+   "states": [
+    "empty",
+    "in force today",
+    "not today",
+    "ended"
+   ]
   }
  ]
 }

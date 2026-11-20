@@ -525,6 +525,19 @@ app_user | user_id | uuid | not null | uuidv7()
 app_user | display_name | text | not null | 
 app_user | status | text | not null | 'active'::text
 app_user | created_at | timestamp with time zone | not null | now()
+approval_delegation | organisation_id | uuid | not null | current_org()
+approval_delegation | id | uuid | not null | uuidv7()
+approval_delegation | delegator | uuid | not null | 
+approval_delegation | delegate | uuid | not null | 
+approval_delegation | starts_on | date | not null | 
+approval_delegation | ends_on | date | not null | 
+approval_delegation | reason | text | not null | 
+approval_delegation | status | text | not null | 'active'::text
+approval_delegation | ended_at | timestamp with time zone | null | 
+approval_delegation | ended_by | uuid | null | 
+approval_delegation | version | integer | not null | 1
+approval_delegation | created_by | uuid | not null | 
+approval_delegation | created_at | timestamp with time zone | not null | 
 approval_policy | organisation_id | uuid | not null | current_org()
 approval_policy | id | uuid | not null | uuidv7()
 approval_policy | object_type | text | not null | 
@@ -534,6 +547,12 @@ approval_policy | request_id | uuid | not null |
 approval_policy | created_by | uuid | not null | 
 approval_policy | created_at | timestamp with time zone | not null | 
 approval_policy | rules | jsonb | not null | '[]'::jsonb
+approval_reminder | organisation_id | uuid | not null | current_org()
+approval_reminder | id | uuid | not null | uuidv7()
+approval_reminder | request_id | uuid | not null | 
+approval_reminder | kind | text | not null | 
+approval_reminder | number | integer | not null | 
+approval_reminder | sent_at | timestamp with time zone | not null | 
 approval_request | organisation_id | uuid | not null | current_org()
 approval_request | id | uuid | not null | uuidv7()
 approval_request | object_type | text | not null | 
@@ -573,6 +592,7 @@ approval_signature | authenticator_data | bytea | null |
 approval_signature | client_data | bytea | null | 
 approval_signature | assertion_signature | bytea | null | 
 approval_signature | selection_sha256 | text | null | 
+approval_signature | on_behalf_of | uuid | null | 
 audit_boundary | organisation_id | uuid | not null | current_org()
 audit_boundary | id | uuid | not null | uuidv7()
 audit_boundary | last_seq | bigint | not null | 
@@ -4293,6 +4313,29 @@ app_user | app_user_pkey | PRIMARY KEY (user_id)
 app_user | app_user_status_known | CHECK ((status = ANY (ARRAY['active'::text, 'deactivated'::text])))
 app_user | app_user_status_not_null | NOT NULL status
 app_user | app_user_user_id_not_null | NOT NULL user_id
+approval_delegation | approval_delegation_by_delegator | CHECK ((created_by = delegator))
+approval_delegation | approval_delegation_created_at_not_null | NOT NULL created_at
+approval_delegation | approval_delegation_created_by_not_null | NOT NULL created_by
+approval_delegation | approval_delegation_days | CHECK (((ends_on >= starts_on) AND ((ends_on - starts_on) <= 90)))
+approval_delegation | approval_delegation_delegate_fkey | FOREIGN KEY (delegate) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_delegate_not_null | NOT NULL delegate
+approval_delegation | approval_delegation_delegator_fkey | FOREIGN KEY (delegator) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_delegator_not_null | NOT NULL delegator
+approval_delegation | approval_delegation_ended_by_fkey | FOREIGN KEY (ended_by) REFERENCES app_user(user_id)
+approval_delegation | approval_delegation_ended_form | CHECK (((status = 'ended'::text) = ((ended_at IS NOT NULL) AND (ended_by IS NOT NULL))))
+approval_delegation | approval_delegation_ends_on_not_null | NOT NULL ends_on
+approval_delegation | approval_delegation_id_not_null | NOT NULL id
+approval_delegation | approval_delegation_not_self | CHECK ((delegator <> delegate))
+approval_delegation | approval_delegation_organisation_id_not_null | NOT NULL organisation_id
+approval_delegation | approval_delegation_pkey | PRIMARY KEY (organisation_id, id)
+approval_delegation | approval_delegation_reason | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 300)))
+approval_delegation | approval_delegation_reason_not_null | NOT NULL reason
+approval_delegation | approval_delegation_starts_on_not_null | NOT NULL starts_on
+approval_delegation | approval_delegation_status | CHECK ((status = ANY (ARRAY['active'::text, 'ended'::text])))
+approval_delegation | approval_delegation_status_not_null | NOT NULL status
+approval_delegation | approval_delegation_version | CHECK ((version >= 1))
+approval_delegation | approval_delegation_version_not_null | NOT NULL version
+approval_delegation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
@@ -4313,6 +4356,17 @@ approval_policy | approval_policy_version_not_null | NOT NULL version
 approval_policy | approval_policy_version_once | UNIQUE (organisation_id, object_type, version)
 approval_policy | approval_policy_version_range | CHECK (((version >= 1) AND (version <= 1000000)))
 approval_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+approval_reminder | approval_reminder_id_not_null | NOT NULL id
+approval_reminder | approval_reminder_kind | CHECK ((((kind = 'reminder'::text) AND ((number >= 1) AND (number <= 3))) OR ((kind = 'escalation'::text) AND (number = 1))))
+approval_reminder | approval_reminder_kind_not_null | NOT NULL kind
+approval_reminder | approval_reminder_number_not_null | NOT NULL number
+approval_reminder | approval_reminder_once | UNIQUE (organisation_id, request_id, kind, number)
+approval_reminder | approval_reminder_organisation_id_not_null | NOT NULL organisation_id
+approval_reminder | approval_reminder_pkey | PRIMARY KEY (organisation_id, id)
+approval_reminder | approval_reminder_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
+approval_reminder | approval_reminder_request_id_not_null | NOT NULL request_id
+approval_reminder | approval_reminder_sent_at_not_null | NOT NULL sent_at
+approval_reminder | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_request | approval_request_change_not_null | NOT NULL change
 approval_request | approval_request_change_object | CHECK ((jsonb_typeof(change) = 'object'::text))
 approval_request | approval_request_decided | CHECK (((status = 'pending'::text) = (decided_at IS NULL)))
@@ -4359,6 +4413,8 @@ approval_signature | approval_signature_mfa_at_not_null | NOT NULL mfa_at
 approval_signature | approval_signature_mfa_fresh | CHECK (((mfa_at <= signed_at) AND ((signed_at - mfa_at) <= '00:05:00'::interval)))
 approval_signature | approval_signature_mfa_known | CHECK ((mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])))
 approval_signature | approval_signature_mfa_method_not_null | NOT NULL mfa_method
+approval_signature | approval_signature_on_behalf_fkey | FOREIGN KEY (on_behalf_of) REFERENCES app_user(user_id)
+approval_signature | approval_signature_on_behalf_other | CHECK (((on_behalf_of IS NULL) OR ((on_behalf_of <> signer) AND (decision = ANY (ARRAY['approve'::text, 'reject'::text])))))
 approval_signature | approval_signature_once | UNIQUE (organisation_id, request_id, signer)
 approval_signature | approval_signature_organisation_id_not_null | NOT NULL organisation_id
 approval_signature | approval_signature_passkey_shape | CHECK ((((mfa_method = 'passkey'::text) AND (passkey_challenge_id IS NOT NULL) AND (passkey_id IS NOT NULL) AND ((length(authenticator_data) >= 37) AND (length(authenticator_data) <= 2048)) AND ((length(client_data) >= 1) AND (length(client_data) <= 4096)) AND ((length(assertion_signature) >= 8) AND (length(assertion_signature) <= 2048))) OR ((mfa_method <> 'passkey'::text) AND (passkey_challenge_id IS NULL) AND (passkey_id IS NULL) AND (authenticator_data IS NULL) AND (client_data IS NULL) AND (assertion_signature IS NULL))))
@@ -9054,6 +9110,8 @@ CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_i
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
 CREATE INDEX api_client_owner ON fyniq.api_client USING btree (organisation_id, owner_id)
+CREATE INDEX approval_delegation_delegate ON fyniq.approval_delegation USING btree (organisation_id, delegate, ends_on)
+CREATE INDEX approval_delegation_delegator ON fyniq.approval_delegation USING btree (organisation_id, delegator, ends_on)
 CREATE INDEX approval_request_by_status ON fyniq.approval_request USING btree (organisation_id, status, requested_at)
 CREATE INDEX audit_event_action_idx ON fyniq.audit_event USING btree (organisation_id, action, seq)
 CREATE INDEX audit_event_actor_idx ON fyniq.audit_event USING btree (organisation_id, ((((body)::jsonb -> 'actor'::text) ->> 'id'::text)), seq)
@@ -9306,11 +9364,15 @@ CREATE UNIQUE INDEX api_client_client_id_key ON fyniq.api_client USING btree (or
 CREATE UNIQUE INDEX api_client_pkey ON fyniq.api_client USING btree (organisation_id, id)
 CREATE UNIQUE INDEX api_client_route_pkey ON fyniq.api_client_route USING btree (client_id)
 CREATE UNIQUE INDEX app_user_pkey ON fyniq.app_user USING btree (user_id)
+CREATE UNIQUE INDEX approval_delegation_pkey ON fyniq.approval_delegation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_pkey ON fyniq.approval_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_policy_request_once ON fyniq.approval_policy USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX approval_policy_version_once ON fyniq.approval_policy USING btree (organisation_id, object_type, version)
+CREATE UNIQUE INDEX approval_reminder_once ON fyniq.approval_reminder USING btree (organisation_id, request_id, kind, number)
+CREATE UNIQUE INDEX approval_reminder_pkey ON fyniq.approval_reminder USING btree (organisation_id, id)
 CREATE UNIQUE INDEX approval_request_one_pending ON fyniq.approval_request USING btree (organisation_id, object_type, object_key) WHERE (status = 'pending'::text)
 CREATE UNIQUE INDEX approval_request_pkey ON fyniq.approval_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX approval_signature_on_behalf_once ON fyniq.approval_signature USING btree (organisation_id, request_id, on_behalf_of) WHERE (on_behalf_of IS NOT NULL)
 CREATE UNIQUE INDEX approval_signature_once ON fyniq.approval_signature USING btree (organisation_id, request_id, signer)
 CREATE UNIQUE INDEX approval_signature_pkey ON fyniq.approval_signature USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_boundary_pkey ON fyniq.audit_boundary USING btree (organisation_id, id)
@@ -9816,6 +9878,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_quality_review 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_route DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_route', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_reminder DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_signature DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery_acknowledgement', 'id')
@@ -9946,6 +10009,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_feedb
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_proposal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_proposal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('api_client', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_delegation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_delegation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_engagement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_engagement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.auditor_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('auditor_request', 'id')
@@ -10118,8 +10182,12 @@ CREATE TRIGGER announcement_guard BEFORE DELETE OR UPDATE ON fyniq.announcement 
 CREATE TRIGGER announcement_no_truncate BEFORE TRUNCATE ON fyniq.announcement FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER api_client_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.api_client FOR EACH ROW EXECUTE FUNCTION api_client_guard()
 CREATE TRIGGER api_client_no_truncate BEFORE TRUNCATE ON fyniq.api_client FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER approval_delegation_guard BEFORE DELETE OR UPDATE ON fyniq.approval_delegation FOR EACH ROW EXECUTE FUNCTION approval_delegation_guard()
+CREATE TRIGGER approval_delegation_no_truncate BEFORE TRUNCATE ON fyniq.approval_delegation FOR EACH STATEMENT EXECUTE FUNCTION approval_delegation_guard()
 CREATE TRIGGER approval_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_guard()
 CREATE TRIGGER approval_policy_voids AFTER INSERT ON fyniq.approval_policy FOR EACH ROW EXECUTE FUNCTION approval_policy_voids()
+CREATE TRIGGER approval_reminder_guard BEFORE DELETE OR UPDATE ON fyniq.approval_reminder FOR EACH ROW EXECUTE FUNCTION approval_reminder_guard()
+CREATE TRIGGER approval_reminder_no_truncate BEFORE TRUNCATE ON fyniq.approval_reminder FOR EACH STATEMENT EXECUTE FUNCTION approval_reminder_guard()
 CREATE TRIGGER approval_request_ai_requester BEFORE INSERT ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_ai_requester()
 CREATE TRIGGER approval_request_guard BEFORE UPDATE ON fyniq.approval_request FOR EACH ROW EXECUTE FUNCTION approval_request_guard()
 CREATE TRIGGER approval_request_voided AFTER UPDATE OF status ON fyniq.approval_request FOR EACH ROW WHEN ((new.status = 'void'::text)) EXECUTE FUNCTION approval_request_voided()
@@ -10660,7 +10728,9 @@ allocation | tenant_isolation | * | (organisation_id = current_org()) | (organis
 announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 api_client | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+approval_delegation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+approval_reminder | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 approval_signature | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10943,7 +11013,9 @@ announcement_dismissal | enabled | forced
 api_client | enabled | forced
 api_client_route | disabled | not forced
 app_user | disabled | not forced
+approval_delegation | enabled | forced
 approval_policy | enabled | forced
+approval_reminder | enabled | forced
 approval_request | enabled | forced
 approval_signature | enabled | forced
 audit_boundary | enabled | forced
@@ -11261,13 +11333,15 @@ anonymise_contact(p_contact uuid) → integer | security definer | v | search_pa
 api_client_access(p_client text, p_now timestamp with time zone, OUT organisation_id uuid, OUT id uuid, OUT kind text, OUT class text, OUT owner_id uuid, OUT owner_active boolean, OUT roles text[], OUT scopes text[], OUT ip_allow text[], OUT reads_per_minute integer, OUT writes_per_minute integer, OUT expires_at timestamp with time zone, OUT revoked boolean) → record | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9eef2824b34633aeed9a230932617834
 api_client_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | bdd02814df045b0babe7e247a6095bc4
 apply_installation_change(p_change uuid, p_connector text, p_id uuid, p_step text, p_at timestamp with time zone) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 8e8cf04d98279cfd8fcd5307219c31ac
+approval_delegation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ff3f3a96b6a143a48934976541640a91
 approval_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cf2f3a845eb3f3f37b28ac86827d4dd0
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
+approval_reminder_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a2fff4a48ea0a489d6f874fef8e8239a
 approval_request_ai_requester() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0d672fb5bb2d84b143a84c9d5499ff4c
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
 approval_rules_valid(p_rules jsonb) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 2f1658d0c494b984aaf4d99dd4b8e89d
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 102271dad94b050dac62a7689b6cc955
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ec4dd6b04beab8372315c4371945d569
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d

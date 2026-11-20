@@ -85,6 +85,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
+- `GET /v1/approval-delegations` (listApprovalDelegations): List delegations of approval authority
+- `POST /v1/approval-delegations` (createApprovalDelegation): Delegate your approval authority
+- `POST /v1/approval-delegations/{delegation_id}/end` (endApprovalDelegation): End a delegation of approval authority
 - `GET /v1/approval-policies` (listApprovalPolicies): List the approval policies
 - `GET /v1/approval-policies/{object_type}` (getApprovalPolicy): Get an approval policy
 - `PATCH /v1/approval-policies/{object_type}` (changeApprovalPolicy): Ask to change an approval policy
