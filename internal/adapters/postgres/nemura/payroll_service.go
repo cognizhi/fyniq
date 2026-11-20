@@ -386,7 +386,7 @@ func (p PayrollService) PublishPayslips(ctx context.Context, s api.Session, run 
 	var n int
 	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		var err error
-		n, err = PublishPayslips(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, version, p.Renderer, p.Blobs)
+		n, err = PublishPayslips(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, version, p.Renderer, p.Blobs, p.Cipher)
 		return err
 	})
 	return n, err
@@ -403,7 +403,7 @@ func (p PayrollService) MyPayslips(ctx context.Context, s api.Session) ([]api.Pa
 		if _, err := OwnPerson(ctx, tx, s.Member); err != nil {
 			return err
 		}
-		rows, err := OwnPayslips(ctx, tx, s.Member)
+		rows, err := OwnPayslips(ctx, tx, p.Cipher, s.Organisation, s.Member)
 		for _, r := range rows {
 			out = append(out, summaryOf(r))
 		}
@@ -416,7 +416,7 @@ func (p PayrollService) MyPayslips(ctx context.Context, s api.Session) ([]api.Pa
 func (p PayrollService) MyPayslip(ctx context.Context, s api.Session, id uuid.UUID) (api.PayslipView, error) {
 	var out api.PayslipView
 	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
-		rows, err := OwnPayslips(ctx, tx, s.Member)
+		rows, err := OwnPayslips(ctx, tx, p.Cipher, s.Organisation, s.Member)
 		if err != nil {
 			return err
 		}

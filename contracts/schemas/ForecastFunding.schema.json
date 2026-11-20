@@ -25,6 +25,13 @@
       "maxLength": 200,
       "type": "string"
     },
+    "pre_money": {
+      "description": "For an Equity row: the pre-money valuation the round is planned at, which the funding plan divides by the shares fully diluted before the round to price it (FR-PLN-07).",
+      "examples": [
+        "4000000.00"
+      ],
+      "type": "string"
+    },
     "rate": {
       "description": "A loan's yearly interest rate, as a fraction.",
       "examples": [

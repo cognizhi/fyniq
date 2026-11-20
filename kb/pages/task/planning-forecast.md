@@ -4,7 +4,7 @@ type: task
 title: The driver forecast and its scenarios
 summary: Model the company forward from its drivers in Base, Best and Worst, record the plan, and read runway with and without funding
 sources:
-  - docs/user-guide/forecast.md sha256:6f4f5d96ae61b63db6858dcbfe83fffd4fa0f7880228e674df24bcd8d25d994d
+  - docs/user-guide/forecast.md sha256:c51780e5782172b35db4ca85c8b31f20df086e46a03dbc6fa560af405c8648d7
 data_class: general
 taint: trusted
 status: draft
@@ -48,3 +48,12 @@ aliases:
 - The workbook's simplifications are kept [accountant to confirm]: forecast years are 12-month blocks from the start, not financial years or years of assessment; everyone with CPF is at the employer rate for 55 and below up to the Ordinary Wage ceiling; each year's tax is paid a fixed number of months after it; what was owed at the start is collected and paid 60% in the first month and 40% in the second. Related: [[planning.cash]], [[planning.budgets]].
 
 (src: docs/user-guide/forecast.md#read-the-results) (src: docs/user-guide/forecast.md#compare-the-scenarios) (src: docs/user-guide/forecast.md#related)
+
+## The funding plan
+
+- Give an **Equity** row of the funding plan an **Equity pre-money**, the valuation the round is planned at, and the page shows **What the planned equity rounds do to ownership** below the results.
+- It starts from the equity register's cap table as it stands today, fully diluted, and takes each Equity row in the order of its month through the round model of [[equity.register]]: the pre-money valuation divided by the shares fully diluted before the round is the price per share, the money buys whole shares of it, and each holder's share before and after, and the points they lose, follow. A second round dilutes the holders as the first left them.
+- A round with no pre-money valuation, or one the model refuses, is listed with why and passes the cap table through unchanged. SAFEs, loans and grants are listed apart, as they issue no shares in the plan.
+- It uses the rows as the forecast holds them, before any scenario's levers, and plans no option pool top-up. Only people who may read the whole cap table see it, and it posts and saves nothing.
+
+(src: docs/user-guide/forecast.md#the-funding-plan)

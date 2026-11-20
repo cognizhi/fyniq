@@ -396,6 +396,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerKPIAlerts(a)
 	registerCapTableGrants(a)
 	registerExitWaterfall(a)
+	registerFundingPlan(a)
 	registerAuditEngagements(a)
 	registerForecastAccuracy(a)
 	registerDashboards(a)

@@ -81,19 +81,23 @@ type movementOutput struct{ Body AssetMovementReport }
 
 // CapitalAllowanceRow is one asset's line of the capital allowance schedule.
 type CapitalAllowanceRow struct {
-	AssetID        string `json:"asset_id" format:"uuid" doc:"The asset." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"`
-	Number         string `json:"number,omitempty" doc:"Its number in the register." example:"FA-0001"`
-	Name           string `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
-	PurchasedOn    string `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
-	Cost           Money  `json:"cost" doc:"The cost it was bought for."`
-	Method         string `json:"method" enum:"s19,s19a1,s19a10a" doc:"The method elected." example:"s19a1"`
-	WorkingLife    int    `json:"working_life_years,omitempty" doc:"Section 19: the years elected." example:"6"`
-	FirstYA        int    `json:"first_ya" doc:"The year of assessment of its first claim: the year after the financial year it was bought in ends." example:"2027"`
-	BroughtForward Money  `json:"brought_forward" doc:"The tax written down value brought forward: its cost less the allowances of the years before."`
-	Initial        Money  `json:"initial_allowance" doc:"Section 19 only, in the first year: 20% of the cost."`
-	Annual         Money  `json:"annual_allowance" doc:"The rest of the year's allowance."`
-	Allowance      Money  `json:"allowance" doc:"The year's allowance: initial + annual."`
-	CarriedForward Money  `json:"carried_forward" doc:"brought forward - allowance."`
+	AssetID         string `json:"asset_id" format:"uuid" doc:"The asset." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5fa1"`
+	Number          string `json:"number,omitempty" doc:"Its number in the register." example:"FA-0001"`
+	Name            string `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
+	PurchasedOn     string `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
+	Cost            Money  `json:"cost" doc:"The cost it was bought for."`
+	Method          string `json:"method" enum:"s19,s19a1,s19a2,s19a10a" doc:"The method elected." example:"s19a1"`
+	WorkingLife     int    `json:"working_life_years,omitempty" doc:"Section 19: the years elected." example:"6"`
+	FirstYA         int    `json:"first_ya" doc:"The year of assessment of its first claim: the year after the financial year it was bought in ends." example:"2027"`
+	BroughtForward  Money  `json:"brought_forward" doc:"The tax written down value brought forward: its cost less the allowances of the years before."`
+	Initial         Money  `json:"initial_allowance" doc:"Section 19 only, in the first year: 20% of the cost."`
+	Annual          Money  `json:"annual_allowance" doc:"The rest of the year's allowance."`
+	Allowance       Money  `json:"allowance" doc:"The year's allowance: initial + annual."`
+	CarriedForward  Money  `json:"carried_forward" doc:"brought forward - allowance."`
+	SoldOn          string `json:"sold_on,omitempty" format:"date" doc:"For the year of a sale (rev 0.603): the day the whole asset was sold. No allowance is given in the year: brought forward is the tax written down value." example:"2028-09-01"`
+	Proceeds        *Money `json:"proceeds,omitempty" doc:"For the year of a sale: the sale proceeds net of GST (nothing for a write-off)."`
+	BalancingAllow  *Money `json:"balancing_allowance,omitempty" doc:"For the year of a sale: the tax written down value less the proceeds, when the proceeds are lower; tax deductible (IRAS)."`
+	BalancingCharge *Money `json:"balancing_charge,omitempty" doc:"For the year of a sale: the proceeds less the tax written down value, when the proceeds are higher, at most the allowances allowed before; taxable (IRAS)."`
 }
 
 // CapitalAllowanceApart is an asset the schedule cannot place.
@@ -103,17 +107,19 @@ type CapitalAllowanceApart struct {
 	Name        string `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
 	PurchasedOn string `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
 	Cost        Money  `json:"cost" doc:"The cost it was bought for."`
-	Reason      string `json:"reason" enum:"no_election,before_pack,disposed,over_cap,bad_life,not_sgd" doc:"Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal stands and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars." example:"no_election"`
-	Fix         string `json:"fix" doc:"What to do." example:"Elect a method on the asset: section 19, 19A(1) or 19A(10A)"`
+	Reason      string `json:"reason" enum:"no_election,before_pack,disposed,over_cap,bad_life,not_sgd" doc:"Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars." example:"no_election"`
+	Fix         string `json:"fix" doc:"What to do." example:"Elect a method on the asset: section 19, 19A(1), 19A(2) or 19A(10A)"`
 }
 
 // CapitalAllowanceTotals are the schedule's columns' sums.
 type CapitalAllowanceTotals struct {
-	BroughtForward Money `json:"brought_forward" doc:"The sum of the tax written down values brought forward."`
-	Initial        Money `json:"initial_allowance" doc:"The sum of the initial allowances."`
-	Annual         Money `json:"annual_allowance" doc:"The sum of the annual allowances."`
-	Allowance      Money `json:"allowance" doc:"The total claim of the year: initial + annual."`
-	CarriedForward Money `json:"carried_forward" doc:"The sum of the tax written down values carried forward."`
+	BroughtForward  Money `json:"brought_forward" doc:"The sum of the tax written down values brought forward."`
+	Initial         Money `json:"initial_allowance" doc:"The sum of the initial allowances."`
+	Annual          Money `json:"annual_allowance" doc:"The sum of the annual allowances."`
+	Allowance       Money `json:"allowance" doc:"The total claim of the year: initial + annual."`
+	CarriedForward  Money `json:"carried_forward" doc:"The sum of the tax written down values carried forward."`
+	BalancingAllow  Money `json:"balancing_allowance" doc:"The sum of the balancing allowances of the year's sales (rev 0.603)."`
+	BalancingCharge Money `json:"balancing_charge" doc:"The sum of the balancing charges of the year's sales (rev 0.603)."`
 }
 
 // CapitalAllowanceSchedule is the tax capital allowance schedule of a year of assessment (FR-FA-04).
@@ -142,7 +148,7 @@ type capitalAllowanceOutput struct{ Body CapitalAllowanceSchedule }
 var capitalAllowanceReasons = map[string]string{
 	capallow.ReasonNoElection: "Elect a method on the asset: section 19, 19A(1) or 19A(10A)",
 	capallow.ReasonBeforePack: "Bought in a basis period before YA 2023: the tax agent works its allowance",
-	capallow.ReasonDisposed:   "Its balancing allowance or charge is the tax agent's",
+	capallow.ReasonDisposed:   "A part of it was disposed of: its balancing allowance or charge is the tax agent's",
 	capallow.ReasonOverCap:    "Elect section 19A(1) or section 19 for it, or leave it for the tax agent: section 19A(10A) takes only assets of at most S$5,000 within S$30,000 a year",
 	capallow.ReasonBadLife:    "Elect a working life the Sixth Schedule's life allows: 6 or 12, or 16 for a prescribed life of 16",
 	capallow.ReasonNotSGD:     "The capital allowance rules are in Singapore dollars",
@@ -348,6 +354,9 @@ func registerAssetReports(a *API) {
 			in2 := make([]capallow.Asset, len(assets))
 			for i, x := range assets {
 				in2[i] = capallow.Asset{ID: x.AssetID, Number: x.Number, Name: x.Name, PurchasedOn: x.PurchasedOn, Cost: x.Cost, Election: x.Election, Disposed: x.Disposed}
+				if x.Sale != nil {
+					in2[i].Disposal = &capallow.Disposal{On: x.Sale.On, Proceeds: x.Sale.Proceeds}
+				}
 			}
 			s, err := capallow.Work(v, cal, base, in.YA, in2)
 			if err != nil {
@@ -355,15 +364,23 @@ func registerAssetReports(a *API) {
 			}
 			out = CapitalAllowanceSchedule{Currency: base.Code, YA: in.YA, Pack: s.Pack, Rows: []CapitalAllowanceRow{}, Apart: []CapitalAllowanceApart{},
 				Totals: CapitalAllowanceTotals{BroughtForward: moneyOut(s.Totals.BroughtFw), Initial: moneyOut(s.Totals.Initial), Annual: moneyOut(s.Totals.Annual),
-					Allowance: moneyOut(s.Totals.Allowance), CarriedForward: moneyOut(s.Totals.CarriedFw)},
+					Allowance: moneyOut(s.Totals.Allowance), CarriedForward: moneyOut(s.Totals.CarriedFw), BalancingAllow: moneyOut(s.Totals.BalancingAllow),
+					BalancingCharge: moneyOut(s.Totals.BalancingCharge)},
 				Notes: []string{
-					"The allowances are worked for assets bought for cash; hire purchase, the 100% write-off of computers and prescribed automation equipment under section 19A(2), deferred claims, tax written down values brought forward into a one-year write-off and balancing allowances and charges are the tax agent's [accountant to confirm].",
+					"The allowances are worked for assets bought for cash; hire purchase (its principal payments are not recorded), deferred claims, tax written down values brought forward into a one-year write-off, a part disposal and a section 24 transfer are the tax agent's [accountant to confirm].",
+					"An asset sold whole takes no allowance in the year of its sale: its balancing allowance or charge is the proceeds' difference to its tax written down value, a charge at most the allowances allowed before [accountant to confirm that no annual allowance is also due in the year of a sale].",
+					"That an asset is a computer or prescribed automation equipment (section 19A(2)) is the company's election for it [accountant to confirm].",
 					"Amounts are in cents, each year's share by ALLOC-EVEN; IRAS's own examples show whole dollars [accountant to confirm].",
 				}}
 			for _, r := range s.Rows {
 				out.Rows = append(out.Rows, CapitalAllowanceRow{AssetID: r.Asset.ID.String(), Number: r.Asset.Number, Name: r.Asset.Name, PurchasedOn: dateOf(r.Asset.PurchasedOn),
 					Cost: moneyOut(r.Asset.Cost), Method: r.Method, WorkingLife: r.Years, FirstYA: r.FirstYA, BroughtForward: moneyOut(r.BroughtFw), Initial: moneyOut(r.Initial),
 					Annual: moneyOut(r.Annual), Allowance: moneyOut(r.Allowance), CarriedForward: moneyOut(r.CarriedFw)})
+				row := &out.Rows[len(out.Rows)-1]
+				if r.Sold != nil {
+					p, ba, bc := moneyOut(r.Sold.Proceeds), moneyOut(r.BalancingAllow), moneyOut(r.BalancingCharge)
+					row.SoldOn, row.Proceeds, row.BalancingAllow, row.BalancingCharge = dateOf(r.Sold.On), &p, &ba, &bc
+				}
 			}
 			for _, x := range s.Apart {
 				out.Apart = append(out.Apart, CapitalAllowanceApart{AssetID: x.Asset.ID.String(), Number: x.Asset.Number, Name: x.Asset.Name, PurchasedOn: dateOf(x.Asset.PurchasedOn),

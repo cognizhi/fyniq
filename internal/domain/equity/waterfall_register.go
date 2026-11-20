@@ -190,3 +190,37 @@ func WaterfallFromRegister(ctx context.Context, u storage.UnitOfWork, day time.T
 	}
 	return out, nil
 }
+
+// RoundTerms are the terms of the new class an unrecorded round would issue, which no register holds: the multiple of the money invested its preference pays first, whether it
+// then shares the rest as converted, and its seniority (1 is paid first). They are asked for, never assumed.
+type RoundTerms struct {
+	Multiple      string
+	Participating bool
+	Seniority     int
+}
+
+// WithRound adds the shares a modelled round would issue (a round scenario's outcome, FR-EQ-21) to the register's waterfall as a class of their own with the terms given, so the
+// waterfall can be read over a round that is not recorded (FR-EQ-29; p2-reporting-planning task 8.1). Every existing class is as the register has it before the round: the round
+// moves no one's shares, a pool top-up grants none, and the money invested in the class is each investor's allotment as it costs. A round that converts SAFEs or notes is refused by
+// name: what the instrument holders would receive in which class is not modelled [lawyer to confirm].
+func WithRound(reg RegisterWaterfall, id, name string, o RoundOutcome, t RoundTerms) (RegisterWaterfall, error) {
+	if len(o.Conversions) > 0 {
+		return reg, fmt.Errorf("%s: a round that converts SAFEs or notes is not modelled: which class its conversions would take is not recorded", CodeWaterfall)
+	}
+	class := WaterfallClass{ID: id, Name: name, Preference: true, Multiple: t.Multiple, Participating: t.Participating, Seniority: t.Seniority}
+	for _, x := range o.Issues {
+		n, err := wholeCount(x.Shares, "an investor's allotment in the round")
+		if err != nil {
+			return reg, err
+		}
+		class.Holders = append(class.Holders, WaterfallHolder{ID: x.HolderID.String(), Shares: n, Invested: x.Amount})
+	}
+	if len(class.Holders) == 0 {
+		return reg, fmt.Errorf("%s: the round has no investor", CodeWaterfall)
+	}
+	reg.Classes = append(slices.Clone(reg.Classes), class)
+	reg.HasPreference = true
+	reg.Notes = append(slices.Clone(reg.Notes), fmt.Sprintf("%s is not recorded: its class is modelled with the terms asked for (a multiple of %s, %s, seniority %d), which no register holds [lawyer to confirm].",
+		name, t.Multiple, map[bool]string{true: "participating", false: "non-participating"}[t.Participating], t.Seniority))
+	return reg, nil
+}

@@ -35,6 +35,7 @@ export const reasonText: Record<string, string> = {
 export const methodText: Record<string, string> = {
   s19: "Section 19, over its working life",
   s19a1: "Section 19A(1), 3 years",
+  s19a2: "Section 19A(2), 1 year, no cap",
   s19a10a: "Section 19A(10A), 1 year",
 };
 
@@ -198,7 +199,9 @@ export function CapitalAllowances({ onElect }: { onElect?: (assetId: string) => 
       {r && (
         <>
           <p className="fy-secondary">
-            YA {r.ya} · claim {r.currency} {money(r.totals.allowance)} · carried forward {money(r.totals.carried_forward)} · rules from <span className="fy-mono">{r.pack}</span>
+            YA {r.ya} · claim {r.currency} {money(r.totals.allowance)} · carried forward {money(r.totals.carried_forward)}
+            {Number(r.totals.balancing_allowance.amount) !== 0 && <> · balancing allowance {money(r.totals.balancing_allowance)}</>}
+            {Number(r.totals.balancing_charge.amount) !== 0 && <> · balancing charge {money(r.totals.balancing_charge)}</>} · rules from <span className="fy-mono">{r.pack}</span>
           </p>
           {r.rows.length === 0 && <p className="fy-secondary">No asset claims in this year.</p>}
           {r.rows.length > 0 && (
@@ -222,6 +225,12 @@ export function CapitalAllowances({ onElect }: { onElect?: (assetId: string) => 
                       <th scope="row">
                         <span className="fy-mono">{a.number}</span> {a.name}
                         <span className="fy-small fy-secondary block">bought {date(a.purchased_on)}</span>
+                        {a.sold_on && (
+                          <span className="fy-small fy-secondary block">
+                            sold {date(a.sold_on)} for {money(a.proceeds)}:{" "}
+                            {a.balancing_charge && Number(a.balancing_charge.amount) !== 0 ? `balancing charge ${money(a.balancing_charge)}` : `balancing allowance ${money(a.balancing_allowance)}`}
+                          </span>
+                        )}
                       </th>
                       <td>
                         {methodText[a.method] ?? a.method}
@@ -307,7 +316,7 @@ export function TaxElectionDialog({ asset, onClose, onDone }: { asset: FixedAsse
       tax_election:
         method === "s19"
           ? { method: "s19", prescribed_working_life_years: Number(prescribed), working_life_years: Number(years) }
-          : { method: method === "s19a10a" ? "s19a10a" : "s19a1" },
+          : { method: method === "s19a10a" || method === "s19a2" ? method : "s19a1" },
     };
     const out = await guarded(confirm, () =>
       api.POST("/v1/fixed-assets/{asset_id}/change", {
@@ -350,6 +359,7 @@ export function TaxElectionDialog({ asset, onClose, onDone }: { asset: FixedAsse
           </label>
           <select id={`${id}-method`} className="fy-input" value={method} disabled={fixed} onChange={(e) => setMethod(e.target.value)}>
             <option value="s19a1">Section 19A(1): a third a year over 3 years</option>
+            <option value="s19a2">Section 19A(2): the whole cost in one year (a computer or prescribed automation equipment)</option>
             <option value="s19a10a">Section 19A(10A): the whole cost in one year (an asset of at most S$5,000)</option>
             <option value="s19">Section 19: 20% at once, the rest over its working life</option>
           </select>

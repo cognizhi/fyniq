@@ -102,6 +102,39 @@ func TestTheExitWaterfallPaysThePreferenceOrTheConversionWhicheverIsMore(t *test
 		t.Errorf("the class: %v", seed)
 	}
 
+	// Over a round that is not recorded (rev 0.604): a scenario of S$4,000,000 from Hatch at S$4.00 is 1,000,000 new shares in a class of its own, with the terms asked for (1x, paid first,
+	// like the Seed class). An exit of S$6,000,000 pays Seed 2,000,000 and Hatch 4,000,000 and the founder nothing; at S$60,000,000 both convert: 1/10 each, S$6,000,000, and the founder
+	// 48,000,000. The scenario is read, never changed.
+	hatch := e.call(http.MethodPost, "/v1/contacts", accountant, map[string]any{"legal_name": "Hatch Capital Pte. Ltd.", "investor": true}).str("id")
+	scen := e.call(http.MethodPost, "/v1/round-scenarios", accountant, map[string]any{"name": "Series A", "on": "2026-10-15", "price": "4.00", "price_decimals": 4, "class_account_id": ordinary,
+		"investors": []map[string]any{{"holder_id": hatch, "amount": "4000000.00"}}, "instruments": []string{}})
+	if scen.Status != http.StatusCreated {
+		t.Fatalf("the scenario: %d %s", scen.Status, scen.Raw)
+	}
+	over := e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=6000000.00&scenario_id="+scen.str("id"), accountant, nil)
+	if over.Status != http.StatusOK || over.str("round", "scenario_id") != scen.str("id") || over.str("round", "price_per_share", "amount") != "4.00" || over.str("round", "raised", "amount") != "4000000.00" ||
+		over.str("round", "multiple") != "1" || over.Body["round"].(map[string]any)["participating"] != false {
+		t.Fatalf("over the round: %d %s", over.Status, over.Raw)
+	}
+	if got := totals(over, "classes"); got["Seedling Ventures Pte. Ltd."] != "2000000.00" || got["Hatch Capital Pte. Ltd."] != "4000000.00" || got["Ah Kow"] != "0.00" {
+		t.Errorf("a small exit over the round: %v", got)
+	}
+	if !strings.Contains(strings.Join(func() (n []string) {
+		for _, x := range over.Body["notes"].([]any) {
+			n = append(n, x.(string))
+		}
+		return
+	}(), " "), "is not recorded") {
+		t.Errorf("the notes do not say the round is not recorded: %s", over.Raw)
+	}
+	huge := e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=60000000.00&scenario_id="+scen.str("id"), accountant, nil)
+	if got := totals(huge, "classes"); got["Seedling Ventures Pte. Ltd."] != "6000000.00" || got["Hatch Capital Pte. Ltd."] != "6000000.00" || got["Ah Kow"] != "48000000.00" {
+		t.Errorf("a large exit over the round: %v", got)
+	}
+	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=6000000.00&scenario_id="+uuid.NewString(), accountant, nil), "getExitWaterfall", 404, CodeNotFound)
+	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=6000000.00&scenario_id="+founder, accountant, nil), "getExitWaterfall", 404, CodeNotFound)
+	e.problemIs(e.call(http.MethodGet, "/v1/exit-waterfall?exit_value=6000000.00&scenario_id="+scen.str("id"), e.as(authz.BoardViewer), nil), "getExitWaterfall", 403, "API-AUTHZ-01")
+
 	// A cap on a participating preference is refused by name, never approximated.
 	seedID := uuid.MustParse(seed["class_id"].(string))
 	e.recordClass(pref, equity.ShareClass{ClassID: &seedID, Name: "Series Seed", Kind: "preference", Series: "Seed", VotesPerShare: "1",

@@ -1863,6 +1863,10 @@
       "label": "Investor updates",
       "tooltip": "An update built from a published board pack, sent once to the members you choose. They are told by a notification that links to the signed-in update; it carries no figure."
     },
+    "equity.waterfall-round": {
+      "label": "Over a round that is not recorded",
+      "tooltip": "Read the waterfall as if a round scenario had happened: its new shares are a class of their own with the preference terms you ask for, which no register holds. A round that converts SAFEs or notes is refused by name."
+    },
     "equity.exit-waterfall": {
       "label": "Exit waterfall",
       "tooltip": "A sandbox: what an exit value would pay each share class and holder under the liquidation preferences the register records, next to a plain split by shares. It posts and saves nothing."
@@ -3154,6 +3158,10 @@
     "forecast.record": {
       "label": "Record",
       "tooltip": "Make this the company's plan: Home and the alerts read the latest recorded forecast. It changes no more."
+    },
+    "planning.funding-plan": {
+      "label": "What the planned equity rounds do to ownership",
+      "tooltip": "Each Equity funding row with a pre-money valuation, taken in the order of its days through the equity register's round model over the cap table fully diluted today: its price, the shares its money buys and each holder before and after. A sandbox: nothing is posted."
     },
     "forecast.without-funding": {
       "label": "Without the funding planned",

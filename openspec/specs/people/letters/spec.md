@@ -122,3 +122,13 @@ Source: PRD-002 §11 · Priority M · Phase P1
 #### Scenario: What a recipient can check
 - **WHEN** a letter is exported
 - **THEN** it states its reference and how to check it, and claims no certificate signature
+
+#### Scenario: Verified by reference and code (rev 0.61)
+- **GIVEN** an issued letter whose footer carries a reference and a verification code
+- **WHEN** a recipient enters both, with no sign-in
+- **THEN** they learn only whether it is valid or withdrawn, its type, the day it was issued and the company, and a wrong code, an unknown reference and a letter not yet issued answer alike
+- **AND** at most 10 tries for a reference in an hour are allowed, and each look-up of a found letter is audited
+
+#### Scenario: Withdrawn by the employee (rev 0.61)
+- **WHEN** the person a letter is about withdraws its verification
+- **THEN** a look-up says withdrawn, and the letter itself stays as issued

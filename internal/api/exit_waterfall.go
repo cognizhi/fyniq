@@ -14,7 +14,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
+	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -56,6 +58,19 @@ type ExitWaterfall struct {
 	AsConverted []WaterfallClassView `json:"as_converted" nullable:"false" doc:"Every class converted, no preference: each share the same."`
 	Notes       []string             `json:"notes" nullable:"false" doc:"What the register records that the waterfall does not model."`
 	Modelled    []string             `json:"modelled" nullable:"false" doc:"The structures the waterfall models: the others are refused by name, never approximated."`
+	Round       *WaterfallRound      `json:"round,omitempty" doc:"Set when the waterfall is read over a round scenario that is not recorded (rev 0.604): the round and the terms its new class was modelled with."`
+}
+
+// WaterfallRound is the unrecorded round a waterfall is read over (FR-EQ-29): a round scenario's outcome as a class of its own, with the terms asked for.
+type WaterfallRound struct {
+	ScenarioID    string `json:"scenario_id" format:"uuid" doc:"The round scenario." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8e01"`
+	Name          string `json:"name" doc:"Its name." example:"Series A, S$4m at S$12m pre-money"`
+	On            string `json:"on" format:"date" doc:"The day the round would take effect." example:"2027-06-01"`
+	Price         Money  `json:"price_per_share" doc:"The price per share the round would be at."`
+	Raised        Money  `json:"raised" doc:"What its shares would cost."`
+	Multiple      string `json:"multiple" doc:"The multiple of the money invested the new class's preference pays first: asked for, not recorded." example:"1"`
+	Participating bool   `json:"participating" doc:"Whether the new class then shares the rest as converted." example:"false"`
+	Seniority     int    `json:"seniority" doc:"The new class's seniority: 1 is paid first." example:"1"`
 }
 
 // TransformSchema implements huma.SchemaTransformer: an example for each note and each modelled structure (NFR-API-01).
@@ -67,7 +82,12 @@ func (ExitWaterfall) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Sche
 
 type exitWaterfallInput struct {
 	ExitValue string `query:"exit_value" required:"true" pattern:"^[0-9]+(\\.[0-9]+)?$" doc:"What the shareholders receive, in the base currency, as a plain decimal." example:"8000000.00"`
-	On        string `query:"on" format:"date" doc:"The day of the register to read; left out, the organisation's today." example:"2027-03-12"`
+	On        string `query:"on" format:"date" doc:"The day of the register to read; left out, the organisation's today, or with a round scenario the day before the round." example:"2027-03-12"`
+	// The unrecorded round (rev 0.604).
+	ScenarioID    string `query:"scenario_id" format:"uuid" doc:"A round scenario (draft or approved) to read the waterfall over as if its round had happened: its new shares are a class of their own with the terms below. A round that converts SAFEs or notes is refused by name." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c8e01"`
+	RoundMultiple string `query:"round_multiple" pattern:"^[0-9]+(\\.[0-9]+)?$" doc:"With a scenario: the multiple of the money invested the new class's preference pays first; 1 by default. The terms of a round that is not recorded are asked for, never assumed." example:"1"`
+	RoundParticip bool   `query:"round_participating" doc:"With a scenario: whether the new class shares the rest as converted after its preference, with no cap; false by default." example:"false"`
+	RoundSenior   int    `query:"round_seniority" minimum:"1" maximum:"9" doc:"With a scenario: the new class's seniority, 1 being paid first, ahead of any class recorded at 1 it shares pari passu with; 1 by default." example:"1"`
 }
 
 type exitWaterfallOutput struct{ Body ExitWaterfall }
@@ -83,7 +103,7 @@ func registerExitWaterfall(a *API) {
 			"of a multiple of the money invested, which converts when that pays the class more; an uncapped participating preference; seniority between classes, classes of one seniority sharing pari " +
 			"passu), next to every class converted with no preference. The money invested in a class is its issues up to the day, shared among its holders by shares. A capped participating " +
 			"preference and a cumulative dividend are refused by name (EQ-WF-01), never approximated, until a lawyer or accountant confirms them. Nothing is posted or saved. Read-only.",
-	}, []string{CodeInvalid, CodeWaterfallRefused}, func(ctx context.Context, in *exitWaterfallInput) (*exitWaterfallOutput, error) {
+	}, []string{CodeInvalid, CodeNotFound, CodeWaterfallRefused}, func(ctx context.Context, in *exitWaterfallInput) (*exitWaterfallOutput, error) {
 		p, _ := authn.From(ctx)
 		var out ExitWaterfall
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
@@ -103,6 +123,25 @@ func registerExitWaterfall(a *API) {
 			if err != nil {
 				return err
 			}
+			var round *equity.Scenario
+			var scenario uuid.UUID
+			if in.ScenarioID != "" {
+				if scenario, err = parseID("scenario_id", in.ScenarioID); err != nil {
+					return err
+				}
+				doc, err := u.Documents().Get(ctx, scenario)
+				if err != nil {
+					return err
+				}
+				if doc.Type != storage.DocumentRoundScenario {
+					return ports.ErrNotFound
+				}
+				sc, err := equity.ReadScenario(doc)
+				if err != nil {
+					return err
+				}
+				round, day = &sc, sc.On.AddDate(0, 0, -1) // the register the day before the round
+			}
 			if in.On != "" {
 				if day, err = time.Parse(time.DateOnly, in.On); err != nil {
 					return invalid([]FieldProblem{{Code: CodeInvalid, Field: "on", Message: "is not a date", Fix: "Send the day as YYYY-MM-DD"}})
@@ -114,6 +153,26 @@ func registerExitWaterfall(a *API) {
 			reg, err := equity.WaterfallFromRegister(ctx, u, day, base)
 			if err != nil {
 				return waterfallRefusal(err)
+			}
+			if round != nil {
+				set, err := journal.LoadSettings(ctx, u)
+				if err != nil {
+					return err
+				}
+				o, err := equity.ModelScenarioIn(ctx, u, *round, set)
+				if err != nil {
+					return equityProblems(err)
+				}
+				terms := equity.RoundTerms{Multiple: cmpOr(in.RoundMultiple, "1"), Participating: in.RoundParticip, Seniority: max(in.RoundSenior, 1)}
+				if reg, err = equity.WithRound(reg, "scenario:"+scenario.String(), "New round, "+round.Name+" (not recorded)", o, terms); err != nil {
+					return waterfallRefusal(err)
+				}
+				raised, err := o.Raised()
+				if err != nil {
+					return err
+				}
+				out.Round = &WaterfallRound{ScenarioID: scenario.String(), Name: round.Name, On: dateOf(round.On), Price: Money{Amount: o.Price.String(), Currency: base.Code}, Raised: moneyOut(raised),
+					Multiple: terms.Multiple, Participating: terms.Participating, Seniority: terms.Seniority}
 			}
 			out.Notes = append(out.Notes, reg.Notes...)
 			if !reg.HasPreference {

@@ -430,7 +430,11 @@ func CheckLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 	if err != nil {
 		return "", sum, err
 	}
-	pdf, err := r.Render(ctx, letters.Document{Blocks: filled.Blocks, Footer: "Reference " + ref})
+	code, err := newVerificationCode()
+	if err != nil {
+		return "", sum, err
+	}
+	pdf, err := r.Render(ctx, letters.Document{Blocks: filled.Blocks, Footer: "Reference " + ref + " - verification code " + code})
 	if err != nil {
 		var u letters.ErrUnsupported
 		if errors.As(err, &u) {
@@ -439,7 +443,8 @@ func CheckLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 		return "", sum, err
 	}
 	sum = sha256.Sum256(pdf)
-	blob := "letters/" + org.String() + "/" + request.String() + ".pdf"
+	codeSum := sha256.Sum256([]byte(code)) // each attempt has its own file, so a check that did not commit leaves bytes that are never mistaken for another attempt's
+	blob := "letters/" + org.String() + "/" + request.String() + "-" + hex.EncodeToString(codeSum[:4]) + ".pdf"
 	if err := blobs.Create(ctx, blob, bytes.NewReader(pdf)); errors.Is(err, ports.ErrExists) {
 		// A check that did not commit left its bytes: they are the same letter only if they hash the same.
 		rc, gerr := blobs.Get(ctx, blob)
@@ -458,6 +463,9 @@ func CheckLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by
 		return "", sum, err
 	}
 	if _, err := tx.Exec(ctx, "UPDATE nemura.letter_request SET state = 'checked', reference = $2, render_blob = $3, render_sha256 = $4, checked_by = $5, checked_at = $6 WHERE id = $1", request, ref, blob, sum[:], by, at); err != nil {
+		return "", sum, letterError(err)
+	}
+	if _, err := tx.Exec(ctx, "SELECT nemura.letter_verification_register($1, $2, $3, $4)", org, request, key, verificationHash(ref, code)); err != nil {
 		return "", sum, letterError(err)
 	}
 	return ref, sum, Audit(ctx, tx, org, at, user(by), "nemura.letter.checked", audit.Object{Type: "letter_request", ID: request}, map[string]audit.Change{"reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum[:])}, "template": {nil, tid.String()}}, "")
@@ -538,6 +546,13 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12::jsonb, $13)`, 
 		return uuid.Nil, letterError(err)
 	}
 	if _, err := tx.Exec(ctx, "UPDATE nemura.letter_request SET state = 'issued', decided_at = $2 WHERE id = $1", request, at); err != nil {
+		return uuid.Nil, letterError(err)
+	}
+	var company string
+	if err := tx.QueryRow(ctx, "SELECT coalesce((SELECT company_name FROM nemura.letter_settings), (SELECT name FROM nemura.organisation WHERE organisation_id = $1))", org).Scan(&company); err != nil { // the company the letter names
+		return uuid.Nil, err
+	}
+	if _, err := tx.Exec(ctx, "SELECT nemura.letter_verification_issue($1, $2, $3, $4, $5)", org, request, id, day(at), company); err != nil { // the letter can now be verified (NM-LTR-05)
 		return uuid.Nil, letterError(err)
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.letter.issued", audit.Object{Type: "letter_issued", ID: id}, map[string]audit.Change{"reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum)}, "authority": {nil, authority}}, ""); err != nil {

@@ -58,7 +58,7 @@ func TestAPayRunApprovedWhileLinkedCarriesItsProofAndWaitsOnFyniqsAnswer(t *test
 		t.Fatal(err)
 	}
 	blobs, _ := local.NewDir(t.TempDir())
-	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Cipher: testCipher(t)}
 	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
 	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
 	birth := d("1990-05-20")

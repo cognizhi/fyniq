@@ -15093,15 +15093,20 @@ A sandbox (FR-EQ-29): for an exit value, what each share class and each holder w
 - **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
 - **Parameters:**
   - `exit_value` (query, required): What the shareholders receive, in the base currency, as a plain decimal.
-  - `on` (query): The day of the register to read; left out, the organisation's today.
+  - `on` (query): The day of the register to read; left out, the organisation's today, or with a round scenario the day before the round.
+  - `scenario_id` (query): A round scenario (draft or approved) to read the waterfall over as if its round had happened: its new shares are a class of their own with the terms below. A round that converts SAFEs or notes is refused by name.
+  - `round_multiple` (query): With a scenario: the multiple of the money invested the new class's preference pays first; 1 by default. The terms of a round that is not recorded are asked for, never assumed.
+  - `round_participating` (query): With a scenario: whether the new class shares the rest as converted after its preference, with no cap; false by default.
+  - `round_seniority` (query): With a scenario: the new class's seniority, 1 being paid first, ahead of any class recorded at 1 it shares pari passu with; 1 by default.
 - **Responses:**
   - `200` OK [`ExitWaterfall`](../../contracts/schemas/ExitWaterfall.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.
   - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
   - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQ-WF-01` The waterfall does not model that structure.
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
-- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `EQ-WF-01`
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `EQ-WF-01`
 
 ### `POST /v1/holder-records`
 
@@ -22177,6 +22182,25 @@ Every scenario of a forecast side by side (FR-PLN-03): each with and without its
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PLAN-01`, `PLAN-02`, `PLAN-03`, `PLAN-09`, `PLAN-10`, `PLAN-11`, `STORAGE-LOCK-01`, `STORAGE-PLAN-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/forecasts/{forecast_id}/funding-plan`
+
+**Model a forecast's planned equity rounds on the cap table** (`getForecastFundingPlan`)
+
+A sandbox (FR-PLN-07): each Equity funding row of the forecast that has a pre-money valuation, taken in the order of its days through the equity register's round model (FR-EQ-21) over the cap table fully diluted the day before, starting from the register's cap table of today: the pre-money valuation divided by the shares fully diluted before the round gives its price (cut down to 4 decimals), the money buys whole shares of it, and each holder's part before and after gives the dilution in percentage points. A round with no valuation, or one the model refuses, is listed with why; SAFEs, loans and grants are listed apart, as they issue no shares in the plan. The rows are the forecast's own, before any scenario's levers. It reads the whole cap table, so it needs the right to. Nothing is posted or saved. Read-only.
+
+- **Permission:** View on Cap table, holders, investors, equity transactions (rev 0.3)
+- **Parameters:**
+  - `forecast_id` (path, required): The forecast.
+- **Responses:**
+  - `200` OK [`FundingPlan`](../../contracts/schemas/FundingPlan.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
 ### `POST /v1/forecasts/{forecast_id}/record`
 

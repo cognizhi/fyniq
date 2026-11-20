@@ -4,11 +4,11 @@ type: task
 title: Keep the fixed asset register
 summary: How an Accountant registers assets from purchases or opening balances, how depreciation posts monthly, and how to sell, write off or void
 sources:
-  - docs/user-guide/fixed-assets.md sha256:cc161795289ad9308a7e1ee1000e37b3873af7e4bbb0911239754620a3b9c63c
+  - docs/user-guide/fixed-assets.md sha256:53860fd88ccd708b2f8f477a8108f9ff4fd083e3197b383010c479309723b62d
 data_class: general
 taint: trusted
 packs:
-  - sg-capital-allowances@2026.1
+  - sg-capital-allowances@2026.2
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
@@ -107,9 +107,10 @@ aliases:
 ## The capital allowance schedule
 
 - **Capital allowances** is the tax schedule of a year of assessment: what each asset claims under the method elected for it with **Capital allowance** in its side-peek, which an Accountant does. It posts nothing and changes no depreciation.
-- Section 19: 20% of the cost at once, then the other 80% over a working life the company elects, 6 or 12 years for a prescribed life of 12 years or less, 6, 12 or 16 for 16 years; irrevocable once made. Section 19A(1): a third of the cost in each of 3 years of assessment. Section 19A(10A): the whole cost in one year, for an asset of at most S$5,000 each, the year's claims at most S$30,000. It takes whole assets in the order they were bought.
+- Section 19: 20% of the cost at once, then the other 80% over a working life the company elects, 6 or 12 years for a prescribed life of 12 years or less, 6, 12 or 16 for 16 years; irrevocable once made. Section 19A(1): a third of the cost in each of 3 years of assessment. Section 19A(2): the whole cost in one year for a computer or prescribed automation equipment, with no cap and no limit of cost, as the company elects. Section 19A(10A): the whole cost in one year, for an asset of at most S$5,000 each, the year's claims at most S$30,000. It takes whole assets in the order they were bought.
 - The year of assessment is the year after the financial year the asset was bought in ends.
-- An asset Fyniq cannot place is listed apart with why, never guessed: none elected, bought before year of assessment 2023, a disposal stands, a working life not allowed, or over the limits of section 19A(10A). Balancing allowances and charges, hire purchase and section 19A(2) are the tax agent's.
+- An asset sold whole takes no allowance in the year of its sale: that year its row shows the tax written down value, the day it was sold and the sale proceeds net of GST, and a balancing allowance (the proceeds are lower, tax deductible) or a balancing charge (the proceeds are higher, taxable, at most what was allowed before). The year after, it has no row; the totals add them. The tax agent confirms that no allowance is also due in the year of a sale.
+- An asset Fyniq cannot place is listed apart with why, never guessed: none elected, bought before year of assessment 2023, a part of it disposed of, a working life not allowed, or over the limits of section 19A(10A). Hire purchase, a tax written down value brought forward into a one-year write-off, deferred claims and a transfer between related companies are the tax agent's.
 - The rules come from the statutory pack with IRAS's page as its source; amounts are in cents; the tax agent confirms them.
 
 (src: docs/user-guide/fixed-assets.md#the-capital-allowance-schedule)

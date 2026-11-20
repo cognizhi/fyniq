@@ -24,7 +24,8 @@ const schedule = {
   rows: [{ asset_id: "fa1", number: "FA-0001", name: "MacBook Pro 14", purchased_on: "2026-10-14", cost: sgd("3000.00"), method: "s19a1", first_ya: 2027, brought_forward: sgd("3000.00"),
     initial_allowance: sgd("0.00"), annual_allowance: sgd("1000.00"), allowance: sgd("1000.00"), carried_forward: sgd("2000.00") }],
   apart: [{ asset_id: "fa2", number: "FA-0002", name: "Dell monitor 27", purchased_on: "2026-11-02", cost: sgd("1200.00"), reason: "no_election", fix: "Elect a method on the asset: section 19, 19A(1) or 19A(10A)" }],
-  totals: { brought_forward: sgd("3000.00"), initial_allowance: sgd("0.00"), annual_allowance: sgd("1000.00"), allowance: sgd("1000.00"), carried_forward: sgd("2000.00") },
+  totals: { brought_forward: sgd("3000.00"), initial_allowance: sgd("0.00"), annual_allowance: sgd("1000.00"), allowance: sgd("1000.00"), carried_forward: sgd("2000.00"),
+    balancing_allowance: sgd("0.00"), balancing_charge: sgd("0.00") },
   notes: ["Amounts are in cents [accountant to confirm]."],
 };
 const base = {
@@ -44,6 +45,19 @@ describe("the asset reports on the fixed asset register", () => {
     expect(within(table).getAllByText("3,600.00").length).toBeGreaterThan(1);
     expect(screen.getByText("The register ties to the ledger")).toBeTruthy();
     expect(seen.some((s) => s.path === "/v1/reports/fixed-asset-movement" && /from=\d{4}-01/.test(s.query))).toBe(true);
+    await noViolations(document.body);
+  });
+
+  it("shows a sale's balancing allowance and charge, and no allowance in its year (rev 0.603)", async () => {
+    const sold = { asset_id: "fa3", number: "FA-0003", name: "Dell server", purchased_on: "2026-03-01", cost: sgd("20000.00"), method: "s19a1", first_ya: 2027, brought_forward: sgd("13333.33"),
+      initial_allowance: sgd("0.00"), annual_allowance: sgd("0.00"), allowance: sgd("0.00"), carried_forward: sgd("0.00"), sold_on: "2027-09-01", proceeds: sgd("21000.00"),
+      balancing_allowance: sgd("0.00"), balancing_charge: sgd("6666.67") };
+    answer({ ...base, "GET /v1/reports/capital-allowances": { status: 200, body: { ...schedule, rows: [sold], totals: { ...schedule.totals, balancing_charge: sgd("6666.67") } } } });
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(await screen.findByRole("tab", { name: "Capital allowances" }));
+    const table = await screen.findByRole("table", { name: "Capital allowances" });
+    expect(within(table).getByText(/sold 1 Sept 2027 for 21,000.00: balancing charge 6,666.67/)).toBeTruthy();
+    expect(screen.getByText(/balancing charge 6,666.67 · rules from/)).toBeTruthy();
     await noViolations(document.body);
   });
 

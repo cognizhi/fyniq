@@ -68,6 +68,10 @@
       ],
       "format": "date",
       "type": "string"
+    },
+    "round": {
+      "$ref": "WaterfallRound.schema.json",
+      "description": "Set when the waterfall is read over a round scenario that is not recorded (rev 0.604): the round and the terms its new class was modelled with."
     }
   },
   "required": [

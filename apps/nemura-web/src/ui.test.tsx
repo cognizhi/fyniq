@@ -24,6 +24,8 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { Erasures } from "./pages/Erasures";
+import { VerifyLetter } from "./pages/VerifyLetter";
 import { FyniqLink } from "./pages/FyniqLink";
 import { Shell } from "./pages/Shell";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
@@ -1736,5 +1738,48 @@ describe("the Finance | People switch", () => {
   it("takes the provider Fyniq named only if it has the shape of one", () => {
     expect(switchProvider("?switch=1&provider=google")).toBe("google");
     for (const bad of ["", "?switch=1", "?provider=", "?provider=Google", "?provider=a%2Fb", "?provider=%2F%2Fevil.example", "?provider=" + "a".repeat(64)]) expect(switchProvider(bad)).toBeNull();
+  });
+});
+
+// req: NM-SEC-08
+describe("erasures", () => {
+  const order = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", state: "requested", reason: "x", eligible_on: "2096-01-01", requested_by: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e11", requested_at: "2096-01-02T09:00:00Z" };
+
+  it("is for an Owner or an HR administrator, lists the orders by identity, and a second person approves with a passkey", async () => {
+    answer("GET /v1/erasures", { status: 200, body: { items: [order] } });
+    answer("POST /v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", { status: 200, body: { decided: true } });
+    stepUp.result = undefined;
+    const { container } = render(<Erasures roles={["hr_admin"]} />);
+    expect(await screen.findByText("Waiting for a second person")).toBeTruthy();
+    expect(screen.getByText("0194f5a0")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(await screen.findByText("Approved. The data is erased shortly and the register keeps a signed record.")).toBeTruthy();
+    expect(bodies.get("POST /v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision")).toEqual({ approve: true });
+  });
+
+  it("shows nothing to a role that may not see erasures", async () => {
+    render(<Erasures roles={["employee"]} />);
+    expect(await screen.findByText("Only an Owner or an HR administrator sees erasures.")).toBeTruthy();
+  });
+});
+
+// part of NM-LTR-05
+describe("verifying a letter", () => {
+  it("needs no sign-in, shows the kind, the day and the company of a valid letter and says nothing matches for the rest", async () => {
+    answer("POST /v1/letter-verification", { status: 200, body: { found: true, status: "valid", type: "employment_confirmation", issued_on: "2026-11-20", company: "Acme Pte. Ltd." } });
+    const { container } = render(<VerifyLetter />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Reference"), { target: { value: "EC-2026-0001" } });
+    fireEvent.change(screen.getByLabelText("Verification code"), { target: { value: "K7QX-2M4D-9WTB-HP3R" } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Valid")).toBeTruthy();
+    expect(screen.getByText(/Employment confirmation, issued 2026-11-20 by Acme Pte\. Ltd\./)).toBeTruthy();
+    expect(bodies.get("POST /v1/letter-verification")).toEqual({ reference: "EC-2026-0001", code: "K7QX-2M4D-9WTB-HP3R" });
+    expect(await violations(container)).toEqual([]);
+    answer("POST /v1/letter-verification", { status: 200, body: { found: false } });
+    fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText(/Nothing matches that reference and code/)).toBeTruthy();
   });
 });

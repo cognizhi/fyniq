@@ -7033,6 +7033,37 @@
    ]
   },
   {
+   "id": "nm-erasures",
+   "file": "NmErasures",
+   "title": "Erasures",
+   "canvas": "nemura-setup",
+   "module": "Setup",
+   "route": "/people/erasures",
+   "kind": "list",
+   "phase": "P1",
+   "roles": [
+    "HR administrator",
+    "Owner"
+   ],
+   "mode": "expert",
+   "requirements": [
+    "NM-SEC-05",
+    "NM-SEC-08",
+    "NM-INT-13"
+   ],
+   "purpose": "Ask for a former employee's personal data to be erased after its retention periods, and approve it as a second person.",
+   "content": [
+    "Ask: the person and why",
+    "Erasures with state and the day each is allowed from",
+    "Approve or refuse as a second person",
+    "What stays append-only"
+   ],
+   "states": [
+    "waiting for a second person",
+    "erased"
+   ]
+  },
+  {
    "id": "nm-assistant",
    "file": "NmAssistant",
    "title": "People assistant",

@@ -672,6 +672,7 @@ nemura_api | column nemura.pay_run_version.supersedes | INSERT
 nemura_api | column nemura.pay_run_version.version | INSERT
 nemura_api | column nemura.payslip.blob_key | INSERT
 nemura_api | column nemura.payslip.data | INSERT
+nemura_api | column nemura.payslip.data_sealed | INSERT
 nemura_api | column nemura.payslip.id | INSERT
 nemura_api | column nemura.payslip.month | INSERT
 nemura_api | column nemura.payslip.pay_date | INSERT
@@ -748,6 +749,8 @@ nemura_api | column nemura.person_job.job_title | INSERT
 nemura_api | column nemura.person_job.manager_person_id | INSERT
 nemura_api | column nemura.person_job.person_id | INSERT
 nemura_api | column nemura.person_job.worksite | INSERT
+nemura_api | column nemura.person_key.person_id | INSERT
+nemura_api | column nemura.person_key.wrapped | INSERT
 nemura_api | column nemura.person_pay.basic_monthly | INSERT
 nemura_api | column nemura.person_pay.created_at | INSERT
 nemura_api | column nemura.person_pay.created_by | INSERT
@@ -888,6 +891,10 @@ nemura_api | function nemura.current_org | EXECUTE
 nemura_api | function nemura.current_person | EXECUTE
 nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
+nemura_api | function nemura.letter_verification_issue | EXECUTE
+nemura_api | function nemura.letter_verification_lookup | EXECUTE
+nemura_api | function nemura.letter_verification_register | EXECUTE
+nemura_api | function nemura.letter_verification_withdraw | EXECUTE
 nemura_api | function nemura.link_client_route | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
 nemura_api | function nemura.lock_leave_head | EXECUTE
@@ -978,6 +985,7 @@ nemura_api | table nemura.person_contact | SELECT
 nemura_api | table nemura.person_dependant | SELECT
 nemura_api | table nemura.person_document | SELECT
 nemura_api | table nemura.person_job | SELECT
+nemura_api | table nemura.person_key | SELECT
 nemura_api | table nemura.person_pay | SELECT
 nemura_api | table nemura.person_pay_item | SELECT
 nemura_api | table nemura.person_secret | SELECT
@@ -1137,6 +1145,7 @@ nemura_readonly | table nemura.person_contact | SELECT
 nemura_readonly | table nemura.person_dependant | SELECT
 nemura_readonly | table nemura.person_document | SELECT
 nemura_readonly | table nemura.person_job | SELECT
+nemura_readonly | table nemura.person_key | SELECT
 nemura_readonly | table nemura.person_pay | SELECT
 nemura_readonly | table nemura.person_pay_item | SELECT
 nemura_readonly | table nemura.person_secret | SELECT
@@ -1313,6 +1322,7 @@ nemura_worker | table nemura.person_contact | SELECT
 nemura_worker | table nemura.person_dependant | SELECT
 nemura_worker | table nemura.person_document | SELECT
 nemura_worker | table nemura.person_job | SELECT
+nemura_worker | table nemura.person_key | SELECT
 nemura_worker | table nemura.person_pay | SELECT
 nemura_worker | table nemura.person_pay_item | SELECT
 nemura_worker | table nemura.person_secret | SELECT

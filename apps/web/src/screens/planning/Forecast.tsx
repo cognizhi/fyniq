@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button";
 import { formatAmount } from "../../format/amount";
 import { month } from "../../format/date";
 import { helpText } from "../../i18n";
+import { FundingPlan } from "./FundingPlan";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { PlanningTabs } from "./tabs";
 
@@ -328,6 +329,7 @@ export function Forecast() {
               { key: "type", label: "Type", choices: ["Equity", "SAFE", "Loan", "Grant"] },
               { key: "month", label: "Month" },
               { key: "amount", label: "Amount" },
+              { key: "pre_money", label: "Equity pre-money" },
               { key: "rate", label: "Loan rate" },
               { key: "tenor", label: "Loan months", whole: true },
               { key: "notes", label: "Notes" },
@@ -388,7 +390,7 @@ export function Forecast() {
           )}
         </fieldset>
       </section>
-
+      {selected && v && <FundingPlan forecastId={selected} version={v.version} />}
     </div>
   );
 }

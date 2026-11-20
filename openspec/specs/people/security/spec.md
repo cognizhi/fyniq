@@ -128,6 +128,10 @@ Source: PRD-002 §20 · Priority M · Phase P1
 - **WHEN** `nemura erasure-reapply` runs before the copy opens
 - **THEN** every entry that verifies is applied again, and one that does not verify is reported and not applied
 
+#### Scenario: New payslips are sealed under the person's key (rev 0.60)
+- **WHEN** a payslip is made
+- **THEN** its itemised figures are sealed under a key of the person's own and the erasure destroys that key, so they can never be read again while the append-only row stays
+
 #### Scenario: What it cannot reach
 - **WHEN** personal data sits in plaintext in an append-only row
 - **THEN** it stays, tied to the person's opaque ID, until the owner decides how it is shredded

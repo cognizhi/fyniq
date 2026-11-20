@@ -944,6 +944,18 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | docs/user-guide/equity-register.md, statutory-calendar.md → equity.register, compliance.calendar, compliance.record-filing (investors' information rights as calendar tasks, FR-EQ-28)
 
+## [2026-11-20] compile | docs/user-guide/forecast.md → planning.forecast (the funding plan taken through the round model, FR-PLN-07)
+
+## [2026-11-20] compile | nemura-erasure: erase a former employee's data (NM-SEC-08)
+
 ## [2026-11-20] compile | invoices: the provider's credit notes mirrored and issued at the provider's total (FR-PSP-07, rev 0.601)
 
 ## [2026-11-20] compile | docs/user-guide/webhooks.md → settings.webhooks (webhooks and events, FR-INT-12); organisation-settings: the features.webhooks switch
+
+## [2026-11-20] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (section 19A(2), the balancing allowance and charge on a sale, sg-capital-allowances@2026.2, FR-FA-04)
+
+## [2026-11-20] compile | nemura-erasure: new payslips sealed under a per-person key
+
+## [2026-11-20] compile | docs/user-guide/exit-waterfall.md → equity.exit-waterfall (the waterfall over a round scenario that is not recorded, FR-EQ-29)
+
+## [2026-11-20] compile | nemura-verify-letter: verify an issued letter (NM-LTR-05)

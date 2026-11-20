@@ -28,6 +28,12 @@ Enter an **exit value**: what the shareholders receive after debts and sale cost
 
 The money invested in a class is what its share issues paid up to the day, shared among its holders by shares. A holder who bought shares from another holder has the class's average price. The accountant confirms this.
 
+## Over a round that is not recorded
+
+When a round scenario exists (**Equity › Model a round**), choose it under **Over a round that is not recorded** and the waterfall is read as if the round had happened. Its new shares become a class of their own, "New round (not recorded)", each investor's money being what its shares cost, next to every class as the register has it the day before the round: the round moves no one's shares, and a pool top-up grants none.
+
+The terms of that class are not recorded anywhere, so you give them: the multiple its preference pays first (1 by default), whether it then shares the rest as converted (no by default), and its seniority (1, paid first, by default). The page says the terms are the ones you asked for. A round that converts SAFEs or notes is refused, naming why: which class their conversions would take is not recorded. The scenario is only read.
+
 ## What it refuses
 
 It refuses a class with a **cap** on its participation and a class with a **cumulative dividend**, and says which class. It never approximates them. The company's lawyer or accountant confirms them first. Anti-dilution protection is listed, and no adjustment is applied, because none is recorded.

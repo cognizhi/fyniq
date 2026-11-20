@@ -21,12 +21,30 @@ export function ExitWaterfall() {
   const id = useId();
   const [value, setValue] = useState("8000000.00");
   const valid = /^[0-9]+(\.[0-9]+)?$/.test(value);
-  const q = useQuery({
-    queryKey: ["exit-waterfall", value],
-    enabled: valid,
+  // A round that is not recorded (rev 0.604): a scenario, and the terms of the class its shares would be.
+  const [scenario, setScenario] = useState("");
+  const [multiple, setMultiple] = useState("1");
+  const [participating, setParticipating] = useState(false);
+  const [seniority, setSeniority] = useState("1");
+  const termsValid = /^[0-9]+(\.[0-9]+)?$/.test(multiple) && /^[1-9]$/.test(seniority);
+  const scenarios = useQuery({
+    queryKey: ["round-scenarios", "for-waterfall"],
     retry: false,
     queryFn: async () => {
-      const { data, error } = await api.GET("/v1/exit-waterfall", { params: { query: { exit_value: value } } });
+      const { data, error } = await api.GET("/v1/round-scenarios", {});
+      if (error) throw error;
+      return data.items;
+    },
+  });
+  const q = useQuery({
+    queryKey: ["exit-waterfall", value, scenario, multiple, participating, seniority],
+    enabled: valid && (!scenario || termsValid),
+    retry: false,
+    queryFn: async () => {
+      const query = scenario
+        ? { exit_value: value, scenario_id: scenario, round_multiple: multiple, round_participating: participating, round_seniority: Number(seniority) }
+        : { exit_value: value };
+      const { data, error } = await api.GET("/v1/exit-waterfall", { params: { query } });
       if (error) throw error;
       return data as Waterfall;
     },
@@ -63,6 +81,48 @@ export function ExitWaterfall() {
           </span>
         </div>
         {!valid && <p className="fy-error">Enter the exit value as a plain number, such as 8000000.00.</p>}
+        {(scenarios.data?.length ?? 0) > 0 && (
+          <fieldset className="fy-stack fy-stack--2">
+            <legend className="fy-label">{helpText("equity.waterfall-round").label}</legend>
+            <span className="fy-help">{helpText("equity.waterfall-round").tooltip}</span>
+            <div className="fy-form fy-form--2">
+              <div className="fy-field">
+                <label className="fy-label" htmlFor={`${id}-scenario`}>
+                  Round scenario
+                </label>
+                <select id={`${id}-scenario`} className="fy-select" value={scenario} onChange={(e) => setScenario(e.target.value)}>
+                  <option value="">None: the recorded shares only</option>
+                  {scenarios.data?.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {scenario && (
+                <>
+                  <div className="fy-field">
+                    <label className="fy-label" htmlFor={`${id}-multiple`}>
+                      Its preference multiple
+                    </label>
+                    <input id={`${id}-multiple`} className="fy-input fy-num" inputMode="decimal" value={multiple} onChange={(e) => setMultiple(e.target.value)} />
+                  </div>
+                  <div className="fy-field">
+                    <label className="fy-label" htmlFor={`${id}-seniority`}>
+                      Its seniority (1 is paid first)
+                    </label>
+                    <input id={`${id}-seniority`} className="fy-input fy-num" inputMode="numeric" maxLength={1} value={seniority} onChange={(e) => setSeniority(e.target.value)} />
+                  </div>
+                  <label className="fy-row gap-2 fy-label">
+                    <input type="checkbox" checked={participating} onChange={(e) => setParticipating(e.target.checked)} />
+                    It then shares the rest as converted
+                  </label>
+                </>
+              )}
+            </div>
+            {scenario && !termsValid && <p className="fy-error">Enter the multiple as a plain number and the seniority as a digit from 1 to 9.</p>}
+          </fieldset>
+        )}
       </section>
       {q.isError && <Refusal problem={problemOf(q.error)} title="The waterfall could not be modelled" />}
       {w && !w.available && (
@@ -73,6 +133,12 @@ export function ExitWaterfall() {
       )}
       {w?.available && (
         <>
+          {w.round && (
+            <p className="fy-banner fy-banner--info fy-small" role="status">
+              Over the round of {w.round.name}, not recorded: {money(w.round.raised)} at {money(w.round.price_per_share)} a share, a class of {w.round.multiple}x
+              {w.round.participating ? ", participating" : ", non-participating"}, seniority {w.round.seniority}. Those terms are the ones you asked for, not a recorded class&apos;s.
+            </p>
+          )}
           <Table title="Under the preferences" classes={w.classes} currency={w.currency} />
           <Table title="As converted: every share the same" classes={w.as_converted} currency={w.currency} />
           {w.notes.length > 0 && (

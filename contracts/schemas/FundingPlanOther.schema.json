@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "The amount."
+    },
+    "month": {
+      "description": "The month its money arrives.",
+      "examples": [
+        "2027-02"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "row": {
+      "description": "The funding row of the forecast it is.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "type": {
+      "description": "Its kind.",
+      "enum": [
+        "SAFE",
+        "Loan",
+        "Grant"
+      ],
+      "examples": [
+        "Loan"
+      ],
+      "type": "string"
+    },
+    "why": {
+      "description": "Why the cap table does not change by it.",
+      "examples": [
+        "A loan or a grant issues no shares"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "row",
+    "type",
+    "month",
+    "amount",
+    "why"
+  ],
+  "title": "FundingPlanOther",
+  "type": "object"
+}

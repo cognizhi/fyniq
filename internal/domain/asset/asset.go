@@ -71,6 +71,7 @@ const (
 	TaxS19     = "s19"     // section 19: the initial allowance and annual allowances over an elected working life
 	TaxS19A1   = "s19a1"   // section 19A(1): a third a year over 3 years
 	TaxS19A10A = "s19a10a" // section 19A(10A): the whole cost in one year, for a low-value asset
+	TaxS19A2   = "s19a2"   // section 19A(2): the whole cost in one year, for a computer or prescribed automation equipment (rev 0.603)
 )
 
 // TaxElection is the capital allowance claim a company elects for an asset (FR-FA-04, rev 0.591): the method and, under section 19, the working life the Sixth Schedule
@@ -93,12 +94,12 @@ func CheckTax(t *TaxElection) *Error {
 		if t.PrescribedYears < 1 || t.Years < 1 {
 			return &Error{CodeTaxMethod, "a section 19 election names the working life the Sixth Schedule prescribes and the years elected", "Send both, such as 6 and 6 for a motor vehicle"}
 		}
-	case TaxS19A1, TaxS19A10A:
+	case TaxS19A1, TaxS19A10A, TaxS19A2:
 		if t.PrescribedYears != 0 || t.Years != 0 {
 			return &Error{CodeTaxMethod, "a working life belongs to a section 19 election only", "Leave the working life out"}
 		}
 	default:
-		return &Error{CodeTaxMethod, fmt.Sprintf("the method %q is not section 19, 19A(1) or 19A(10A)", t.Method), "Use s19, s19a1 or s19a10a"}
+		return &Error{CodeTaxMethod, fmt.Sprintf("the method %q is not section 19, 19A(1), 19A(2) or 19A(10A)", t.Method), "Use s19, s19a1, s19a2 or s19a10a"}
 	}
 	return nil
 }

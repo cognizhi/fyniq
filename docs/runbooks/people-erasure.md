@@ -19,7 +19,8 @@ of theirs not yet answered, refuses it.
    in one transaction empties the person's names, work email, phone and reason for leaving, their own contact details, emergency contacts, NRIC or FIN
    and salary account, and the member's display name, tells Fyniq with a tombstone (which clears the name and email Fyniq held), and deletes the
    person's files (documents, payslip and letter PDFs; a file under retention is tried again when it lapses).
-3. **No append-only record is changed and no guard function is loosened.** What sits in plaintext in append-only rows (issued letters, payslip figures,
+3. From 21 Nov 2026 the itemised figures of each **new payslip** are sealed under a key of the person's own (`person_key`); the erasure destroys the key, so those figures can never be read again. `reapply_erasure` destroys a key a restore brought back.
+4. **No append-only record is changed and no guard function is loosened.** What sits in plaintext in append-only rows (issued letters, payslip figures,
    pay run lines, leave and sick notes, key employment terms, dependants, classification, assistant drafts) stays, tied to the person's opaque ID.
    `internal/nemura/erasure.Classes` lists every class of the data inventory with what an erasure does to it; the owner decides how the append-only
    ones are shredded (`docs/security/p2-grants-for-human-review.md`).

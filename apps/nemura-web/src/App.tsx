@@ -7,6 +7,7 @@ import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
+import { VerifyLetter } from "./pages/VerifyLetter";
 import { LeaverHome } from "./pages/LeaverHome";
 import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
@@ -16,6 +17,7 @@ import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
 import { MyPay, Payslip } from "./pages/MyPay";
+import { Erasures } from "./pages/Erasures";
 import { FyniqLink } from "./pages/FyniqLink";
 import { rememberPage, switchProvider, switchedIn } from "./workspace";
 import { PayRunApproval } from "./pages/PayRunApproval";
@@ -75,6 +77,7 @@ export function App() {
   }, [path, route, state.status, landing, signedOut]);
 
   const body = (() => {
+    if (route?.id === "verify-letter") return <VerifyLetter />; // public: no sign-in, no session wait (NM-LTR-05)
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
     if (path === "/join") return <Join kind={joinKind()} />;
     if (path === "/sign-in") return <SignIn returnTo={landing === "/sign-in" ? "/" : landing} />;
@@ -96,6 +99,7 @@ export function App() {
     if (state.status === "in" && route.id === "my-pay") return <MyPay roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payslip") return <Payslip id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payrun-approval") return <PayRunApproval id={matched?.params.id ?? ""} roles={state.session.roles ?? []} member={state.session.member_id} />;
+    if (state.status === "in" && route.id === "erasures") return <Erasures roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "fyniq-link") return <FyniqLink roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payroll-hr") return <PayrollHR roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "people-requests") return <PeopleRequests roles={state.session.roles ?? []} />;

@@ -80,6 +80,36 @@ describe("Forecast", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-PLN-07
+  it("shows what the planned equity rounds do to ownership, with a round that has no valuation listed with why, and the rows that issue no shares", async () => {
+    const m = (amount: string) => ({ amount, currency: "SGD" });
+    answer({
+      "GET /v1/forecasts": { status: 200, body: { items: [{ id, status: "recorded", version: 2, plan }] } },
+      [`GET /v1/forecasts/${id}`]: { status: 200, body: { id, status: "recorded", version: 2, plan }, headers: { ETag: `"2-posted"` } },
+      [`GET /v1/forecasts/${id}/results`]: { status: 200, body: results },
+      [`GET /v1/forecasts/${id}/funding-plan`]: { status: 200, body: {
+        forecast_id: id, currency: "SGD", cap_table_on: "2026-12-05", shares_fully_diluted: "1000000", notes: ["A SAFE converts at the next priced round: not modelled."],
+        rounds: [
+          { row: 0, month: "2027-06", planned: m("1000000.00"), pre_money: m("4000000.00"), modelled: true, price_per_share: m("4.00"), new_shares: "250000", raised: m("1000000.00"), post_money: m("5000000.00"),
+            holders: [{ holder_id: "h1", holder_name: "Ah Kow", before: "70.00", after: "56.00", points_lost: "14.00", shares_after: "700000" }, { holder_name: "New investors", before: "", after: "20.00", points_lost: "-20.00", shares_after: "250000" }] },
+          { row: 1, month: "2027-09", planned: m("300000.00"), modelled: false, why: "No pre-money valuation is planned, so the round has no price to model: add one to the funding row", holders: [] },
+        ],
+        other: [{ row: 2, type: "Loan", month: "2027-02", amount: m("50000.00"), why: "A loan or a grant issues no shares" }],
+      } },
+    });
+    renderPage(Forecast, { path: "/planning/forecast", session: accountant, mode: "expert" });
+    const heading = await screen.findByRole("heading", { name: "What the planned equity rounds do to ownership" });
+    const card = heading.closest("section") as HTMLElement;
+    const table = within(card).getByRole("table", { name: /Each holder before and after the round of Jun 2027/ });
+    const kow = within(table).getByText("Ah Kow").closest("tr") as HTMLElement;
+    expect(within(kow).getByText("70.00%")).toBeTruthy();
+    expect(within(kow).getByText("56.00%")).toBeTruthy();
+    expect(within(kow).getByText("14.00")).toBeTruthy();
+    expect(within(card).getByText(/Not modelled\. No pre-money valuation is planned/)).toBeTruthy();
+    expect(within(card).getByText(/Loan of 50,000\.00 SGD\. A loan or a grant issues no shares/)).toBeTruthy();
+    await noViolations(document.body);
+  });
+
   // req: FR-PLN-03
   it("puts the results first, and folds a recorded forecast's plan until asked (rev 0.247)", async () => {
     answer({

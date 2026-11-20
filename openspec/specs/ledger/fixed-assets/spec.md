@@ -106,3 +106,9 @@ Source: PRD-001 §8.9 · Priority S · Phase P2
 - **WHEN** an asset has no election, was bought before YA 2023, has a disposal that stands, has a working life its prescribed life does not allow, or is over the limits of S19A(10A)
 - **THEN** it is listed apart with the reason and claims nothing, and is never guessed
 - **AND** a S19 election, once made, never changes
+
+#### Scenario: Computers and a sale's balancing allowance or charge (rev 0.603)
+- **GIVEN** an asset elected under S19A(2), the whole cost in one year with no cap, or an asset sold whole
+- **WHEN** the schedule is produced for the year of assessment of the sale
+- **THEN** no allowance is given that year and the row shows the tax written down value, the sale proceeds net of GST and a balancing allowance (proceeds below it) or a balancing charge (proceeds above it, at most the allowances allowed before)
+- **AND** the years after the sale have no row, and an asset with only a part disposed of is still listed apart

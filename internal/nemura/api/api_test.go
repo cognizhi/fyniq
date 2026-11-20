@@ -614,7 +614,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, RunLink: fakeRunLink{err: requestsErr}, LinkOps: fakeLinkOps{err: requestsErr}, LetterVerify: fakeLetterVerify{err: requestsErr}, Erasure: fakeErasure{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkSync: fakeLinkSync{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -789,6 +789,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		featuresOff        bool             // Leave is switched off
 		leaver             bool             // the person has left
 		seed               func(m *memIdem) // keys already claimed
+		before             func()
 		header             map[string]string
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
@@ -849,7 +850,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		"NM_ERASURE_ALREADY":        {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeAlready, Message: "x."}},
 		"NM_ERASURE_REGISTER":       {method: "POST", path: "/v1/erasures/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71/decision", body: `{"approve":true}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeBadRegister, Message: "x."}},
 		"NM_ERASURE_ACCESS_REQUEST": {method: "POST", path: "/v1/erasures", body: `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","reason":"x"}`, signedIn: true, owner: true, stepUp: true, err: &erasure.Refusal{Code: erasure.CodeOpenAccessReq, Message: "x."}},
-		CodeClientExists:            {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
+		"NM_RATE_LIMITED": {method: "POST", path: "/v1/letter-verification", body: `{"reference":"RL-2026-0001","code":"AAAA-AAAA-AAAA-AAAA"}`, before: func() {
+			verifyLimiter = verifyLimit{}
+			for i := 0; i < 10; i++ {
+				verifyLimiter.allow("RL-2026-0001", testNow)
+			}
+		}},
+		CodeClientExists: {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
 		tr, ok := triggers[c.Code]
@@ -867,6 +874,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		if tr.seed != nil {
 			testIdem = newMemIdem()
 			tr.seed(testIdem)
+		}
+		if tr.before != nil {
+			tr.before()
 		}
 		_, mux := testAPI(t)
 		testIdem = nil
@@ -1401,3 +1411,14 @@ func (f fakeErasure) Decide(context.Context, Session, []authz.Role, uuid.UUID, b
 func (f fakeErasure) List(context.Context, Session) ([]ErasureOrderView, error) {
 	return []ErasureOrderView{}, f.err
 }
+
+type fakeLetterVerify struct{ err error }
+
+func (f fakeLetterVerify) Verify(_ context.Context, reference, code string) (LetterVerificationView, error) {
+	if reference == "EC-2026-0001" && code == "K7QX-2M4D-9WTB-HP3R" {
+		s, ty, on, co := "valid", "employment_confirmation", "2026-11-20", "Acme Pte. Ltd."
+		return LetterVerificationView{Found: true, Status: &s, Type: &ty, IssuedOn: &on, Company: &co}, f.err
+	}
+	return LetterVerificationView{}, f.err
+}
+func (f fakeLetterVerify) Withdraw(context.Context, Session, uuid.UUID) error { return f.err }
