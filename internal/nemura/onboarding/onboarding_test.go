@@ -46,3 +46,57 @@ func TestALeavingKeepsItsDatesApartAndIsWhole(t *testing.T) {
 		t.Errorf("the account narrows on %v", got)
 	}
 }
+
+// A template is whole: a name, one to sixty tasks, each with a title, one of four assignees and an offset within range; the standard template passes and its tasks are due from the start date; a joiner's
+// task is decided by the joiner, a manager's by the manager and any by the HR team (NM-ONB-01).
+// req: NM-ONB-01
+func TestATemplateIsWholeAndItsTasksAreDueFromTheStartDate(t *testing.T) {
+	if err := onboarding.CheckTemplate("Office joiner", onboarding.Standard()); err != nil {
+		t.Fatal(err)
+	}
+	for name, tc := range map[string]struct {
+		name  string
+		tasks []onboarding.Task
+	}{
+		"no name":       {" ", onboarding.Standard()},
+		"no tasks":      {"x", nil},
+		"unknown who":   {"x", []onboarding.Task{{Title: "a", Assignee: "boss"}}},
+		"no title":      {"x", []onboarding.Task{{Title: " ", Assignee: "hr"}}},
+		"too early":     {"x", []onboarding.Task{{Title: "a", Assignee: "hr", Offset: -61}}},
+		"too late":      {"x", []onboarding.Task{{Title: "a", Assignee: "hr", Offset: 366}}},
+		"detail length": {"x", []onboarding.Task{{Title: "a", Assignee: "hr", Detail: strings.Repeat("x", 1001)}}},
+	} {
+		if err := onboarding.CheckTemplate(tc.name, tc.tasks); err == nil {
+			t.Errorf("%s was accepted", name)
+		}
+	}
+	start := d("2026-12-01")
+	kets := onboarding.Task{}
+	for _, task := range onboarding.Standard() {
+		if strings.Contains(task.Title, "KETs") {
+			kets = task
+		}
+	}
+	if got := onboarding.DueOn(start, kets.Offset); got != d("2026-12-15") {
+		t.Errorf("the KETs are due %v: they are due within 14 days of starting", got)
+	}
+	if got := onboarding.DueOn(start, -3); got != d("2026-11-28") {
+		t.Errorf("three days before: %v", got)
+	}
+	for _, tc := range []struct {
+		assignee string
+		who      onboarding.Who
+		want     bool
+	}{
+		{"joiner", onboarding.Who{Joiner: true}, true}, {"joiner", onboarding.Who{Manager: true, IT: true}, false}, {"manager", onboarding.Who{Manager: true}, true},
+		{"manager", onboarding.Who{Joiner: true}, false}, {"it", onboarding.Who{IT: true}, true}, {"it", onboarding.Who{Manager: true, Joiner: true}, false},
+		{"hr", onboarding.Who{HR: true}, true}, {"hr", onboarding.Who{IT: true, Manager: true, Joiner: true}, false}, {"joiner", onboarding.Who{HR: true}, true},
+	} {
+		if got := onboarding.CanDecide(tc.assignee, tc.who); got != tc.want {
+			t.Errorf("%s by %+v: %v", tc.assignee, tc.who, got)
+		}
+	}
+	if !onboarding.Overdue("open", d("2026-12-01"), d("2026-12-02")) || onboarding.Overdue("done", d("2026-12-01"), d("2026-12-02")) || onboarding.Overdue("open", d("2026-12-01"), d("2026-12-01")) {
+		t.Error("overdue is an open task past its due date")
+	}
+}
