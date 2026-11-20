@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class_id": {
+      "description": "The class's ID, or account:\u003cid\u003e for the shares of an account with no recorded class.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"
+      ],
+      "type": "string"
+    },
+    "converts": {
+      "description": "True for a non-participating preference class that does better converting.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "has_preference": {
+      "description": "Whether it has a liquidation preference.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "holders": {
+      "description": "Its holders' parts.",
+      "items": {
+        "$ref": "WaterfallHolderView.schema.json"
+      },
+      "type": "array"
+    },
+    "multiple": {
+      "description": "The multiple of the money invested its preference pays first.",
+      "examples": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Series Seed"
+      ],
+      "type": "string"
+    },
+    "participating": {
+      "description": "Whether it shares the rest as converted after its preference, with no cap.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "preference": {
+      "$ref": "Money.schema.json",
+      "description": "What it takes as its preference: zero for a class that converts or has none."
+    },
+    "residual": {
+      "$ref": "Money.schema.json",
+      "description": "What it takes of the rest, as converted."
+    },
+    "seniority": {
+      "description": "1 is paid first; classes of the same seniority share pari passu.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "Its proceeds."
+    }
+  },
+  "required": [
+    "class_id",
+    "name",
+    "has_preference",
+    "preference",
+    "residual",
+    "total",
+    "converts",
+    "holders"
+  ],
+  "title": "WaterfallClassView",
+  "type": "object"
+}

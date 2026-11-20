@@ -511,6 +511,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (getExemptStatusEvidence): Get an exempt status's file
 - `DELETE /v1/exempt-statuses/{status_id}/evidence/{evidence_id}` (removeExemptStatusEvidence): Remove a file from a drafted exempt status
 - `POST /v1/exempt-statuses/{status_id}/record` (recordExemptStatus): Record an exempt-private-company status
+- `GET /v1/exit-waterfall` (getExitWaterfall): Model what an exit pays each class and holder
 - `GET /v1/expense-claims` (listExpenseClaims): List expense claims
 - `POST /v1/expense-claims` (createExpenseClaim): Save a draft expense claim
 - `GET /v1/expense-claims/gst-codes` (getClaimGSTCodes): Get the GST codes for a claim's receipts

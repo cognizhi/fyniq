@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_converted": {
+      "description": "Every class converted, no preference: each share the same.",
+      "items": {
+        "$ref": "WaterfallClassView.schema.json"
+      },
+      "type": "array"
+    },
+    "available": {
+      "description": "False until a class with a liquidation preference is recorded: nothing is modelled.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "classes": {
+      "description": "Under the preferences, each class's proceeds, in the order of its name.",
+      "items": {
+        "$ref": "WaterfallClassView.schema.json"
+      },
+      "type": "array"
+    },
+    "currency": {
+      "description": "The base currency every amount is in.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "exit_value": {
+      "$ref": "Money.schema.json",
+      "description": "What the shareholders receive after debts and sale costs."
+    },
+    "message": {
+      "description": "Why it is not available.",
+      "examples": [
+        "No share class records a liquidation preference."
+      ],
+      "type": "string"
+    },
+    "modelled": {
+      "description": "The structures the waterfall models: the others are refused by name, never approximated.",
+      "items": {
+        "examples": [
+          "An uncapped participating preference"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "notes": {
+      "description": "What the register records that the waterfall does not model.",
+      "items": {
+        "examples": [
+          "Series Seed has anti-dilution protection (broad based), and no adjustment of its conversion is recorded, so none is applied [lawyer to confirm]."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "on": {
+      "description": "The day of the register it reads.",
+      "examples": [
+        "2027-03-12"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "available",
+    "currency",
+    "on",
+    "exit_value",
+    "classes",
+    "as_converted",
+    "notes",
+    "modelled"
+  ],
+  "title": "ExitWaterfall",
+  "type": "object"
+}

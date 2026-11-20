@@ -27071,6 +27071,67 @@ components:
       required:
         - items
       type: object
+    ExitWaterfall:
+      additionalProperties: false
+      properties:
+        as_converted:
+          description: "Every class converted, no preference: each share the same."
+          items:
+            $ref: "#/components/schemas/WaterfallClassView"
+          type: array
+        available:
+          description: "False until a class with a liquidation preference is recorded: nothing is modelled."
+          examples:
+            - true
+          type: boolean
+        classes:
+          description: Under the preferences, each class's proceeds, in the order of its name.
+          items:
+            $ref: "#/components/schemas/WaterfallClassView"
+          type: array
+        currency:
+          description: The base currency every amount is in.
+          examples:
+            - SGD
+          type: string
+        exit_value:
+          $ref: "#/components/schemas/Money"
+          description: What the shareholders receive after debts and sale costs.
+        message:
+          description: Why it is not available.
+          examples:
+            - No share class records a liquidation preference.
+          type: string
+        modelled:
+          description: "The structures the waterfall models: the others are refused by name, never approximated."
+          items:
+            examples:
+              - An uncapped participating preference
+            type: string
+          type: array
+        notes:
+          description: What the register records that the waterfall does not model.
+          items:
+            examples:
+              - Series Seed has anti-dilution protection (broad based), and no adjustment of its conversion is recorded, so none is applied [lawyer to confirm].
+            type: string
+          type: array
+        "on":
+          description: The day of the register it reads.
+          examples:
+            - "2027-03-12"
+          format: date
+          type: string
+      required:
+        - available
+        - currency
+        - "on"
+        - exit_value
+        - classes
+        - as_converted
+        - notes
+        - modelled
+      type: object
     ExpenseClaim:
       additionalProperties: false
       properties:
@@ -63491,6 +63552,101 @@ components:
         - actual
         - budget
         - variance
+      type: object
+    WaterfallClassView:
+      additionalProperties: false
+      properties:
+        class_id:
+          description: The class's ID, or account:<id> for the shares of an account with no recorded class.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10
+          type: string
+        converts:
+          description: True for a non-participating preference class that does better converting.
+          examples:
+            - false
+          type: boolean
+        has_preference:
+          description: Whether it has a liquidation preference.
+          examples:
+            - true
+          type: boolean
+        holders:
+          description: Its holders' parts.
+          items:
+            $ref: "#/components/schemas/WaterfallHolderView"
+          type: array
+        multiple:
+          description: The multiple of the money invested its preference pays first.
+          examples:
+            - "1"
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Series Seed
+          type: string
+        participating:
+          description: Whether it shares the rest as converted after its preference, with no cap.
+          examples:
+            - false
+          type: boolean
+        preference:
+          $ref: "#/components/schemas/Money"
+          description: "What it takes as its preference: zero for a class that converts or has none."
+        residual:
+          $ref: "#/components/schemas/Money"
+          description: What it takes of the rest, as converted.
+        seniority:
+          description: 1 is paid first; classes of the same seniority share pari passu.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        total:
+          $ref: "#/components/schemas/Money"
+          description: Its proceeds.
+      required:
+        - class_id
+        - name
+        - has_preference
+        - preference
+        - residual
+        - total
+        - converts
+        - holders
+      type: object
+    WaterfallHolderView:
+      additionalProperties: false
+      properties:
+        holder_id:
+          description: The holder.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c11
+          format: uuid
+          type: string
+        holder_name:
+          description: Their name.
+          examples:
+            - Seedling Ventures Pte. Ltd.
+          type: string
+        invested:
+          $ref: "#/components/schemas/Money"
+          description: "The money invested in the class that is theirs: the class's issues shared by shares (ALLOC-PRORATA)."
+        shares:
+          description: Their shares of the class, as converted.
+          examples:
+            - "1500000"
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+          description: What they receive.
+      required:
+        - holder_id
+        - holder_name
+        - shares
+        - invested
+        - total
       type: object
     WithdrawFXRateRequest:
       additionalProperties: false
@@ -149180,6 +149336,117 @@ paths:
       x-fyniq-permission:
         capability: Director accounts, settlements, share issues (rev 0.3)
         right: A
+  /v1/exit-waterfall:
+    get:
+      description: "A sandbox (FR-EQ-29): for an exit value, what each share class and each holder would receive under the liquidation preferences the register records (a non-participating preference of a multiple of the money invested, which converts when that pays the class more; an uncapped participating preference; seniority between classes, classes of one seniority sharing pari passu), next to every class converted with no preference. The money invested in a class is its issues up to the day, shared among its holders by shares. A capped participating preference and a cumulative dividend are refused by name (EQ-WF-01), never approximated, until a lawyer or accountant confirms them. Nothing is posted or saved. Read-only."
+      operationId: getExitWaterfall
+      parameters:
+        - description: What the shareholders receive, in the base currency, as a plain decimal.
+          explode: false
+          in: query
+          name: exit_value
+          required: true
+          schema:
+            description: What the shareholders receive, in the base currency, as a plain decimal.
+            examples:
+              - "8000000.00"
+            pattern: ^[0-9]+(\.[0-9]+)?$
+            type: string
+        - description: The day of the register to read; left out, the organisation's today.
+          explode: false
+          in: query
+          name: "on"
+          schema:
+            description: The day of the register to read; left out, the organisation's today.
+            examples:
+              - "2027-03-12"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExitWaterfall"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `EQ-WF-01` The waterfall does not model that structure."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Model what an exit pays each class and holder
+      tags:
+        - Cap table
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - EQ-WF-01
+      x-fyniq-permission:
+        capability: Cap table, holders, investors, equity transactions (rev 0.3)
+        right: V
   /v1/expense-claims:
     get:
       description: "The claims at their current version, newest date first (a draft without a date last), a page at a time (FR-AP-14): the caller's own (the default), those whose approval waits for the caller, or everyone's. A person whose right on \"Expense claims\" is their own claims only (an Employee) sees only theirs, whatever they ask for. Each has its claimant, stage and total. Read-only; no side effects."
