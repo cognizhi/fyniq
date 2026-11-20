@@ -9,6 +9,7 @@ package api
 var auditedReads = map[string]string{
 	"exportAccessReview":         "access_review.exported",
 	"getCorporateDocumentPDF":    "corporate_document.pdf_downloaded",
+	"exportBoardPack":            "report.exported",
 	"exportCapTable":             "report.exported",
 	"exportDirectorStatement":    "report.exported",
 	"exportDocumentTemplates":    "document_template_bundle.exported",

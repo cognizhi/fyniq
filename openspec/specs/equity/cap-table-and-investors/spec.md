@@ -289,7 +289,7 @@ Source: PRD-001 §8.23 · Priority S · Phase P2
 - **GIVEN** an investor's recorded rights list monthly accounts, quarterly accounts, annual accounts or the board pack, each with the days after the period's end it is due
 - **WHEN** the statutory calendar is read
 - **THEN** it holds one task for each month, quarter or financial year the right covers from the day the rights apply, due that many days after the period's end
-- **AND** the task is closed, with the update or pack as its evidence, when it reaches a member who signs in as the holder; a holder no member signs in as is told so
+- **AND** the task is closed, with the update or pack as its evidence, when it reaches a member who signs in as the holder; a holder no member signs in as has one item not assessed, naming why, and nothing due before the calendar's rules start is in it
 
 ### Requirement: FR-EQ-23 Investor updates
 The system SHALL build a monthly or quarterly investor update from the board pack (FR-RPT-06) and send it to a distribution list as access-controlled links.

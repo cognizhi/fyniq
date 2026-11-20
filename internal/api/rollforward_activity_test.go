@@ -51,3 +51,32 @@ func TestTheRollForwardShowsWhatEachCustomerWasBilledCollectedAndRecognised(t *t
 		t.Errorf("August: %d %s", q.Status, q.Raw)
 	}
 }
+
+// Billed is what the customer owes more, GST included, because the check is against the receivable; recognised is the net revenue (FR-RPT-13, rev 0.594). A GST-registered
+// company's invoice of 1,000.00 + 90.00 GST dated 14 October is billed 1,090.00 and recognised 1,000.00, and what the customer owes moved by 1,090.00.
+// req: FR-RPT-13
+func TestBilledIsGrossOfGSTAndRecognisedIsNet(t *testing.T) {
+	e := newEnv(t)
+	e.customer()
+	if r := e.call(http.MethodPost, "/v1/organisation/gst-registrations", e.as(authz.Controller), map[string]any{"registered_from": "2026-01-01", "gst_number": "202312345K"}); r.Status != 201 {
+		t.Fatalf("registering for GST: %d %s", r.Status, r.Raw)
+	}
+	acc := e.as(authz.Accountant)
+	r := e.call(http.MethodPost, "/v1/invoices", acc, e.invoiceDraft("1", "1000.00"))
+	if r.Status != 201 {
+		t.Fatalf("saving: %d %s", r.Status, r.Raw)
+	}
+	if p := e.call(http.MethodPost, "/v1/invoices/"+r.str("id")+"/issue", acc, nil, "If-Match", r.Header.Get("ETag")); p.Status != 200 {
+		t.Fatalf("issuing: %d %s", p.Status, p.Raw)
+	}
+	g := e.call(http.MethodGet, "/v1/reports/deferral-roll-forward?from=2026-10&to=2026-10", e.as(authz.Auditor), nil)
+	cs, _ := g.Body["customers"].([]any)
+	if g.Status != 200 || len(cs) != 1 {
+		t.Fatalf("October: %d %s", g.Status, g.Raw)
+	}
+	x := cs[0].(map[string]any)
+	amount := func(field string) string { return x[field].(map[string]any)["amount"].(string) }
+	if amount("billed") != "1090.00" || amount("recognised") != "1000.00" || amount("receivable_movement") != "1090.00" || x["explained"] != true {
+		t.Errorf("a GST-registered invoice: %v", x)
+	}
+}

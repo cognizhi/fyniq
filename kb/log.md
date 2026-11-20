@@ -957,3 +957,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/exit-waterfall.md → equity.exit-waterfall (the waterfall over a round scenario that is not recorded, FR-EQ-29)
 
 ## [2026-11-20] compile | nemura-verify-letter: verify an issued letter (NM-LTR-05)
+
+## [2026-11-20] compile | docs/user-guide/statutory-calendar.md → compliance.calendar (a holder with no member is Not assessed; nothing due before the rules start, FR-EQ-28)

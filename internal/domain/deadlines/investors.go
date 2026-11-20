@@ -79,7 +79,7 @@ type Delivery struct {
 // a sent update (monthly accounts: of the month, either kind; quarterly accounts and annual accounts: the quarterly update of the period's last month) or, for
 // the board pack, the month's published pack, to a holder whose member signs in as them; it is Filed with that as its evidence. A holder no member signs in
 // as cannot be sent an update through Fyniq, which the task says.
-func investorItems(ctx context.Context, u storage.UnitOfWork, today, to time.Time) ([]Item, error) {
+func investorItems(ctx context.Context, u storage.UnitOfWork, today, starts, to time.Time) ([]Item, error) {
 	rights, err := equity.RightsOf(ctx, u)
 	if err != nil {
 		return nil, err
@@ -134,6 +134,13 @@ func investorItems(ctx context.Context, u storage.UnitOfWork, today, to time.Tim
 			}
 			return nil, err
 		}
+		if holder.MemberUserID == nil {
+			// An update cannot reach them through Fyniq, so their tasks could never close: one item says so, not assessed and never overdue, until a member signs in as the holder.
+			out = append(out, Item{Key: ObligationInvestorInformation + ":" + holder.ID.String() + ":-", Obligation: ObligationInvestorInformation, Area: pack.AreaCorporate,
+				Title: "Send " + holder.LegalName + " the information their rights give", Status: NotAssessed, Register: true, Link: investorLink,
+				Reason: "No member signs in as this holder, so an update cannot reach them through Fyniq: link a member in Contacts"})
+			continue
+		}
 		for _, right := range r.Value.InformationRights {
 			earliest := r.Value.From
 			if cal.BooksStart.After(earliest) {
@@ -141,16 +148,13 @@ func investorItems(ctx context.Context, u storage.UnitOfWork, today, to time.Tim
 			}
 			for _, per := range infoPeriods(cal, right.Kind, earliest, to) {
 				due := per.End.AddDate(0, 0, right.Days)
-				if due.After(to) {
+				if due.After(to) || due.Before(starts) { // nothing due before the day the calendar's rules start is in it, as for every other item
 					continue
 				}
 				it := Item{Key: fmt.Sprintf("%s:%s:%s:%s", ObligationInvestorInformation, holder.ID, right.Kind, per.End.Format(time.DateOnly)), Obligation: ObligationInvestorInformation,
 					Area: pack.AreaCorporate, Anchor: per.End, Due: due, Link: investorLink, Register: true,
 					Title: fmt.Sprintf("Send %s %s for %s", holder.LegalName, informationWords[right.Kind], per.Words),
 					Why:   fmt.Sprintf("%s within %d days of the period's end, as the agreements give (FR-EQ-28)", informationWords[right.Kind], right.Days)}
-				if holder.MemberUserID == nil {
-					it.Why += ". No member signs in as this holder, so link one in Contacts for an update to reach them"
-				}
 				if d, err := delivered(updates, published, packOf, holder, right.Kind, per, today); err != nil {
 					return nil, err
 				} else if d != nil {

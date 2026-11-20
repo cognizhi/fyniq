@@ -107,7 +107,7 @@ type CapitalAllowanceApart struct {
 	Name        string `json:"name" doc:"Its name." example:"MacBook Pro 14, Wei Ling"`
 	PurchasedOn string `json:"purchased_on" format:"date" doc:"The day it was bought." example:"2026-03-14"`
 	Cost        Money  `json:"cost" doc:"The cost it was bought for."`
-	Reason      string `json:"reason" enum:"no_election,before_pack,disposed,over_cap,bad_life,not_sgd" doc:"Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars." example:"no_election"`
+	Reason      string `json:"reason" enum:"no_election,before_pack,disposed,over_cap,bad_life,not_sgd,not_in_pack" doc:"Why it is listed apart: no_election, the company has not elected a method; before_pack, acquired in a basis period before YA 2023; disposed, a disposal of part of the asset stands, or of one whose proceeds are not known, and its balancing allowance or charge is the tax agent's; over_cap, elected under section 19A(10A) but over S$5,000 or past the year's S$30,000; bad_life, a working life the prescribed life does not allow; not_sgd, the base currency is not Singapore dollars; not_in_pack, the method elected is not one the pack version in force works." example:"no_election"`
 	Fix         string `json:"fix" doc:"What to do." example:"Elect a method on the asset: section 19, 19A(1), 19A(2) or 19A(10A)"`
 }
 
@@ -148,6 +148,7 @@ type capitalAllowanceOutput struct{ Body CapitalAllowanceSchedule }
 var capitalAllowanceReasons = map[string]string{
 	capallow.ReasonNoElection: "Elect a method on the asset: section 19, 19A(1) or 19A(10A)",
 	capallow.ReasonBeforePack: "Bought in a basis period before YA 2023: the tax agent works its allowance",
+	capallow.ReasonNotInPack:  "Elect another method, or activate sg-capital-allowances@2026.2 or later in Settings › Statutory packs",
 	capallow.ReasonDisposed:   "A part of it was disposed of: its balancing allowance or charge is the tax agent's",
 	capallow.ReasonOverCap:    "Elect section 19A(1) or section 19 for it, or leave it for the tax agent: section 19A(10A) takes only assets of at most S$5,000 within S$30,000 a year",
 	capallow.ReasonBadLife:    "Elect a working life the Sixth Schedule's life allows: 6 or 12, or 16 for a prescribed life of 16",
