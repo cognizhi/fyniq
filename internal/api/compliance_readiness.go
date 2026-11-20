@@ -35,11 +35,19 @@ type FrameworkReadiness struct {
 	Gaps          []ReadinessGap `json:"gaps" nullable:"false" doc:"The controls that are not passing, with the worst first."`
 }
 
+// AnnexANumber is a control number of ISO/IEC 27001:2022 Annex A, such as 5.15 or 8.34.
+type AnnexANumber string
+
+// Schema documents the number.
+func (AnnexANumber) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Pattern: `^[5-8]\.[0-9]{1,2}$`, Description: "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34.", Examples: []any{"5.15"}}
+}
+
 // AnnexAReadiness is how many of ISO/IEC 27001:2022 Annex A's 93 control numbers a control of the registry maps to.
 type AnnexAReadiness struct {
-	Total     int      `json:"total" doc:"How many numbers Annex A has." example:"93"`
-	Covered   []string `json:"covered" nullable:"false" doc:"The numbers some control's mapping names." example:"5.15"`
-	Uncovered []string `json:"uncovered" nullable:"false" doc:"The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body." example:"5.1"`
+	Total     int            `json:"total" doc:"How many numbers Annex A has." example:"93"`
+	Covered   []AnnexANumber `json:"covered" nullable:"false" doc:"The numbers some control's mapping names."`
+	Uncovered []AnnexANumber `json:"uncovered" nullable:"false" doc:"The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body."`
 }
 
 // Readiness is the readiness of each framework, and Annex A's clause numbers without a control (CMP-08). It is a view of how far the registry
@@ -120,12 +128,12 @@ func readinessOf(list Controls, regs []compliance.Control) Readiness {
 		slices.SortStableFunc(fr.Gaps, func(x, y ReadinessGap) int { return rank[x.Status] - rank[y.Status] })
 		out.Frameworks = append(out.Frameworks, fr)
 	}
-	out.AnnexA = AnnexAReadiness{Total: len(compliance.AnnexA), Covered: []string{}, Uncovered: []string{}}
+	out.AnnexA = AnnexAReadiness{Total: len(compliance.AnnexA), Covered: []AnnexANumber{}, Uncovered: []AnnexANumber{}}
 	for _, n := range compliance.AnnexA {
 		if covered[n] {
-			out.AnnexA.Covered = append(out.AnnexA.Covered, n)
+			out.AnnexA.Covered = append(out.AnnexA.Covered, AnnexANumber(n))
 		} else {
-			out.AnnexA.Uncovered = append(out.AnnexA.Uncovered, n)
+			out.AnnexA.Uncovered = append(out.AnnexA.Uncovered, AnnexANumber(n))
 		}
 	}
 	return out

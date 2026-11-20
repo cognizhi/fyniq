@@ -25048,12 +25048,7 @@ export interface components {
             reason: string;
         };
         AnnexAReadiness: {
-            /**
-             * @description The numbers some control's mapping names.
-             * @example [
-             *       "5.15"
-             *     ]
-             */
+            /** @description The numbers some control's mapping names. */
             covered: string[];
             /**
              * Format: int64
@@ -25061,12 +25056,7 @@ export interface components {
              * @example 93
              */
             total: number;
-            /**
-             * @description The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body.
-             * @example [
-             *       "5.1"
-             *     ]
-             */
+            /** @description The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body. */
             uncovered: string[];
         };
         Announcement: {

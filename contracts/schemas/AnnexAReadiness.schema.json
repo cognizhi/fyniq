@@ -4,12 +4,12 @@
   "properties": {
     "covered": {
       "description": "The numbers some control's mapping names.",
-      "examples": [
-        [
-          "5.15"
-        ]
-      ],
       "items": {
+        "description": "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34.",
+        "examples": [
+          "5.15"
+        ],
+        "pattern": "^[5-8]\\.[0-9]{1,2}$",
         "type": "string"
       },
       "type": "array"
@@ -24,12 +24,12 @@
     },
     "uncovered": {
       "description": "The numbers no control maps to: gaps for the statement of applicability, whose wording waits for the certification body.",
-      "examples": [
-        [
-          "5.1"
-        ]
-      ],
       "items": {
+        "description": "A control number of Annex A: 5.1 to 5.37, 6.1 to 6.8, 7.1 to 7.14 or 8.1 to 8.34.",
+        "examples": [
+          "5.15"
+        ],
+        "pattern": "^[5-8]\\.[0-9]{1,2}$",
         "type": "string"
       },
       "type": "array"
