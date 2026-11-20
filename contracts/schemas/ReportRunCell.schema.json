@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "not_available": {
+      "description": "True when the figure cannot be worked out (a division by zero, or a column the books lack): never zero.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "value": {
+      "description": "A plain decimal with an ASCII minus: an amount at the currency's decimals, a percent to 1 decimal, a ratio to 2.",
+      "examples": [
+        "1000.00"
+      ],
+      "type": "string"
+    }
+  },
+  "title": "ReportRunCell",
+  "type": "object"
+}

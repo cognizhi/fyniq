@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "columns": {
+      "description": "The columns, in order.",
+      "items": {
+        "$ref": "ReportColumnBody.schema.json"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "type": "array"
+    },
+    "filters": {
+      "$ref": "ReportFiltersBody.schema.json",
+      "description": "The filters."
+    },
+    "rows": {
+      "description": "The rows, in order; a formula uses only rows above it.",
+      "items": {
+        "$ref": "ReportRowBody.schema.json"
+      },
+      "maxItems": 60,
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema": {
+      "description": "The definition's schema.",
+      "enum": [
+        "fyniq-report@1"
+      ],
+      "examples": [
+        "fyniq-report@1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "rows",
+    "columns",
+    "filters"
+  ],
+  "title": "ReportDefinitionBody",
+  "type": "object"
+}

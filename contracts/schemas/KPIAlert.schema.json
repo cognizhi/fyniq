@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "description": "The expense category: a report group of the chart.",
+      "examples": [
+        "Hosting"
+      ],
+      "type": "string"
+    },
+    "history_months": {
+      "description": "How many months before it the trend is worked out from (6 to 12).",
+      "examples": [
+        8
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The alert's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7a10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What kind of alert it is.",
+      "enum": [
+        "spend_anomaly"
+      ],
+      "examples": [
+        "spend_anomaly"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision the figures were read at (FR-RPT-08).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "mean": {
+      "$ref": "Money.schema.json",
+      "description": "The mean of the months before it, which the spend was compared with."
+    },
+    "month": {
+      "description": "The closed month whose spend broke from its trend.",
+      "examples": [
+        "2026-11"
+      ],
+      "pattern": "^[0-9]{4}-[0-9]{2}$",
+      "type": "string"
+    },
+    "spend": {
+      "$ref": "Money.schema.json",
+      "description": "The month's spend in the category."
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "category",
+    "month",
+    "spend",
+    "mean",
+    "history_months",
+    "ledger_revision"
+  ],
+  "title": "KPIAlert",
+  "type": "object"
+}

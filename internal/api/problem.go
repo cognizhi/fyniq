@@ -8,6 +8,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
+	"github.com/cognizhi/fyniq/internal/domain/dashboard"
+	"github.com/cognizhi/fyniq/internal/domain/reportdef"
 	"github.com/cognizhi/fyniq/internal/domain/salarybatch"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
@@ -516,6 +518,36 @@ var codeFacts = map[string]struct {
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
 	CodeHelpNoUser:                {422, "Not a person with a tour of their own"},
 	CodeSavedNoUser:               {422, "Not a person with favourites and views of their own"},
+	dashboard.CodeTile:            {422, "A tile is not in the catalogue, or is placed twice"},
+	dashboard.CodeGrid:            {422, "A tile is outside the grid"},
+	dashboard.CodeTooMany:         {422, "Too many tiles"},
+	CodeDashboardRole:             {403, "Not a role that arranges a role's dashboard"},
+	reportdef.CodeSchema:          {422, "Not a report definition"},
+	reportdef.CodeRow:             {422, "A row of the report is not sound"},
+	reportdef.CodeRowFields:       {422, "A row has the wrong fields for its kind"},
+	reportdef.CodeFormula:         {422, "A formula does not parse"},
+	reportdef.CodeReference:       {422, "A formula names a row that is not above it"},
+	reportdef.CodeLimit:           {422, "Too many rows or columns"},
+	reportdef.CodeColumn:          {422, "A column is not one the builder has"},
+	reportdef.CodeFilter:          {422, "A filter is not a dimension value"},
+	CodeReportNotYours:            {403, "Another person's report"},
+	CodeReportScheduler:           {403, "Not a role that schedules reports"},
+	CodeReportRecipient:           {422, "A recipient may not read reports"},
+	storage.CodeDashboardLayout:   {409, "A dashboard layout changes only as its next version"},
+	storage.CodeKPIAlert:          {409, "A raised alert is never changed"},
+	storage.CodeBoardPack:         {409, "A board pack changes only as a draft, and a published one never"},
+	storage.CodeBoardPackDraft:    {409, "The month has a draft already"},
+	storage.CodeInvestorUpdate:    {409, "An investor update changes only as a draft"},
+	storage.CodeInvestorRead:      {409, "An update is read by the people it was sent to"},
+	CodePackRole:                  {403, "Not a role that builds, publishes or sends"},
+	CodePackNotDraft:              {409, "The pack is published"},
+	CodePackNotReady:              {422, "An update is built from a published pack"},
+	CodePackRecipient:             {422, "A recipient may not read the board pack"},
+	CodePackSent:                  {409, "The update is sent"},
+	storage.CodeReportName:        {409, "A report has that name"},
+	storage.CodeReportDefinition:  {409, "A report definition changes only as its next version"},
+	storage.CodeReportSchedule:    {409, "A report schedule changes only as its next version"},
+	storage.CodeReportScheduleRun: {409, "A recorded run is never changed"},
 	saveditem.CodePath:            {422, "Not the address of a page"},
 	saveditem.CodeArea:            {422, "A page outside your access"},
 	saveditem.CodeTitle:           {422, "Not a name"},
@@ -1235,6 +1267,16 @@ var codeFacts = map[string]struct {
 
 // storageFixes say how to fix a storage refusal whose database check gave no hint (ENG-23).
 var storageFixes = map[string]string{
+	storage.CodeDashboardLayout: "Read the layout again and save the change as its next version",
+	storage.CodeKPIAlert: "The next month is its own alert",
+	storage.CodeBoardPack:      "Read the draft again and save the change as its next edit, or publish a corrected version",
+	storage.CodeBoardPackDraft: "Open the month's draft and edit it, or publish it first",
+	storage.CodeInvestorUpdate: "Read the draft again and save the change as its next edit, or send a new update",
+	storage.CodeInvestorRead:   "Only a person the update was sent to opens it as read",
+	storage.CodeReportName:        "Give the report another name, or archive the one that has it",
+	storage.CodeReportDefinition:  "Read the definition again and save the change as its next version",
+	storage.CodeReportSchedule:    "Read the schedule again and save the change as its next version",
+	storage.CodeReportScheduleRun: "A run is recorded once; the next run is its own record",
 	storage.CodeOverlap:       "Change the dates so they neither overlap another version nor end before they start",
 	storage.CodeOrganisation:  "Correct the value the message names and send the change again",
 	storage.CodeVersion:       "Read the record again, check what changed, and send your change with its new ETag",

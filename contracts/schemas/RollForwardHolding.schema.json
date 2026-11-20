@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_code": {
+      "description": "The holding account's code.",
+      "examples": [
+        "2400"
+      ],
+      "type": "string"
+    },
+    "account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Deferred revenue"
+      ],
+      "type": "string"
+    },
+    "direct": {
+      "$ref": "Money.schema.json",
+      "description": "What documents put on it with no schedule to release it."
+    },
+    "kind": {
+      "description": "1210 Prepayments (by supplier) or 2400 Deferred revenue (by customer).",
+      "enum": [
+        "prepayment",
+        "deferred_revenue"
+      ],
+      "examples": [
+        "deferred_revenue"
+      ],
+      "type": "string"
+    },
+    "ledger_balance": {
+      "$ref": "Money.schema.json",
+      "description": "What the account holds at the end of the run, from the balance service (ENG-04), read positive."
+    },
+    "rows": {
+      "description": "One row per customer or supplier.",
+      "items": {
+        "$ref": "RollForwardRow.schema.json"
+      },
+      "type": "array"
+    },
+    "ties": {
+      "description": "True when the closing total, the direct amounts and what other sources put on the account equal the ledger balance, so that nothing is unexplained.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "total": {
+      "$ref": "RollForwardRow.schema.json",
+      "description": "The totals of the columns."
+    },
+    "unexplained": {
+      "$ref": "Money.schema.json",
+      "description": "What is left when the schedules, the direct amounts and the other sources are taken from the ledger balance: zero when it ties (INV-07)."
+    }
+  },
+  "required": [
+    "kind",
+    "account_code",
+    "account_name",
+    "rows",
+    "total",
+    "ledger_balance",
+    "direct",
+    "unexplained",
+    "ties"
+  ],
+  "title": "RollForwardHolding",
+  "type": "object"
+}

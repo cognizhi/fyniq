@@ -308,8 +308,39 @@ function Quality() {
             <div className="fy-row fy-row--between"><dt>Expired, invalid or out of date</dt><dd className="fy-num">{m.expired + m.invalid + m.stale}</dd></div>
             <div className="fy-row fy-row--between"><dt>Approved within 10 seconds of opening, or without opening</dt><dd className="fy-num">{pct(m.quick_share)}</dd></div>
             <div className="fy-row fy-row--between"><dt>Median time to a decision</dt><dd className="fy-num">{Math.round(m.median_decision_seconds)} s</dd></div>
+            <div className="fy-row fy-row--between"><dt>Approved after an edit</dt><dd className="fy-num">{pct(m.edited_share ?? 0)}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Approved, then undone</dt><dd className="fy-num">{pct(m.reversed_share ?? 0)}</dd></div>
             <div className="fy-row fy-row--between"><dt>Rejections that gave a reason</dt><dd className="fy-num">{pct(m.rejected_with_reason_share)}</dd></div>
           </dl>
+          {(m.task_types ?? []).length > 0 && (
+            <div className="fy-tablewrap">
+              <table className="fy-table fy-table--compact">
+                <caption className="fy-sr">Each task type's approvals in {month}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Task type</th>
+                    <th scope="col" className="fy-num">Proposals</th>
+                    <th scope="col" className="fy-num">Approved</th>
+                    <th scope="col" className="fy-num">Edited</th>
+                    <th scope="col" className="fy-num">Undone</th>
+                    <th scope="col" className="fy-num">Median decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.task_types.map((t) => (
+                    <tr key={t.task_type}>
+                      <th scope="row">{t.task_type}</th>
+                      <td className="fy-num">{t.count}</td>
+                      <td className="fy-num">{t.approved ?? 0}</td>
+                      <td className="fy-num">{t.edited ?? 0}</td>
+                      <td className="fy-num">{t.reversed ?? 0}</td>
+                      <td className="fy-num">{Math.round(t.median_decision_seconds ?? 0)} s</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           {q.data?.signed_at ? (
             <p className="fy-small" role="status">
               <Icon of={ShieldCheck} /> Reviewed and signed {dateTime(q.data.signed_at)}. {q.data.note}

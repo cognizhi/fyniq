@@ -2,10 +2,42 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "approved": {
+      "description": "How many of its proposals were approved.",
+      "examples": [
+        9
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "count": {
       "description": "How many of the month's proposals were of it.",
       "examples": [
         12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "edited": {
+      "description": "How many of the approved ones were approved with an item changed or removed (an edit before approving).",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "median_decision_seconds": {
+      "description": "The median time from its proposals to their decisions, in seconds.",
+      "examples": [
+        310
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "reversed": {
+      "description": "How many of the approved ones were undone afterwards (AI-91).",
+      "examples": [
+        1
       ],
       "format": "int64",
       "type": "integer"
@@ -29,7 +61,11 @@
   "required": [
     "task_type",
     "count",
-    "share"
+    "share",
+    "approved",
+    "edited",
+    "reversed",
+    "median_decision_seconds"
   ],
   "title": "QualityTaskType",
   "type": "object"

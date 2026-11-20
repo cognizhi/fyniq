@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The reports the caller may read: their own and the shared ones, by name.",
+      "items": {
+        "$ref": "ReportDefinition.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last.",
+      "examples": [
+        "eyJhZnRlciI6IjEifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "ReportDefinitionPage",
+  "type": "object"
+}

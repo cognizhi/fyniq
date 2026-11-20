@@ -77,6 +77,7 @@ const (
 	PeopleAndHR         Capability = "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
 	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
 	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
+	ReportDefinitions   Capability = "Report definitions and schedules: save, share and schedule a report (rev 0.560)"
 )
 
 // WholeRow are the qualifiers that limit what a role does on a row, not which of its records it sees: an approval or
@@ -85,7 +86,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, ProjectCostRates, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection, ReportDefinitions}
 
 // The capabilities outside Appendix D.
 const (
@@ -294,6 +295,10 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	OwnMCPConnection: {
 		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", ""}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {}, "Auditor": {}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"C", ""}, "AI": {},
+	},
+	// (rev 0.560) Saving a report, and scheduling one, are a person's own writes, never the AI's: it reads reports (Reports, dashboards).
+	ReportDefinitions: {
+		"Owner": {"C", ""}, "Admin": {"C", ""}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
 	},
 }
 
@@ -2086,6 +2091,53 @@ var (
 		Note: passkeyNote + " Open to a session that passed no second factor yet: this is how it passes one."}
 )
 
+// The report builder (FR-RPT-04, FR-RPT-07; p2-reporting-planning design D1 to D3, rev 0.540): saved definitions and their schedules.
+// Reading and running need an unqualified view of the reports, because a definition can name any account; saving, changing, archiving
+// and scheduling are the Report definitions row's C, a person's own writes the AI never holds. Who may change a definition (its owner,
+// or an Owner or Administrator for a shared one) and who may schedule (Owner, Administrator, Controller, Accountant) the handlers decide.
+var (
+	ListReportDefinitions   = Policy{Operation: "listReportDefinitions", Capability: Reports, Need: View, Unqualified: true}
+	GetReportDefinition     = Policy{Operation: "getReportDefinition", Capability: Reports, Need: View, Unqualified: true}
+	RunReportDefinition     = Policy{Operation: "runReportDefinition", Capability: Reports, Need: View, Unqualified: true}
+	RunReportDraft          = Policy{Operation: "runReportDraft", Capability: Reports, Need: View, Unqualified: true, Note: "A read: it runs a definition that is sent and saves nothing."}
+	CreateReportDefinition  = Policy{Operation: "createReportDefinition", Capability: ReportDefinitions, Need: Create}
+	ReplaceReportDefinition = Policy{Operation: "replaceReportDefinition", Capability: ReportDefinitions, Need: Create}
+	ArchiveReportDefinition = Policy{Operation: "archiveReportDefinition", Capability: ReportDefinitions, Need: Create}
+	ListReportSchedules     = Policy{Operation: "listReportSchedules", Capability: Reports, Need: View, Unqualified: true}
+	CreateReportSchedule    = Policy{Operation: "createReportSchedule", Capability: ReportDefinitions, Need: Create}
+	ReplaceReportSchedule   = Policy{Operation: "replaceReportSchedule", Capability: ReportDefinitions, Need: Create}
+	ListReportScheduleRuns  = Policy{Operation: "listReportScheduleRuns", Capability: Reports, Need: View, Unqualified: true}
+)
+
+// The board pack and the investor update (FR-RPT-06, FR-EQ-23, FR-EQ-24; p2-reporting-planning design D4 to D7, rev 0.540). A reader whose view of the
+// reports is the board pack reads the published packs and the updates sent to them (the handlers narrow it); the roles that read the whole
+// ledger's reports also see drafts. Building, publishing and sending are the Report definitions row's C, which the AI never holds; the Owner,
+// Controller and Accountant build and the Owner and Controller publish and send (the handlers decide).
+var (
+	ListBoardPacks       = Policy{Operation: "listBoardPacks", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetBoardPack         = Policy{Operation: "getBoardPack", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	CreateBoardPackDraft = Policy{Operation: "createBoardPackDraft", Capability: ReportDefinitions, Need: Create}
+	EditBoardPackDraft   = Policy{Operation: "editBoardPackDraft", Capability: ReportDefinitions, Need: Create}
+	PublishBoardPack     = Policy{Operation: "publishBoardPack", Capability: ReportDefinitions, Need: Create}
+	// Dashboards (FR-VIZ-09, FR-KPI-05): the catalogue and the layout that applies are read by anyone who may read the KPIs (the board pack's view included);
+	// a person arranges their own as their own write (the AI never does), and an Owner or Administrator a role's (the handler decides).
+	ListDashboardTiles = Policy{Operation: "listDashboardTiles", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetMyDashboard     = Policy{Operation: "getMyDashboard", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetRoleDashboard   = Policy{Operation: "getRoleDashboard", Capability: Reports, Need: View, Unqualified: true}
+	SaveMyDashboard    = Policy{Operation: "saveMyDashboard", Capability: OwnNotifications, Need: Create}
+	SaveRoleDashboard  = Policy{Operation: "saveRoleDashboard", Capability: ReportDefinitions, Need: Create}
+	// The deferral roll-forward (FR-RPT-13) reads every spread, like the schedules report: an unqualified view of the reports.
+	GetDeferralRollForward = Policy{Operation: "getDeferralRollForward", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
+	ListKPIAlerts       = Policy{Operation: "listKpiAlerts", Capability: Reports, Need: View, Unqualified: true}
+	ListInvestorUpdates = Policy{Operation: "listInvestorUpdates", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"}}
+	GetInvestorUpdate   = Policy{Operation: "getInvestorUpdate", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
+		Note: "A recipient's first open is recorded as read: a side effect of this read."}
+	CreateInvestorUpdate = Policy{Operation: "createInvestorUpdate", Capability: ReportDefinitions, Need: Create}
+	EditInvestorUpdate   = Policy{Operation: "editInvestorUpdate", Capability: ReportDefinitions, Need: Create}
+	SendInvestorUpdate   = Policy{Operation: "sendInvestorUpdate", Capability: ReportDefinitions, Need: Create}
+)
+
 // The connectors (FR-INT-20, FR-INT-25…27; PRD-001 rev 0.139): the catalogue, read by whoever may read the
 // organisation's integrations; the installation's connectors, a Super admin's, every step but pause and test approved
 // by the other once there are two (FR-ADM-07); the organisation's, Appendix D's "Organisation integrations" row, every
@@ -2222,7 +2274,9 @@ var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview,
 	RequestRoundScenarioApproval, CreateInvestorRights, GetInvestorRights, ReplaceInvestorRights, RequestInvestorRightsApproval,
 	AddInvestorRightsEvidence, ListInvestorRightsEvidence, GetInvestorRightsEvidence, RemoveInvestorRightsEvidence, CreateControllerEntry,
 	GetControllerEntry, ReplaceControllerEntry, RequestControllerEntryApproval, AddControllerEntryEvidence, ListControllerEntryEvidence,
-	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
+	GetControllerEntryEvidence, RemoveControllerEntryEvidence, GetStatutoryTests, ListReportDefinitions, GetReportDefinition, RunReportDefinition, RunReportDraft, CreateReportDefinition, ReplaceReportDefinition,
+	ArchiveReportDefinition, ListReportSchedules, CreateReportSchedule, ReplaceReportSchedule, ListReportScheduleRuns, ListBoardPacks, GetBoardPack, CreateBoardPackDraft, EditBoardPackDraft, PublishBoardPack,
+	ListKPIAlerts, GetDeferralRollForward, ListDashboardTiles, GetMyDashboard, GetRoleDashboard, SaveMyDashboard, SaveRoleDashboard, ListInvestorUpdates, GetInvestorUpdate, CreateInvestorUpdate, EditInvestorUpdate, SendInvestorUpdate, ListAcraExtracts, CreateAcraExtract, GetAcraExtract,
 	ReplaceAcraExtract, RecordAcraExtract, AddAcraExtractEvidence, ListAcraExtractEvidence, GetAcraExtractEvidence, RemoveAcraExtractEvidence,
 	GetAcraReconciliation, GetGSTMonitor, ListGSTForecasts, CreateGSTForecast, GetBadDebtRelief, WorkTaxPaper, ListStatutoryPackUpdates, GetInvoiceNowGate, ListInvoiceNowInbound, PollInvoiceNowInbound, DraftInvoiceNowInbound, ListInvoiceNowSubmissions, QueueInvoiceNowSubmission, SendInvoiceNowSubmission, RetryInvoiceNowSubmission, CreateInvoiceNowExclusion, WithdrawInvoiceNowExclusion, RequestInvoiceNowContingency, ApproveInvoiceNowContingency, GetGSTForecast, ReplaceGSTForecast, RecordGSTForecast,
 	AddGSTForecastEvidence, ListGSTForecastEvidence, GetGSTForecastEvidence, RemoveGSTForecastEvidence, GetStatutoryCalendar,

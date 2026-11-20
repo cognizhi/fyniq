@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available": {
+      "description": "False when the books do not have all the months the column needs, as a prior year they do not have: its cells are not available.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "from": {
+      "description": "Its first day; absent when the books lack the months.",
+      "examples": [
+        "2026-10-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "key": {
+      "description": "The column's key.",
+      "examples": [
+        "current"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "Its heading.",
+      "examples": [
+        "Oct 2026"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "available"
+  ],
+  "title": "ReportRunColumn",
+  "type": "object"
+}

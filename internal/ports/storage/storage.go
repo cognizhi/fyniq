@@ -220,6 +220,18 @@ type UnitOfWork interface {
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
 	KPIInputs() KPIInputs
+	// ReportDefinitions are the report builder's saved reports (FR-RPT-04, rev 0.540).
+	ReportDefinitions() ReportDefinitions
+	// ReportSchedules are the saved reports' schedules and their runs (FR-RPT-07, rev 0.540).
+	ReportSchedules() ReportSchedules
+	// BoardPacks are the monthly board packs, a draft and then frozen when published (FR-RPT-06, rev 0.540).
+	BoardPacks() BoardPacks
+	// KPIAlerts are the spend anomaly alerts the worker raises (FR-KPI-06, rev 0.540).
+	KPIAlerts() KPIAlerts
+	// DashboardLayouts are the dashboards a role or a person arranged (FR-VIZ-09, FR-KPI-05, rev 0.540).
+	DashboardLayouts() DashboardLayouts
+	// InvestorUpdates are the updates built from a published pack, and who read them (FR-EQ-23, rev 0.540).
+	InvestorUpdates() InvestorUpdates
 	// Checks are the checks' latest results, their runs and their owners (FR-CTL-01, FR-CTL-05).
 	Checks() Checks
 	// AccessReviews are the quarterly access review's attestations and the members' sign-ins (FR-CTL-06).

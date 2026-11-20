@@ -464,6 +464,8 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"subscription_amendment.mrr":   func(t *testing.T, b porttest.Books, v string) error { return rawSubscription(t, b, "amendment", v) },
 	"payment_link.amount":          func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLink(t, b, v) },
 	"payment_link_payment.amount":  func(t *testing.T, b porttest.Books, v string) error { return rawPaymentLinkPayment(t, b, v) },
+	"kpi_alert.spend":              func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "spend", v) },
+	"kpi_alert.mean":               func(t *testing.T, b porttest.Books, v string) error { return rawKPIAlert(t, b, "mean", v) },
 	"psp_dispute_loss.amount":      func(t *testing.T, b porttest.Books, v string) error { return rawPSPDisputeLoss(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
 	"salary_batch_line.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawSalaryLine(t, b, v) },
@@ -1660,6 +1662,25 @@ func rawPaymentLinkPayment(t *testing.T, b porttest.Books, value string) error {
 	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.payment_link_payment (link_id, connector_id, provider_payment_id, currency, amount, paid_at, seen_at)
 VALUES ($1, $2, 'ch_1', 'SGD', $3::numeric, now(), now())`, uuid.New(), uuid.New(), value)
+		return err
+	})
+}
+
+// rawKPIAlert inserts an alert as the worker with value in the column named: spend or mean (the other is a sound amount).
+func rawKPIAlert(t *testing.T, b porttest.Books, column, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_worker")
+	defer func() { _ = c.Close(ctx) }()
+	spend, mean := "100.00", "50.00"
+	if column == "spend" {
+		spend = value
+	} else {
+		mean = value
+	}
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.kpi_alert (kind, category, month, currency, spend, mean, history_months, ledger_revision, raised_at)
+VALUES ('spend_anomaly', 'Hosting', '2026-10-01', 'SGD', $1::numeric, $2::numeric, 8, 1, now())`, spend, mean)
 		return err
 	})
 }

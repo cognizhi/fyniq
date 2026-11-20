@@ -167,6 +167,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bills/{bill_id}/post-approval` (requestBillPost): Ask for approval to post a bill
 - `POST /v1/bills/{bill_id}/void` (voidBill): Void a posted bill
 - `POST /v1/bills/{bill_id}/void-approval` (requestBillVoid): Ask for approval to void a bill
+- `GET /v1/board-packs` (listBoardPacks): List the board packs
+- `POST /v1/board-packs` (createBoardPackDraft): Start a month's board pack
+- `GET /v1/board-packs/{id}` (getBoardPack): Get a board pack
+- `PUT /v1/board-packs/{id}` (editBoardPackDraft): Write a pack's highlights, commentary and asks
+- `POST /v1/board-packs/{id}/publish` (publishBoardPack): Publish a board pack
 - `GET /v1/break-glass` (listBreakGlass): List the break-glasses
 - `POST /v1/break-glass` (startBreakGlass): Start break-glass
 - `GET /v1/break-glass/{break_glass_id}` (getBreakGlass): Get a break-glass
@@ -402,6 +407,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/customer-refunds/{refund_id}` (getCustomerRefund): Get a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void` (voidCustomerRefund): Void a refund to a customer
 - `POST /v1/customer-refunds/{refund_id}/void-approval` (requestCustomerRefundVoid): Ask for approval to void a refund to a customer
+- `GET /v1/dashboard-tiles` (listDashboardTiles): List the tiles a dashboard can hold
+- `GET /v1/dashboards/mine` (getMyDashboard): Get the dashboard that applies to you
+- `PUT /v1/dashboards/mine` (saveMyDashboard): Arrange your own dashboard
+- `GET /v1/dashboards/roles/{role}` (getRoleDashboard): Get the dashboard set for a role
+- `PUT /v1/dashboards/roles/{role}` (saveRoleDashboard): Arrange the dashboard of a role
 - `GET /v1/dimension-values` (listDimensionValues): List the dimensions' values
 - `POST /v1/dimension-values` (createDimensionValue): Add a value to a dimension
 - `PUT /v1/dimension-values/{value_id}` (replaceDimensionValue): Rename a dimension's value, or put it out of use
@@ -619,6 +629,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/investor-rights/{rights_id}/evidence` (addInvestorRightsEvidence): Attach the agreements a holder's rights come from
 - `GET /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (getInvestorRightsEvidence): Get a file of a holder's rights
 - `DELETE /v1/investor-rights/{rights_id}/evidence/{evidence_id}` (removeInvestorRightsEvidence): Remove a file from a holder's drafted rights
+- `GET /v1/investor-updates` (listInvestorUpdates): List the investor updates
+- `POST /v1/investor-updates` (createInvestorUpdate): Start an investor update
+- `GET /v1/investor-updates/{id}` (getInvestorUpdate): Open an investor update
+- `PUT /v1/investor-updates/{id}` (editInvestorUpdate): Write an investor update
+- `POST /v1/investor-updates/{id}/send` (sendInvestorUpdate): Send an investor update
 - `POST /v1/invoice-disputes/{dispute_id}/resolution` (resolveInvoiceDispute): Resolve a dispute or a promise to pay
 - `POST /v1/invoicenow/contingencies` (requestInvoiceNowContingency): Ask to file a return with a gap in its InvoiceNow submissions
 - `POST /v1/invoicenow/contingencies/{contingency_id}/approve` (approveInvoiceNowContingency): Approve a contingency
@@ -685,6 +700,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/knowledge-base/publications/approval` (requestKBPublication): Ask for approval to publish knowledge-base pages
 - `POST /v1/knowledge-base/recompile` (recompileKnowledgeBase): Recompile the organisation's knowledge base
 - `GET /v1/knowledge-base/snapshots` (listKBSnapshots): List the knowledge base's snapshots
+- `GET /v1/kpi-alerts` (listKpiAlerts): List the spend anomaly alerts
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
 - `GET /v1/kpis` (getKpis): Get the KPIs of a month
@@ -1000,11 +1016,23 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/recurring-journals/{recurring_journal_id}` (replaceRecurringJournal): Change a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/pause` (pauseRecurringJournal): Pause a recurring journal
 - `POST /v1/recurring-journals/{recurring_journal_id}/resume` (resumeRecurringJournal): Resume a recurring journal
+- `POST /v1/report-builder/run` (runReportDraft): Run a report definition without saving it
+- `GET /v1/report-definitions` (listReportDefinitions): List the saved reports
+- `POST /v1/report-definitions` (createReportDefinition): Save a report
+- `GET /v1/report-definitions/{id}` (getReportDefinition): Get a saved report
+- `PUT /v1/report-definitions/{id}` (replaceReportDefinition): Change a saved report
+- `POST /v1/report-definitions/{id}/archive` (archiveReportDefinition): Archive a saved report
+- `GET /v1/report-definitions/{id}/run` (runReportDefinition): Run a saved report
 - `GET /v1/report-exports` (listReportExports): List my exports
 - `POST /v1/report-exports` (requestReportExport): Ask for an accountant export
 - `GET /v1/report-exports/{export_id}` (getReportExport): Get one of my exports
 - `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
+- `GET /v1/report-schedules` (listReportSchedules): List a saved report's schedules
+- `POST /v1/report-schedules` (createReportSchedule): Schedule a saved report
+- `PUT /v1/report-schedules/{id}` (replaceReportSchedule): Change a report's schedule
+- `GET /v1/report-schedules/{id}/runs` (listReportScheduleRuns): List a schedule's runs
 - `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
+- `GET /v1/reports/deferral-roll-forward` (getDeferralRollForward): Get the roll-forward of deferred revenue and prepayments
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/projects` (getProjectReport): Project profitability, utilisation and realisation
 - `GET /v1/reports/projects/export` (exportProjectReport): Export the project report

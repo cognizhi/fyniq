@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "definition": {
+      "$ref": "ReportDefinitionBody.schema.json",
+      "description": "Its rows, columns and filters."
+    },
+    "description": {
+      "description": "What it is for.",
+      "examples": [
+        "The board's margin view"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Gross margin by month"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "visibility": {
+      "description": "private keeps it to its owner; shared lets every person who may read the whole ledger's reports run it. Running always checks the runner's own rights.",
+      "enum": [
+        "private",
+        "shared"
+      ],
+      "examples": [
+        "shared"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "visibility",
+    "definition"
+  ],
+  "title": "ReportDefinitionIn",
+  "type": "object"
+}

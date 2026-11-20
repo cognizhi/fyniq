@@ -23,7 +23,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
+	"github.com/cognizhi/fyniq/internal/domain/checks"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/passkey/passkeytest"
@@ -394,6 +396,31 @@ func TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies(t *testing.T) {
 	})
 	if refused < 8 {
 		t.Errorf("each refusal is audited: %d events", refused)
+	}
+	// C.1 #19: each refusal answered to Nemura is kept, and the check lists the runs that have none posted since, by code and never by a figure.
+	var open []storage.PayrollRunRefusal
+	_ = e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		open, err = u.PayrollRuns().OpenRefusals(ctx)
+		return err
+	})
+	if len(open) == 0 {
+		t.Errorf("the refusals answered to Nemura were not kept")
+	}
+	for _, o := range open {
+		if !refusals[o.Code] {
+			t.Errorf("a kept refusal %s was never answered to Nemura", o.Code)
+		}
+	}
+	d, _ := checks.Find("payroll.pay-lines-cannot-post")
+	var found checks.Result
+	_ = e.store.Do(context.Background(), w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		found, err = d.Run(ctx, u, &checks.Env{Base: money.MustLookup("SGD"), Today: time.Date(2026, 10, 15, 0, 0, 0, 0, time.UTC)})
+		return err
+	})
+	if found.Status != checks.Error || found.Count != len(open) || strings.Contains(found.Detail, "90000") {
+		t.Errorf("the check for pay lines that cannot post: %+v", found)
 	}
 
 	// A closed wage month: the difference posts in the current open month (FR-PPL-11).

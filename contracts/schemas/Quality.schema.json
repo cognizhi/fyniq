@@ -10,6 +10,22 @@
       "format": "int64",
       "type": "integer"
     },
+    "edited": {
+      "description": "Approvals with an item changed or removed before approving (the edit-before-approve count).",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "edited_share": {
+      "description": "The share of approvals that were edited before approving, from 0 to 1; 0 when nothing was approved.",
+      "examples": [
+        0.18
+      ],
+      "format": "double",
+      "type": "number"
+    },
     "expired": {
       "description": "Left undecided until they expired.",
       "examples": [
@@ -49,6 +65,13 @@
       },
       "type": "array"
     },
+    "per_approver_task_type": {
+      "description": "What each person approved of each task type, the most first.",
+      "items": {
+        "$ref": "QualityApproverTaskType.schema.json"
+      },
+      "type": "array"
+    },
     "quick_share": {
       "description": "The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.",
       "examples": [
@@ -69,6 +92,22 @@
       "description": "The share of rejections that gave a reason, from 0 to 1.",
       "examples": [
         0.75
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "reversed": {
+      "description": "Approved proposals a person undid afterwards (AI-91): reversals after approval.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reversed_share": {
+      "description": "The share of approvals that were undone, from 0 to 1; 0 when nothing was approved.",
+      "examples": [
+        0.05
       ],
       "format": "double",
       "type": "number"
@@ -100,7 +139,12 @@
     "median_decision_seconds",
     "rejected_with_reason_share",
     "per_approver",
-    "task_types"
+    "task_types",
+    "edited",
+    "edited_share",
+    "reversed",
+    "reversed_share",
+    "per_approver_task_type"
   ],
   "title": "Quality",
   "type": "object"
