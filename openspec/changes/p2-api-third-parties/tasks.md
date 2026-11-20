@@ -34,8 +34,15 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 6. Sandbox (FR-INT-18)
 
-- [ ] 6.1 A sandbox organisation from the sample company with its own credentials.
-  - **Left (not started):** design D7 stands, with what the code found: there is no API operation that creates an organisation yet (a practice organisation is opened from an existing one, `storage.Practices`), `internal/seedload` loads the sample company through the posting engine into an organisation that has a chart, and `cmd/seed --new-organisation` makes the organisation and its invitations for the local stack only. A sandbox therefore needs: a `sandbox` flag on the organisation set at creation and never changed (a migration and a guard), an operation for an Owner or Administrator to create one (a job, since the sample company's journals are posted by the engine), its own integration clients and tokens (tenancy already refuses another organisation's), and a refusal on a production deployment until the owner enables it. **Decision needed (owner):** option A, a sandbox is a second organisation of the installation, flagged, created by the Owner's request and enabled per deployment (recommended: it reuses tenancy, RLS and the seed loader, and the Go and Python SDKs can run against it); option B, a separate sandbox deployment with its own database (no risk to production data, but a second environment to run and pay for); option C, no sandbox, only the local stack and `make seed-load` (nothing to build, but no integrator can test against a hosted copy). Until chosen, `[owner to confirm]`.
+- [x] 6.1 A sandbox organisation from the sample company with its own credentials.
+  - Built (rev 0.618; the owner's decision of 21 Nov 2026, design D7 amended: option A, enabled per deployment): migrations 001250 and 001251 (the registry `sandbox_organisation`, the guard FY960,
+    `organisation_is_sandbox`, `create_sandbox_organisation`, the installation change step `sandbox`), `storage.Sandboxes`, the operations `createSandboxOrganisation` (Super admin, step-up, with two Super
+    admins the other approves) and `loadSandboxSampleCompany`, `FYNIQ_SANDBOX` and `FYNIQ_SANDBOX_WEBHOOK_HOSTS`, the sandbox flag on `getOrganisation` and `listMyOrganisations`, the guards on every
+    outbound path (the connector runtime, the email sink, the outbox's default-deny, webhooks, InvoiceNow, the API's connector install, practice and webhook endpoints), threat model
+    `sandbox-organisation.md`, the grants for human review, the guide page and its knowledge-base page. Tests: `TestAttackASandboxOrganisationIsMadeNewFlaggedForGoodAndNeverFromARealOne`,
+    `TestASuperAdminMakesASandboxOrganisationWhereTheDeploymentAllowsIt`, `TestAttackASandboxOrganisationsOutboundWorkIsNotRun`, `TestAttackASandboxOrganisationGetsNoOutboundAdapter`,
+    `TestASandboxOrganisationsWebhookReachesOnlyAnAllowedHost`, the matrix rows `matrixSandbox`. **Left:** the Super admin console screen to make one (the operations are built); a scripted model for a
+    sandbox's AI chat; the SDKs' run against a deployed sandbox `[live-verify]`; the IRAS filer's guard when an operation first calls it.
 
 ## 7. Ticketing and chat (FR-INT-23, FR-NTF-04, FR-INT-04)
 

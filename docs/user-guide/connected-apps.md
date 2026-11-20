@@ -3,7 +3,7 @@ key: settings.connected-apps
 title: Connect an AI app, and see what it did
 mode: basic
 roles: [owner, administrator, controller, accountant, bookkeeper, ar_specialist, ap_specialist, payroll_administrator, payment_releaser, approver, tax_agent, dpo]
-requirements: [AI-16, AI-35, AI-37, AI-42, AI-44, AI-89, AI-90]
+requirements: [AI-16, AI-35, AI-37, AI-42, AI-44, AI-46, AI-89, AI-90]
 status: draft
 ---
 
@@ -49,6 +49,15 @@ change settings, and it never sees an NRIC, a full bank account number or a secr
   tokens for that app at once; their other apps, their sign-in and their integrations are not touched.
 - **Integration clients and personal access tokens**: the systems and the developer tokens that reach your books through the API, with
   their class, access and end date. They are made and revoked under Settings, Integrations, not here.
+
+## Apps from other publishers
+
+- An Administrator registers an AI app of another publisher by hand under **Apps from other publishers** (Expert mode), with a passkey or authenticator code: its name, who publishes it, one to five
+  exact sign-in addresses, what the organisation uses it for, and where the publisher processes what it reads. Fyniq checks the name and the addresses; it does not contact the publisher or
+  fetch anything, and it has not verified who publishes the app.
+- Registering is not allowing. The app cannot connect until an Owner adds its ID to the apps that may connect, with a second approver, and registering is closed until an Owner has turned on **AI apps
+  through MCP** and **An Administrator may register an AI app of another publisher**. An app that processes outside Singapore needs the PDPA transfer assessed first.
+- Every registration makes a data inventory entry and appears in the quarterly access review. **Remove the app** takes it away at once; its record stays.
 
 ## Changes an app proposes
 

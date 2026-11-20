@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "description": "done when the person did what the task asked; cancelled when it is no longer needed. For good: a finished task stays finished.",
+      "enum": [
+        "done",
+        "cancelled"
+      ],
+      "examples": [
+        "done"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "IntegrationTaskClose",
+  "type": "object"
+}

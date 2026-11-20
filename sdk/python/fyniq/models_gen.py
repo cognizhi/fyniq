@@ -2604,7 +2604,7 @@ class OrderCloseRequest(_OrderCloseRequestRequired, _OrderCloseRequestOptional):
     """OrderCloseRequest is a schema of the contract."""
 
 _OrganisationRequired = TypedDict("_OrganisationRequired", {"base_currency": "str", "base_minor_units": "int", "id": "str", "name": "str", "team_mode": "str", "version": "int"})
-_OrganisationOptional = TypedDict("_OrganisationOptional", {"practice": "bool"}, total=False)
+_OrganisationOptional = TypedDict("_OrganisationOptional", {"practice": "bool", "sandbox": "bool"}, total=False)
 
 
 class Organisation(_OrganisationRequired, _OrganisationOptional):

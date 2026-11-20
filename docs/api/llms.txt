@@ -627,6 +627,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/installation/health` (getPlatformHealth): Read the platform's health
 - `GET /v1/installation/private-endpoints` (listPrivateEndpoints): List the registered private endpoints
 - `POST /v1/installation/private-endpoints` (registerPrivateEndpoint): Register, change or retire a private endpoint
+- `POST /v1/installation/sandbox-organisations` (createSandboxOrganisation): Make a sandbox organisation
+- `POST /v1/installation/sandbox-organisations/{organisation_id}/sample-company` (loadSandboxSampleCompany): Load the sample company into a sandbox organisation
 - `GET /v1/installation/sign-in-methods` (listSignInMethods): List the sign-in providers and their switches
 - `PATCH /v1/installation/sign-in-methods/{provider}` (changeSignInMethod): Turn a sign-in provider on or off, or set its domains
 - `GET /v1/installation/super-admins` (listSuperAdmins): List the Super admins
@@ -1179,6 +1181,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/tasks` (createIntegrationTask): Make a task as an integration
 - `GET /v1/tasks/{task_id}` (getIntegrationTask): Read a task an integration made
 - `PATCH /v1/tasks/{task_id}` (updateIntegrationTask): Update a task an integration made
+- `POST /v1/tasks/{task_id}/close` (closeIntegrationTask): Finish a task an integration made, as a person
 - `GET /v1/tax/bad-debt-relief` (getBadDebtRelief): The GST bad debt relief queue
 - `POST /v1/tax/bad-debt-relief/claims` (claimBadDebtRelief): Claim GST bad debt relief for a write-off
 - `GET /v1/tax/bad-debt-relief/claims/{claim_id}` (getBadDebtReliefClaim): Get a claim of GST bad debt relief

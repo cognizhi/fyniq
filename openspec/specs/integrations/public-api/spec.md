@@ -351,14 +351,18 @@ Source: PRD-001 §8.18.1 · Priority S · Phase P1 (TS) / P2 (Go, Python)
 - **AND** the SDK has a method only for an operation a client's scopes can reach, generated from the contract so that a stale SDK fails the API check
 
 ### Requirement: FR-INT-18 Sandbox
-Each organisation SHALL be able to create a sandbox copy of the sample company (FR-UX-10) for integration testing.
+A Super admin SHALL be able to make a sandbox organisation (a flagged organisation of the same installation, enabled per deployment) holding only the sample company (FR-UX-10), with API clients of its own, sending nothing outside Fyniq.
 
 Source: PRD-001 §8.18.1 · Priority S · Phase P2
 
 #### Scenario: Sandbox is isolated from real data
-- **WHEN** an organisation creates a sandbox
-- **THEN** it is a copy of the sample company with its own credentials
-- **AND** those credentials have no access to the organisation's real data
+- **WHEN** a Super admin makes a sandbox organisation where the deployment enables them
+- **THEN** it is a new organisation holding the sample company, whose clients reach it and nothing else
+- **AND** no existing organisation becomes a sandbox and a sandbox never becomes a real organisation
+
+#### Scenario: Sandbox sends nothing outside Fyniq
+- **WHEN** a sandbox organisation's work would send email, call a payment provider, bank, InvoiceNow access point or AI model, or send a webhook to a host the operator has not allowed
+- **THEN** it is refused or stubbed and nothing leaves Fyniq
 
 ### Requirement: FR-INT-19 Agent-to-agent
 The system SHALL publish an A2A agent card so other organisations' agents can ask Fyniq read-only questions under OAuth.

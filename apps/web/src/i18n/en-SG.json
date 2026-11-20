@@ -2799,6 +2799,30 @@
       "label": "Disconnect for a person",
       "tooltip": "End one person's access for one AI app at once. Their other apps, their sign-in and their integrations are not touched."
     },
+    "mcp.third-party": {
+      "label": "Apps from other publishers",
+      "tooltip": "AI apps of other publishers, registered by hand by an Administrator. Fyniq has not verified them; an Owner allows each one, with a second approver, before anyone can connect it."
+    },
+    "mcp.register-third-party": {
+      "label": "Register an app",
+      "tooltip": "Record an AI app of another publisher: who publishes it, where it signs people in, what it is for and where it processes data. It cannot connect until an Owner allows it."
+    },
+    "mcp.remove-third-party": {
+      "label": "Remove the app",
+      "tooltip": "Take the app away at once: it can no longer sign anyone in, and its record stays for the access review."
+    },
+    "inbox.integration-tasks": {
+      "label": "Tasks from other systems",
+      "tooltip": "Tasks that a ticketing system or another connected system asked a person to do. The system finishes its own; an Owner or an Administrator can finish one here."
+    },
+    "inbox.integration-task-done": {
+      "label": "Mark done",
+      "tooltip": "The task was done: it is finished for good and the system that made it will see so."
+    },
+    "inbox.integration-task-cancel": {
+      "label": "Cancel the task",
+      "tooltip": "The task is no longer needed: it is finished for good and the system that made it will see so."
+    },
     "policy.acknowledge": {
       "label": "Acknowledge policy",
       "tooltip": "Read the version of a policy now in force and confirm you accept it, within 30 days of its publication or of joining."

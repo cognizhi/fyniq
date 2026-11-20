@@ -30,12 +30,20 @@
         false
       ],
       "type": "boolean"
+    },
+    "sandbox": {
+      "description": "true for a sandbox organisation, made for integration testing with the sample company (FR-INT-18).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
     }
   },
   "required": [
     "id",
     "name",
     "practice",
+    "sandbox",
     "current"
   ],
   "title": "MyOrganisation",

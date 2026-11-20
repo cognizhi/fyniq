@@ -3,7 +3,7 @@ key: settings.integrations
 title: Integrations and connectors
 mode: expert
 roles: [owner, admin, controller, auditor, dpo, super_admin]
-requirements: [FR-INT-20, FR-INT-21, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36, FR-PSP-01, FR-PSP-04, FR-PSP-05, FR-PSP-06]
+requirements: [FR-INT-20, FR-INT-21, FR-INT-24, FR-INT-25, FR-INT-26, FR-INT-27, SEC-36, FR-PSP-01, FR-PSP-04, FR-PSP-05, FR-PSP-06]
 status: draft
 ---
 
@@ -156,6 +156,14 @@ anything.
   in it should equal what the provider says it holds for you. A sweep that fell behind shows with the other bank syncs.
 - **Events Fyniq cannot read.** A webhook of a type Fyniq does not know is kept and set aside for a person. It posts
   nothing.
+
+## Tasks from other systems
+
+- A ticketing system or another connected system can ask a person to do something: it makes a **task** with its own reference and a link back to the ticket. These tasks show in your **Inbox** under
+  **Tasks from other systems**, apart from the compliance tasks the company secretary assistant raises.
+- The system that made a task finishes it, and a finished task stays finished. An Owner or an Administrator can also finish one here: **Mark done** when it was done, **Cancel the task** when it is no
+  longer needed. A finished task is never reopened: ask the system for a new one.
+- A task never approves anything, never marks a statutory obligation met and never changes the books: it is a reminder with a link. Do not put personal data or amounts in one.
 
 ## Related
 
