@@ -78,6 +78,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "purchase-orders": lazyRouteComponent(() => import("./screens/purchases/PurchaseOrders"), "PurchaseOrders"),
   "purchase-order-new": lazyRouteComponent(() => import("./screens/purchases/PurchaseOrderPage"), "PurchaseOrderPage"),
   "purchase-order": lazyRouteComponent(() => import("./screens/purchases/PurchaseOrderPage"), "PurchaseOrderPage"),
+  "personal-approvals": lazyRouteComponent(() => import("./screens/approvals/PersonalApprovals"), "PersonalApprovals"),
   payroll: lazyRouteComponent(() => import("./screens/payroll/Payroll"), "Payroll"),
   "employee-record": lazyRouteComponent(() => import("./screens/payroll/EmployeeRecord"), "EmployeeRecord"),
   "salary-payments": lazyRouteComponent(() => import("./screens/payroll/SalaryPayments"), "SalaryPayments"),

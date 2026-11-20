@@ -180,6 +180,10 @@ export function Inbox() {
           <h1 className="fy-h1">Inbox</h1>
           <p className="fy-secondary">What waits for you: requests to approve, your own requests, and the weekly review.</p>
         </div>
+        <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/me/approve">
+          <Icon of={Stamp} />
+          To approve
+        </Link>
         <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/inbox/ai-tasks">
           <Icon of={ListChecks} />
           AI tasks

@@ -3,8 +3,10 @@ package nemura
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -307,18 +309,44 @@ WHERE person_id = $1 AND (viewers && $2 OR ($3 AND 'employee' = ANY(viewers))) O
 
 // BankDigest is what an approval of a bank account change approves: the person and the keyed fingerprint of the new account, never the account.
 func BankDigest(person uuid.UUID, fingerprint []byte) []byte {
+	return BankDigestWith(person, fingerprint, "")
+}
+
+// BankDigestWith is BankDigest with the bank's code bound in: an approver signs the account and the bank it is at, so the BIC Fyniq derives from the code is what was approved (design D28). With no code it is
+// exactly BankDigest's, so a change proposed before the code existed keeps its digest.
+func BankDigestWith(person uuid.UUID, fingerprint []byte, bankCode string) []byte {
 	h := sha256.New()
 	h.Write([]byte("bank_account_change:" + person.String() + ":"))
 	h.Write(fingerprint)
+	if bankCode != "" {
+		h.Write([]byte(":bank_code:" + bankCode))
+	}
 	return h.Sum(nil)
+}
+
+// BankDetailDigest is the digest of a bank-detail record a payment line carries (payroll.payments.ready): the confirmed change's ID, the keyed fingerprint of the account and the bank's code, as lower-case hex.
+// It names the record without the account, so Fyniq can tell a changed record from the one it approved a line for.
+func BankDetailDigest(change uuid.UUID, fingerprint []byte, bankCode string) string {
+	sum := sha256.Sum256(append([]byte("bank_detail:"+change.String()+":"+bankCode+":"), fingerprint...))
+	return hex.EncodeToString(sum[:])
 }
 
 // ProposeBankChange is an employee proposing a new salary bank account for themselves (NM-PPL-04). It takes effect only when someone else approves it and
 // the employee confirms it with a passkey; the approval is a request of the approvals primitive.
 func ProposeBankChange(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, proposer, person uuid.UUID, account string) (uuid.UUID, error) {
+	return ProposeBankChangeAt(ctx, tx, c, org, at, proposer, person, account, "", "")
+}
+
+// ProposeBankChangeAt is ProposeBankChange with the bank's Singapore code and name beside the account (design D26, D28). Both are optional together: with none, the account is on record and no payment line is
+// sent for it until a change with a bank is confirmed.
+func ProposeBankChangeAt(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, proposer, person uuid.UUID, account, bankCode, bankName string) (uuid.UUID, error) {
 	v, err := people.NormaliseBank(account)
 	if err != nil {
 		return uuid.Nil, err
+	}
+	bankCode, bankName = strings.TrimSpace(bankCode), strings.TrimSpace(bankName)
+	if (bankCode == "") != (bankName == "") || (bankCode != "" && !people.BankCodeShape.MatchString(bankCode)) || len(bankName) > 140 {
+		return uuid.Nil, &people.Refusal{Code: people.CodeInvalid, Message: "The bank is its Singapore code (4 digits, or 4 and a 3-digit branch) and its name, together: give both or neither."}
 	}
 	var member *uuid.UUID
 	if err := tx.QueryRow(ctx, "SELECT member_id FROM nemura.person WHERE id = $1", person).Scan(&member); errors.Is(err, pgx.ErrNoRows) {
@@ -339,15 +367,15 @@ func ProposeBankChange(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.
 		return uuid.Nil, err
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO nemura.approval_request (id, object_type, object_id, digest, requested_by, required_role, expires_at)
-VALUES ($1, 'bank_account_change', $2, $3, $4, 'hr_admin', $5)`, approval, id, BankDigest(person, fp), proposer, at.Add(7*24*time.Hour)); err != nil {
+VALUES ($1, 'bank_account_change', $2, $3, $4, 'hr_admin', $5)`, approval, id, BankDigestWith(person, fp, bankCode), proposer, at.Add(7*24*time.Hour)); err != nil {
 		return uuid.Nil, err
 	}
 	if err := Audit(ctx, tx, org, at, user(proposer), "nemura.approval.requested", audit.Object{Type: "approval_request", ID: approval},
 		map[string]audit.Change{"object_type": {nil, "bank_account_change"}}, ""); err != nil {
 		return uuid.Nil, err
 	}
-	if _, err := tx.Exec(ctx, "INSERT INTO nemura.bank_account_change (id, person_id, new_sealed, new_masked, new_fingerprint, proposed_by, approval_id) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-		id, person, sealed, people.MaskBank(v), fp, proposer, approval); err != nil {
+	if _, err := tx.Exec(ctx, "INSERT INTO nemura.bank_account_change (id, person_id, new_sealed, new_masked, new_fingerprint, proposed_by, approval_id, new_bank_code, new_bank_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		id, person, sealed, people.MaskBank(v), fp, proposer, approval, nullable(bankCode), nullable(bankName)); err != nil {
 		return uuid.Nil, err
 	}
 	return id, Audit(ctx, tx, org, at, user(proposer), "nemura.bank_account.change_proposed", audit.Object{Type: "bank_account_change", ID: id},
@@ -403,8 +431,9 @@ func ConfirmBankChange(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Ti
 	var sl []byte
 	var mk string
 	var fpb []byte
-	err := tx.QueryRow(ctx, `SELECT c.person_id, p.member_id, c.new_sealed, c.new_masked, c.new_fingerprint FROM nemura.bank_account_change c
-JOIN nemura.person p ON p.organisation_id = c.organisation_id AND p.id = c.person_id WHERE c.id = $1 AND c.state = 'approved'`, change).Scan(&person, &member, &sl, &mk, &fpb)
+	var code, name *string
+	err := tx.QueryRow(ctx, `SELECT c.person_id, p.member_id, c.new_sealed, c.new_masked, c.new_fingerprint, c.new_bank_code, c.new_bank_name FROM nemura.bank_account_change c
+JOIN nemura.person p ON p.organisation_id = c.organisation_id AND p.id = c.person_id WHERE c.id = $1 AND c.state = 'approved'`, change).Scan(&person, &member, &sl, &mk, &fpb, &code, &name)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return &people.Refusal{Code: people.CodeNotFound, Message: "There is no approved bank account change with that ID."}
 	} else if err != nil {
@@ -413,8 +442,8 @@ JOIN nemura.person p ON p.organisation_id = c.organisation_id AND p.id = c.perso
 	if member == nil || *member != by {
 		return &people.Refusal{Code: people.CodeInvalid, Message: "Only the person whose account it is confirms the change."}
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO nemura.person_secret (person_id, bank_sealed, bank_masked, bank_fingerprint) VALUES ($1, $2, $3, $4)
-ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.bank_sealed, bank_masked = EXCLUDED.bank_masked, bank_fingerprint = EXCLUDED.bank_fingerprint, updated_at = $5`, person, sl, mk, fpb, at); err != nil {
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.person_secret (person_id, bank_sealed, bank_masked, bank_fingerprint, bank_code, bank_name) VALUES ($1, $2, $3, $4, $6, $7)
+ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.bank_sealed, bank_masked = EXCLUDED.bank_masked, bank_fingerprint = EXCLUDED.bank_fingerprint, bank_code = EXCLUDED.bank_code, bank_name = EXCLUDED.bank_name, updated_at = $5`, person, sl, mk, fpb, at, code, name); err != nil {
 		return err
 	}
 	if err := Audit(ctx, tx, org, at, user(by), "nemura.person.bank_account_set", audit.Object{Type: "person_secret", ID: person}, map[string]audit.Change{"field": {nil, "bank"}}, ""); err != nil {
@@ -431,7 +460,11 @@ ON CONFLICT (organisation_id, person_id) DO UPDATE SET bank_sealed = EXCLUDED.ba
 		return err
 	}
 	// A linked organisation tells Fyniq the new version of the details, never the account, in the same transaction (NM-INT-09).
-	_, err = QueueBankEvent(ctx, tx, org, at, person)
+	if _, err = QueueBankEvent(ctx, tx, org, at, person); err != nil {
+		return err
+	}
+	// and the payment lines it sent for this person, which Fyniq blocks until the new bank detail's line arrives (FR-PPL-14).
+	_, err = requeuePaymentsFor(ctx, tx, org, at, person)
 	return err
 }
 

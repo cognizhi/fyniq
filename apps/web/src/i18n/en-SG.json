@@ -1187,6 +1187,10 @@
       "label": "Record the arrangement",
       "tooltip": "Records, as evidence, how one item is met from this month. A pay run is not approved for payment while an item has none."
     },
+    "approvals.personal": {
+      "label": "To approve",
+      "tooltip": "The expense claims you approve: claims of the departments your Approver role covers, or every claim if your role approves all. You never approve your own claim."
+    },
     "payroll.overview": {
       "label": "Payroll",
       "tooltip": "Fyniq's part of payroll: where each feature lives, the state of the link to Nemura, how the month's statutory outputs are met and the latest salary payments."

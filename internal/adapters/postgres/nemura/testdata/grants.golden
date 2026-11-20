@@ -63,6 +63,8 @@ nemura_api | column nemura.audit_event.id | INSERT
 nemura_api | column nemura.bank_account_change.approval_id | INSERT
 nemura_api | column nemura.bank_account_change.confirmed_at | UPDATE
 nemura_api | column nemura.bank_account_change.id | INSERT
+nemura_api | column nemura.bank_account_change.new_bank_code | INSERT
+nemura_api | column nemura.bank_account_change.new_bank_name | INSERT
 nemura_api | column nemura.bank_account_change.new_fingerprint | INSERT
 nemura_api | column nemura.bank_account_change.new_masked | INSERT
 nemura_api | column nemura.bank_account_change.new_sealed | INSERT
@@ -751,10 +753,14 @@ nemura_api | column nemura.person_pay_item.kind | INSERT
 nemura_api | column nemura.person_pay_item.name | INSERT
 nemura_api | column nemura.person_pay_item.nature | INSERT
 nemura_api | column nemura.person_pay_item.pay_id | INSERT
+nemura_api | column nemura.person_secret.bank_code | INSERT
+nemura_api | column nemura.person_secret.bank_code | UPDATE
 nemura_api | column nemura.person_secret.bank_fingerprint | INSERT
 nemura_api | column nemura.person_secret.bank_fingerprint | UPDATE
 nemura_api | column nemura.person_secret.bank_masked | INSERT
 nemura_api | column nemura.person_secret.bank_masked | UPDATE
+nemura_api | column nemura.person_secret.bank_name | INSERT
+nemura_api | column nemura.person_secret.bank_name | UPDATE
 nemura_api | column nemura.person_secret.bank_sealed | INSERT
 nemura_api | column nemura.person_secret.bank_sealed | UPDATE
 nemura_api | column nemura.person_secret.ir8a_sealed | INSERT

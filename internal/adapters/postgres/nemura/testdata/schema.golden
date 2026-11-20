@@ -203,6 +203,8 @@ bank_account_change | approval_id | uuid | true |
 bank_account_change | state | text | true | 'proposed'::text
 bank_account_change | confirmed_at | timestamp with time zone | false | 
 bank_account_change | created_at | timestamp with time zone | true | now()
+bank_account_change | new_bank_code | text | false | 
+bank_account_change | new_bank_name | text | false | 
 company_policy | organisation_id | uuid | true | nemura.current_org()
 company_policy | id | uuid | true | uuidv7()
 company_policy | effective_from | date | true | 
@@ -966,6 +968,8 @@ person_secret | bank_masked | text | false |
 person_secret | bank_fingerprint | bytea | false | 
 person_secret | updated_at | timestamp with time zone | true | now()
 person_secret | ir8a_sealed | bytea | false | 
+person_secret | bank_code | text | false | 
+person_secret | bank_name | text | false | 
 person_terms | organisation_id | uuid | true | nemura.current_org()
 person_terms | id | uuid | true | uuidv7()
 person_terms | person_id | uuid | true | 
@@ -1239,6 +1243,8 @@ audit_event | audit_event_seq_not_null | NOT NULL seq
 audit_event | audit_event_seq_positive | CHECK ((seq > 0))
 bank_account_change | bank_account_change_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES nemura.approval_request(organisation_id, id)
 bank_account_change | bank_account_change_approval_id_not_null | NOT NULL approval_id
+bank_account_change | bank_account_change_bank_code | CHECK (((new_bank_code IS NULL) OR (new_bank_code ~ '^[0-9]{4}([0-9]{3})?$'::text)))
+bank_account_change | bank_account_change_bank_name | CHECK (((new_bank_name IS NULL) OR ((char_length(new_bank_name) >= 1) AND (char_length(new_bank_name) <= 140))))
 bank_account_change | bank_account_change_confirmed_whole | CHECK (((state = 'confirmed'::text) = (confirmed_at IS NOT NULL)))
 bank_account_change | bank_account_change_created_at_not_null | NOT NULL created_at
 bank_account_change | bank_account_change_id_not_null | NOT NULL id
@@ -2402,6 +2408,8 @@ person_pay_item | person_pay_item_pay_fkey | FOREIGN KEY (organisation_id, pay_i
 person_pay_item | person_pay_item_pay_id_not_null | NOT NULL pay_id
 person_pay_item | person_pay_item_pkey | PRIMARY KEY (organisation_id, id)
 person_pay_item | person_pay_item_text | CHECK ((((length(btrim(key)) >= 1) AND (length(btrim(key)) <= 40)) AND ((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80))))
+person_secret | person_secret_bank_code | CHECK (((bank_code IS NULL) OR (bank_code ~ '^[0-9]{4}([0-9]{3})?$'::text)))
+person_secret | person_secret_bank_name | CHECK (((bank_name IS NULL) OR ((char_length(bank_name) >= 1) AND (char_length(bank_name) <= 140))))
 person_secret | person_secret_bank_whole | CHECK ((((bank_sealed IS NULL) = (bank_masked IS NULL)) AND ((bank_sealed IS NULL) = (bank_fingerprint IS NULL))))
 person_secret | person_secret_masked_hides | CHECK ((((nric_masked IS NULL) OR (nric_masked ~ '\*'::text)) AND ((bank_masked IS NULL) OR (bank_masked ~ '\*'::text))))
 person_secret | person_secret_nric_whole | CHECK ((((nric_sealed IS NULL) = (nric_masked IS NULL)) AND ((nric_sealed IS NULL) = (nric_fingerprint IS NULL))))
@@ -3205,6 +3213,7 @@ CREATE OR REPLACE FUNCTION nemura.bank_account_change_guard()
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.new_sealed IS DISTINCT FROM OLD.new_sealed OR NEW.new_masked IS DISTINCT FROM OLD.new_masked
+     OR NEW.new_bank_code IS DISTINCT FROM OLD.new_bank_code OR NEW.new_bank_name IS DISTINCT FROM OLD.new_bank_name
      OR NEW.proposed_by IS DISTINCT FROM OLD.proposed_by OR NEW.approval_id IS DISTINCT FROM OLD.approval_id
      OR NOT ((OLD.state = 'proposed' AND NEW.state IN ('approved', 'refused')) OR (OLD.state = 'approved' AND NEW.state = 'confirmed')) THEN
     RAISE EXCEPTION 'A bank account change moves forward only: proposed, approved or refused, then confirmed' USING ERRCODE = 'NM126';

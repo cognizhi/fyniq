@@ -34,6 +34,8 @@ the claim deadline, the Controller approves it too. Nobody approves their own cl
 
 **All claims** lists every member's claims by stage, for those who see them all.
 
+If you hold the Approver role without a finance role, open **To approve** from your Inbox (`/me/approve`): it lists the claims of the departments your role covers, or every claim if your role approves all. You never approve your own claim, and a claim outside your departments is not listed for you. An Accountant or Controller sees every claim as the fallback.
+
 ## Set the expense policy
 
 1. Open **Settings** › **Expense policy**.

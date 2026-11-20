@@ -366,6 +366,10 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 				} else {
 					applyErr = &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The posting answer has a status other than posted or refused, or lacks its reference or its code."}
 				}
+			} else if ev.Status == "posted" { // Fyniq has the run: the payment lines can be made against it (design D28)
+				if _, qerr := QueuePaymentsReady(ctx, sp, org, now, ev.RunID); qerr != nil {
+					return "", qerr
+				}
 			}
 		}
 	case TypeSessionRevoked:
