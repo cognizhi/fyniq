@@ -283,6 +283,7 @@ func Config(version string) huma.Config {
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Tasks", Description: "Tasks API clients made for people to do (FR-INT-24): a ticketing system or another integration with the scope fyniq.write.tasks makes tasks of its own and updates only those. Never a compliance task, never a financial record, never the AI."},
 		{Name: "Connected apps", Description: "AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6)."},
 		{Name: "Help", Description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."},
 		{Name: "Announcements", Description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."},
