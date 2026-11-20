@@ -326,6 +326,9 @@ fyniq_api       EXECUTE   installation_changes()
 fyniq_api       EXECUTE   installation_connector_secrets()
 fyniq_api       EXECUTE   installation_connectors()
 fyniq_api       EXECUTE   installation_org()
+fyniq_api       INSERT    integration_task (client_id, created_at, created_by, detail, due_on, external_ref, link_url, title, updated_at)
+fyniq_api       SELECT    integration_task
+fyniq_api       UPDATE    integration_task (closed_at, detail, due_on, link_url, status, title, updated_at, version)
 fyniq_api       INSERT    investor_update (asks, created_at, created_by, highlights, kind, pack_id, title, updated_at, updated_by)
 fyniq_api       SELECT    investor_update
 fyniq_api       UPDATE    investor_update (asks, edit, highlights, recipients, sent_at, sent_by, status, title, updated_at, updated_by)
@@ -1018,6 +1021,7 @@ fyniq_readonly  SELECT    holding_movement
 fyniq_readonly  SELECT    idempotency_key
 fyniq_readonly  SELECT    inbound_file
 fyniq_readonly  SELECT    inbound_message
+fyniq_readonly  SELECT    integration_task
 fyniq_readonly  SELECT    investor_update
 fyniq_readonly  SELECT    investor_update_read
 fyniq_readonly  SELECT    invoice_dispute

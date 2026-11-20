@@ -24,6 +24,7 @@ OPERATIONS = {
     "createBill": {"method": "POST", "path": "/v1/bills", "summary": "Save a draft bill", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.purchases"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "createContact": {"method": "POST", "path": "/v1/contacts", "summary": "Add a contact", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "createCustomerGroup": {"method": "POST", "path": "/v1/customer-groups", "summary": "Add a customer group", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
+    "createIntegrationTask": {"method": "POST", "path": "/v1/tasks", "summary": "Make a task as an integration", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.tasks"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "createInvoice": {"method": "POST", "path": "/v1/invoices", "summary": "Save a draft invoice", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "createInvoiceDispute": {"method": "POST", "path": "/v1/invoices/{invoice_id}/disputes", "summary": "Record a customer's dispute of an invoice, or their promise to pay", "path_params": ["invoice_id"], "query": [], "body": True, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "createInvoicePaymentLink": {"method": "POST", "path": "/v1/invoices/{invoice_id}/payment-link", "summary": "Ask the payment provider for a payment link on an invoice", "path_params": ["invoice_id"], "query": [], "body": True, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
@@ -68,8 +69,8 @@ OPERATIONS = {
     "getBillPayment": {"method": "GET", "path": "/v1/bill-payments/{payment_id}", "summary": "Get a payment of bills", "path_params": ["payment_id"], "query": [], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBillsTemplate": {"method": "GET", "path": "/v1/imports/bills/template", "summary": "Get the template for bills and vendor credits, as drafts", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBoardPack": {"method": "GET", "path": "/v1/board-packs/{id}", "summary": "Get a board pack", "path_params": ["id"], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "getBrand": {"method": "GET", "path": "/v1/organisation/brand", "summary": "Read the logo and brand", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "getBrandFile": {"method": "GET", "path": "/v1/organisation/brand/files/{kind}", "summary": "Read a logo or icon file", "path_params": ["kind"], "query": ["version"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getBrand": {"method": "GET", "path": "/v1/organisation/brand", "summary": "Read the logo and brand", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getBrandFile": {"method": "GET", "path": "/v1/organisation/brand/files/{kind}", "summary": "Read a logo or icon file", "path_params": ["kind"], "query": ["version"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBudget": {"method": "GET", "path": "/v1/budgets/{budget_id}", "summary": "Get a budget", "path_params": ["budget_id"], "query": [], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBudgetVsActual": {"method": "GET", "path": "/v1/reports/budget-vs-actual", "summary": "Get Budget vs Actual", "path_params": [], "query": ["by", "from", "to"], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getBudgetsTemplate": {"method": "GET", "path": "/v1/imports/budgets/template", "summary": "Get the template for budgets, as drafts", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -93,7 +94,7 @@ OPERATIONS = {
     "getCustomerRefund": {"method": "GET", "path": "/v1/customer-refunds/{refund_id}", "summary": "Get a refund to a customer", "path_params": ["refund_id"], "query": [], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getCustomerStatement": {"method": "GET", "path": "/v1/contacts/{contact_id}/statement", "summary": "Work out a customer's statement", "path_params": ["contact_id"], "query": ["currency", "from", "to"], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getDeferralRollForward": {"method": "GET", "path": "/v1/reports/deferral-roll-forward", "summary": "Get the roll-forward of deferred revenue and prepayments", "path_params": [], "query": ["from", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "getEvidenceRules": {"method": "GET", "path": "/v1/evidence-rules", "summary": "List the evidence rules", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getEvidenceRules": {"method": "GET", "path": "/v1/evidence-rules", "summary": "List the evidence rules", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getFeasibilityResults": {"method": "GET", "path": "/v1/feasibility-studies/{study_id}/results", "summary": "Work a feasibility study out", "path_params": ["study_id"], "query": [], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getFeasibilityStudy": {"method": "GET", "path": "/v1/feasibility-studies/{study_id}", "summary": "Get a feasibility study", "path_params": ["study_id"], "query": [], "body": False, "scopes": ["fyniq.read.planning"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getFinancialStatement": {"method": "GET", "path": "/v1/reports/statements/{kind}", "summary": "Get a financial statement", "path_params": ["kind"], "query": ["as_at_revision", "columns", "compare", "dimension_id", "dimension_value_id", "from", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -109,6 +110,7 @@ OPERATIONS = {
     "getGSTForecastEvidence": {"method": "GET", "path": "/v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}", "summary": "Get a GST forecast's file", "path_params": ["forecast_id", "evidence_id"], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getGSTMonitor": {"method": "GET", "path": "/v1/compliance/gst-monitor", "summary": "Get the GST registration monitor", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.compliance"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getGeneralLedger": {"method": "GET", "path": "/v1/reports/general-ledger", "summary": "Get the general ledger report", "path_params": [], "query": ["account_id", "as_at_revision", "dimension_value_id", "from", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getIntegrationTask": {"method": "GET", "path": "/v1/tasks/{task_id}", "summary": "Read a task an integration made", "path_params": ["task_id"], "query": [], "body": False, "scopes": ["fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getInvestorUpdate": {"method": "GET", "path": "/v1/investor-updates/{id}", "summary": "Open an investor update", "path_params": ["id"], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getInvoice": {"method": "GET", "path": "/v1/invoices/{invoice_id}", "summary": "Get an invoice", "path_params": ["invoice_id"], "query": [], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getInvoiceDisputes": {"method": "GET", "path": "/v1/invoices/{invoice_id}/disputes", "summary": "Read an invoice's disputes and promises to pay", "path_params": ["invoice_id"], "query": [], "body": False, "scopes": ["fyniq.read.sales", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -126,8 +128,8 @@ OPERATIONS = {
     "getMyDashboard": {"method": "GET", "path": "/v1/dashboards/mine", "summary": "Get the dashboard that applies to you", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getOpeningBalances": {"method": "GET", "path": "/v1/opening-balances", "summary": "Get the opening balances", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getOpeningBalancesTemplate": {"method": "GET", "path": "/v1/imports/opening-balances/template", "summary": "Get the template for opening balances, as a draft", "path_params": [], "query": ["format"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "getOperation": {"method": "GET", "path": "/v1/operations/{operation_id}", "summary": "Poll a long operation", "path_params": ["operation_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "getOrganisation": {"method": "GET", "path": "/v1/organisation", "summary": "Get your organisation", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getOperation": {"method": "GET", "path": "/v1/operations/{operation_id}", "summary": "Poll a long operation", "path_params": ["operation_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "getOrganisation": {"method": "GET", "path": "/v1/organisation", "summary": "Get your organisation", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getPayables": {"method": "GET", "path": "/v1/payables", "summary": "Get AP ageing and the bills to pay", "path_params": [], "query": ["as_at", "within"], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getPaymentProviderInvoices": {"method": "GET", "path": "/v1/payment-providers/invoices", "summary": "Read the invoices and subscriptions a billing provider bills", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "getPeriod": {"method": "GET", "path": "/v1/periods/{period_id}", "summary": "Get a period", "path_params": ["period_id"], "query": [], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
@@ -206,6 +208,7 @@ OPERATIONS = {
     "listFxRates": {"method": "GET", "path": "/v1/fx/rates", "summary": "List the organisation's exchange rates", "path_params": [], "query": ["currency", "cursor", "from", "kind", "page_size", "to", "withdrawn"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.write.accounting"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listGSTForecastEvidence": {"method": "GET", "path": "/v1/gst-forecasts/{forecast_id}/evidence", "summary": "List a GST forecast's files", "path_params": ["forecast_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listGSTForecasts": {"method": "GET", "path": "/v1/gst-forecasts", "summary": "List the GST forecasts", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listIntegrationTasks": {"method": "GET", "path": "/v1/tasks", "summary": "List the tasks integrations made", "path_params": [], "query": ["cursor", "page_size", "status"], "body": False, "scopes": ["fyniq.write.tasks"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listInvestorUpdates": {"method": "GET", "path": "/v1/investor-updates", "summary": "List the investor updates", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.reports"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listInvoiceNowInbound": {"method": "GET", "path": "/v1/invoicenow/inbound", "summary": "List the invoices received through InvoiceNow", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.purchases", "fyniq.write.purchases"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listInvoiceNowSubmissions": {"method": "GET", "path": "/v1/invoicenow/submissions", "summary": "List the InvoiceNow submissions", "path_params": [], "query": ["cursor", "document_id", "page_size", "status"], "body": False, "scopes": ["fyniq.read.compliance"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
@@ -216,7 +219,7 @@ OPERATIONS = {
     "listKpiInputs": {"method": "GET", "path": "/v1/kpi-inputs", "summary": "List the KPIs' entered counts", "path_params": [], "query": ["cursor", "from", "page_size", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listMoneyAccountEvidence": {"method": "GET", "path": "/v1/money-accounts/{money_account_id}/evidence", "summary": "List a money account's bank agreements", "path_params": ["money_account_id"], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listMoneyAccounts": {"method": "GET", "path": "/v1/money-accounts", "summary": "List the money accounts", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
-    "listMyOperations": {"method": "GET", "path": "/v1/operations", "summary": "List my long operations", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
+    "listMyOperations": {"method": "GET", "path": "/v1/operations", "summary": "List my long operations", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listPaymentProviderAccounts": {"method": "GET", "path": "/v1/payment-providers/accounts", "summary": "List the payment providers' accounts", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listPaymentProviderDisputes": {"method": "GET", "path": "/v1/payment-providers/disputes", "summary": "List the payment providers' disputes", "path_params": [], "query": ["cursor", "page_size"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
     "listPaymentProviderEvents": {"method": "GET", "path": "/v1/payment-providers/events", "summary": "List the payment providers' webhook events", "path_params": [], "query": ["cursor", "page_size", "status"], "body": False, "scopes": ["fyniq.read.banking", "fyniq.write.banking"], "paged": True, "preview": False, "idempotency_key": False, "if_match": False},
@@ -317,7 +320,7 @@ OPERATIONS = {
     "runChecks": {"method": "POST", "path": "/v1/checks/runs", "summary": "Run every check now", "path_params": [], "query": [], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "runReportDefinition": {"method": "GET", "path": "/v1/report-definitions/{id}/run", "summary": "Run a saved report", "path_params": ["id"], "query": ["as_at_revision", "from", "to"], "body": False, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "runReportDraft": {"method": "POST", "path": "/v1/report-builder/run", "summary": "Run a report definition without saving it", "path_params": [], "query": [], "body": True, "scopes": ["fyniq.read.reports"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
-    "searchRecords": {"method": "GET", "path": "/v1/search", "summary": "Search the records", "path_params": [], "query": ["group", "q"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
+    "searchRecords": {"method": "GET", "path": "/v1/search", "summary": "Search the records", "path_params": [], "query": ["group", "q"], "body": False, "scopes": ["fyniq.read.accounting", "fyniq.read.banking", "fyniq.read.compliance", "fyniq.read.planning", "fyniq.read.purchases", "fyniq.read.reports", "fyniq.read.sales", "fyniq.write.accounting", "fyniq.write.banking", "fyniq.write.purchases", "fyniq.write.sales", "fyniq.write.tasks"], "paged": False, "preview": False, "idempotency_key": False, "if_match": False},
     "sendQuote": {"method": "POST", "path": "/v1/quotes/{quote_id}/send", "summary": "Send a quote or sales order", "path_params": ["quote_id"], "query": [], "body": False, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "sendSalesReminder": {"method": "POST", "path": "/v1/sales-reminders/{document_id}/send", "summary": "Send a reminder due", "path_params": ["document_id"], "query": [], "body": True, "scopes": ["fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": False},
     "setContactDocumentTemplate": {"method": "PUT", "path": "/v1/contacts/{contact_id}/document-templates/{kind}/{document_type}", "summary": "Choose a contact's template", "path_params": ["contact_id", "kind", "document_type"], "query": [], "body": True, "scopes": ["fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
@@ -327,6 +330,7 @@ OPERATIONS = {
     "undoBankTransfer": {"method": "POST", "path": "/v1/bank-transfers/{transfer_id}/undo", "summary": "Undo a transfer", "path_params": ["transfer_id"], "query": [], "body": True, "scopes": ["fyniq.write.banking"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "unreconcileBankLine": {"method": "POST", "path": "/v1/bank-lines/{line_id}/unreconcile", "summary": "Put a bank line back in the queue", "path_params": ["line_id"], "query": [], "body": True, "scopes": ["fyniq.write.banking"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "updateContact": {"method": "PATCH", "path": "/v1/contacts/{contact_id}", "summary": "Change a contact", "path_params": ["contact_id"], "query": [], "body": True, "scopes": ["fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": False, "if_match": True},
+    "updateIntegrationTask": {"method": "PATCH", "path": "/v1/tasks/{task_id}", "summary": "Update a task an integration made", "path_params": ["task_id"], "query": [], "body": True, "scopes": ["fyniq.write.tasks"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "updateItem": {"method": "PATCH", "path": "/v1/items/{item_id}", "summary": "Change an item", "path_params": ["item_id"], "query": [], "body": True, "scopes": ["fyniq.write.purchases", "fyniq.write.sales"], "paged": False, "preview": True, "idempotency_key": False, "if_match": True},
     "voidBill": {"method": "POST", "path": "/v1/bills/{bill_id}/void", "summary": "Void a posted bill", "path_params": ["bill_id"], "query": [], "body": True, "scopes": ["fyniq.write.purchases"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
     "voidBillPayment": {"method": "POST", "path": "/v1/bill-payments/{payment_id}/void", "summary": "Void a payment of bills", "path_params": ["payment_id"], "query": [], "body": True, "scopes": ["fyniq.write.purchases"], "paged": False, "preview": True, "idempotency_key": True, "if_match": True},
@@ -432,6 +436,10 @@ class OperationsMixin:
     def create_customer_group(self, body=None, **options):
         """Add a customer group (POST /v1/customer-groups; scopes fyniq.write.purchases, fyniq.write.sales)."""
         return self.call("createCustomerGroup", [], body, **options)
+
+    def create_integration_task(self, body=None, **options):
+        """Make a task as an integration (POST /v1/tasks; scopes fyniq.write.tasks)."""
+        return self.call("createIntegrationTask", [], body, **options)
 
     def create_invoice(self, body=None, **options):
         """Save a draft invoice (POST /v1/invoices; scopes fyniq.write.sales)."""
@@ -610,11 +618,11 @@ class OperationsMixin:
         return self.call("getBoardPack", [id], None, **options)
 
     def get_brand(self, **options):
-        """Read the logo and brand (GET /v1/organisation/brand; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """Read the logo and brand (GET /v1/organisation/brand; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("getBrand", [], None, **options)
 
     def get_brand_file(self, kind, **options):
-        """Read a logo or icon file (GET /v1/organisation/brand/files/{kind}; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """Read a logo or icon file (GET /v1/organisation/brand/files/{kind}; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("getBrandFile", [kind], None, **options)
 
     def get_budget(self, budget_id, **options):
@@ -710,7 +718,7 @@ class OperationsMixin:
         return self.call("getDeferralRollForward", [], None, **options)
 
     def get_evidence_rules(self, **options):
-        """List the evidence rules (GET /v1/evidence-rules; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """List the evidence rules (GET /v1/evidence-rules; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("getEvidenceRules", [], None, **options)
 
     def get_feasibility_results(self, study_id, **options):
@@ -772,6 +780,10 @@ class OperationsMixin:
     def get_general_ledger(self, **options):
         """Get the general ledger report (GET /v1/reports/general-ledger; scopes fyniq.read.reports)."""
         return self.call("getGeneralLedger", [], None, **options)
+
+    def get_integration_task(self, task_id, **options):
+        """Read a task an integration made (GET /v1/tasks/{task_id}; scopes fyniq.write.tasks)."""
+        return self.call("getIntegrationTask", [task_id], None, **options)
 
     def get_investor_update(self, id, **options):
         """Open an investor update (GET /v1/investor-updates/{id}; scopes fyniq.read.reports)."""
@@ -842,11 +854,11 @@ class OperationsMixin:
         return self.call("getOpeningBalancesTemplate", [], None, **options)
 
     def get_operation(self, operation_id, **options):
-        """Poll a long operation (GET /v1/operations/{operation_id}; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """Poll a long operation (GET /v1/operations/{operation_id}; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("getOperation", [operation_id], None, **options)
 
     def get_organisation(self, **options):
-        """Get your organisation (GET /v1/organisation; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """Get your organisation (GET /v1/organisation; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("getOrganisation", [], None, **options)
 
     def get_payables(self, **options):
@@ -1161,6 +1173,10 @@ class OperationsMixin:
         """List the GST forecasts (GET /v1/gst-forecasts; scopes fyniq.read.compliance)."""
         return self.call("listGSTForecasts", [], None, **options)
 
+    def list_integration_tasks(self, **options):
+        """List the tasks integrations made (GET /v1/tasks; scopes fyniq.write.tasks)."""
+        return self.call("listIntegrationTasks", [], None, **options)
+
     def list_investor_updates(self, **options):
         """List the investor updates (GET /v1/investor-updates; scopes fyniq.read.reports)."""
         return self.call("listInvestorUpdates", [], None, **options)
@@ -1202,7 +1218,7 @@ class OperationsMixin:
         return self.call("listMoneyAccounts", [], None, **options)
 
     def list_my_operations(self, **options):
-        """List my long operations (GET /v1/operations; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """List my long operations (GET /v1/operations; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("listMyOperations", [], None, **options)
 
     def list_payment_provider_accounts(self, **options):
@@ -1606,7 +1622,7 @@ class OperationsMixin:
         return self.call("runReportDraft", [], body, **options)
 
     def search_records(self, **options):
-        """Search the records (GET /v1/search; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales)."""
+        """Search the records (GET /v1/search; scopes fyniq.read.accounting, fyniq.read.banking, fyniq.read.compliance, fyniq.read.planning, fyniq.read.purchases, fyniq.read.reports, fyniq.read.sales, fyniq.write.accounting, fyniq.write.banking, fyniq.write.purchases, fyniq.write.sales, fyniq.write.tasks)."""
         return self.call("searchRecords", [], None, **options)
 
     def send_quote(self, quote_id, **options):
@@ -1644,6 +1660,10 @@ class OperationsMixin:
     def update_contact(self, contact_id, body=None, **options):
         """Change a contact (PATCH /v1/contacts/{contact_id}; scopes fyniq.write.purchases, fyniq.write.sales)."""
         return self.call("updateContact", [contact_id], body, **options)
+
+    def update_integration_task(self, task_id, body=None, **options):
+        """Update a task an integration made (PATCH /v1/tasks/{task_id}; scopes fyniq.write.tasks)."""
+        return self.call("updateIntegrationTask", [task_id], body, **options)
 
     def update_item(self, item_id, body=None, **options):
         """Change an item (PATCH /v1/items/{item_id}; scopes fyniq.write.purchases, fyniq.write.sales)."""

@@ -35,6 +35,8 @@ var (
 		"purchases":  {Bills, ContactsAndItems},
 		"banking":    {BankTransactions},
 		"accounting": {Journals},
+		// tasks (FR-INT-24, rev 0.607): the tasks an integration makes of its own; no financial record and no compliance task.
+		"tasks": {IntegrationTasks},
 	}
 )
 

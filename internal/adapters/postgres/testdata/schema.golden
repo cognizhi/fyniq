@@ -1552,6 +1552,20 @@ installation_connector_secret | set_by | text | not null |
 installation_connector_secret | set_at | timestamp with time zone | not null | 
 installation_connector_secret | valid_until | timestamp with time zone | null | 
 installation_connector_secret | destroyed_at | timestamp with time zone | null | 
+integration_task | organisation_id | uuid | not null | current_org()
+integration_task | id | uuid | not null | uuidv7()
+integration_task | client_id | text | not null | 
+integration_task | external_ref | text | not null | 
+integration_task | title | text | not null | 
+integration_task | detail | text | not null | ''::text
+integration_task | due_on | date | null | 
+integration_task | link_url | text | null | 
+integration_task | status | text | not null | 'open'::text
+integration_task | created_by | uuid | not null | 
+integration_task | created_at | timestamp with time zone | not null | 
+integration_task | updated_at | timestamp with time zone | not null | 
+integration_task | closed_at | timestamp with time zone | null | 
+integration_task | version | integer | not null | 1
 investor_update | organisation_id | uuid | not null | current_org()
 investor_update | id | uuid | not null | uuidv7()
 investor_update | pack_id | uuid | not null | 
@@ -5876,6 +5890,28 @@ installation_connector_secret | installation_connector_secret_ref_form | CHECK (
 installation_connector_secret | installation_connector_secret_ref_not_null | NOT NULL ref
 installation_connector_secret | installation_connector_secret_set_at_not_null | NOT NULL set_at
 installation_connector_secret | installation_connector_secret_set_by_not_null | NOT NULL set_by
+integration_task | integration_task_client_form | CHECK ((client_id ~ '^[!-~]{1,200}$'::text))
+integration_task | integration_task_client_id_not_null | NOT NULL client_id
+integration_task | integration_task_closed | CHECK (((closed_at IS NOT NULL) = (status <> 'open'::text)))
+integration_task | integration_task_created_at_not_null | NOT NULL created_at
+integration_task | integration_task_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+integration_task | integration_task_created_by_not_null | NOT NULL created_by
+integration_task | integration_task_detail_not_null | NOT NULL detail
+integration_task | integration_task_external_ref_not_null | NOT NULL external_ref
+integration_task | integration_task_id_not_null | NOT NULL id
+integration_task | integration_task_link | CHECK (((link_url IS NULL) OR ((link_url ~ '^https://[^[:space:]]+$'::text) AND (length(link_url) <= 2048))))
+integration_task | integration_task_organisation_id_not_null | NOT NULL organisation_id
+integration_task | integration_task_pkey | PRIMARY KEY (organisation_id, id)
+integration_task | integration_task_ref_form | CHECK ((external_ref ~ '^[!-~]{1,200}$'::text))
+integration_task | integration_task_ref_once | UNIQUE (organisation_id, client_id, external_ref)
+integration_task | integration_task_status | CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'cancelled'::text])))
+integration_task | integration_task_status_not_null | NOT NULL status
+integration_task | integration_task_title_not_null | NOT NULL title
+integration_task | integration_task_updated_at_not_null | NOT NULL updated_at
+integration_task | integration_task_version | CHECK ((version >= 1))
+integration_task | integration_task_version_not_null | NOT NULL version
+integration_task | integration_task_words | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND (length(detail) <= 2000)))
+integration_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 investor_update | investor_update_asks_not_null | NOT NULL asks
 investor_update | investor_update_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND (updated_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((sent_by IS NULL) OR (sent_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
 investor_update | investor_update_created_at_not_null | NOT NULL created_at
@@ -9038,6 +9074,7 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX integration_task_by_status ON fyniq.integration_task USING btree (organisation_id, status, id DESC)
 CREATE INDEX invoice_dispute_invoice ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, created_at)
 CREATE INDEX invoicenow_contingency_period ON fyniq.invoicenow_contingency USING btree (organisation_id, period_from, period_to)
 CREATE INDEX invoicenow_event_submission ON fyniq.invoicenow_event USING btree (organisation_id, submission_id, at)
@@ -9391,6 +9428,8 @@ CREATE UNIQUE INDEX installation_connector_secret_current ON fyniq.installation_
 CREATE UNIQUE INDEX installation_connector_secret_once ON fyniq.installation_connector_secret USING btree (ref)
 CREATE UNIQUE INDEX installation_connector_secret_pkey ON fyniq.installation_connector_secret USING btree (id)
 CREATE UNIQUE INDEX installation_pkey ON fyniq.installation USING btree (singleton)
+CREATE UNIQUE INDEX integration_task_pkey ON fyniq.integration_task USING btree (organisation_id, id)
+CREATE UNIQUE INDEX integration_task_ref_once ON fyniq.integration_task USING btree (organisation_id, client_id, external_ref)
 CREATE UNIQUE INDEX investor_update_pkey ON fyniq.investor_update USING btree (organisation_id, id)
 CREATE UNIQUE INDEX investor_update_read_once ON fyniq.investor_update_read USING btree (organisation_id, update_id, user_id)
 CREATE UNIQUE INDEX investor_update_read_pkey ON fyniq.investor_update_read USING btree (organisation_id, id)
@@ -9899,6 +9938,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fixed_as
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('fx_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.integration_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('integration_task', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.investor_update DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('investor_update', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
@@ -10202,6 +10242,8 @@ CREATE TRIGGER installation_connector_secret_guard BEFORE DELETE OR UPDATE ON fy
 CREATE TRIGGER installation_connector_secret_named BEFORE INSERT ON fyniq.installation_connector_secret FOR EACH ROW EXECUTE FUNCTION connector_secret_named()
 CREATE TRIGGER installation_connector_secret_no_truncate BEFORE TRUNCATE ON fyniq.installation_connector_secret FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER instrument_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION instrument_guard()
+CREATE TRIGGER integration_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.integration_task FOR EACH ROW EXECUTE FUNCTION integration_task_guard()
+CREATE TRIGGER integration_task_no_truncate BEFORE TRUNCATE ON fyniq.integration_task FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER investor_right_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION investor_right_guard()
 CREATE TRIGGER investor_update_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.investor_update FOR EACH ROW EXECUTE FUNCTION investor_update_guard()
 CREATE TRIGGER investor_update_no_truncate BEFORE TRUNCATE ON fyniq.investor_update FOR EACH STATEMENT EXECUTE FUNCTION investor_update_guard()
@@ -10652,6 +10694,7 @@ holding_movement | tenant_isolation | * | (organisation_id = current_org()) | (o
 idempotency_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+integration_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -10943,6 +10986,7 @@ installation_announcement | disabled | not forced
 installation_change | disabled | not forced
 installation_connector | disabled | not forced
 installation_connector_secret | disabled | not forced
+integration_task | enabled | forced
 investor_update | enabled | forced
 investor_update_read | enabled | forced
 invitation_code | disabled | not forced
@@ -11333,6 +11377,7 @@ installation_connectors() → SETOF installation_connector | security definer | 
 installation_dual_control() → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | a3a29b8dc4a420477e6b9ff6948499d8
 installation_org() → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 9731da83e60ff6283071958a473dc801
 instrument_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 249c231a7cc53d4f0e283ebd13cde723
+integration_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e5fc0cdac9bcf649aa01f5b3de44be9a
 investor_right_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 96cf1779564b1618a9b0c82c231fe328
 investor_update_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 61bfca06922e94b4f963dc2716fddc3e
 investor_update_read_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b2420800b375b543d651fac2a0440734
