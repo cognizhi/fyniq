@@ -180,7 +180,7 @@ Source: PRD-001 §8.22 · Priority S · Phase P1
 - **AND** the "before GST registration" flag comes with `p1-gst`
 
 ### Requirement: FR-EQ-04 Founder pay choice
-The system SHALL record a founder pay choice per director per period (no salary, salary paid, salary deferred, director's fee, shares instead of pay), effective-dated and stored with the signed decision, and the pay run SHALL apply it.
+The system SHALL record a founder pay choice per director per period (no salary, salary paid, salary deferred, director's fee, shares instead of pay), effective-dated and stored with the signed decision, and the pay run SHALL apply it, except a deferral, which no pay run calculates (rev 0.591, the owner's decision of 21 Nov 2026).
 
 Source: PRD-001 §8.22 · Priority M · Phase P1 (with payroll)
 
@@ -222,6 +222,12 @@ Source: PRD-001 §8.22 · Priority M · Phase P1 (with payroll)
 - **WHEN** a pay choice is recorded with its signed decision, or a fee the shareholders voted is approved by another person
 - **THEN** the choice applies by month, "No salary" by default, posting nothing; the fee posts `director_fee@1`, Dr 6050 / Cr 2120
 - **AND** the pay run's part and C.2 #24 come with `p1-payroll-link`
+
+#### Scenario: Deferred director pay is deferred (rev 0.591)
+- **GIVEN** the owner's decision of 21 Nov 2026
+- **WHEN** a director's pay choice is "salary deferred"
+- **THEN** it stays a recorded choice: no pay run calculates the deferral and nothing moves net pay to 2120
+- **AND** C.2 #24 waits for a deferral feature that is not planned; C.2 #21 and #23 watch the account meanwhile
 
 ### Requirement: FR-EQ-05 Settlement routes
 The system SHALL offer settlement routes for a director's balance on 2500 or 2120, each an approval object (FR-APR-01) that shows its ledger impact before approval (FR-APR-02), with FM-9 applying.
