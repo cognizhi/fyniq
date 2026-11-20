@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/domain/deadlines"
 	"github.com/cognizhi/fyniq/internal/domain/payrollimport"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -30,6 +31,10 @@ var payrollChecks = []Definition{
 		Explain: "A wage month whose pay run was posted from Nemura or a provider, and that also has other postings (a journal, a bank line) on the salary accounts the pay run posts to, may count the same " +
 			"salaries twice. Check each and move or reverse the one that repeats the pay run.",
 		Rules: "FR-PAY-07, FR-PPL-04", Owner: "accountant", View: viewPayroll, Module: "features.payroll", Triggers: onPayroll, Run: salariesCountedTwice},
+	{Key: "payroll.cpf-due", Ref: "C.2 #14", Area: "Payroll", Worst: Due, Title: "CPF is paid by the 14th",
+		Explain: "The CPF contribution of each wage month is due on the 14th of the month after (CPF Board). Each month's, due within 14 days or past with no payment recorded on the statutory calendar, is listed. " +
+			"Pay it, then record it on the calendar with the CPF Board's acknowledgement. It is the CPF line of the calendar check C.2 #15, shown here for payroll.",
+		Rules: "FR-TAX-07, CMP-02", Owner: "accountant", View: viewCalendar, Triggers: []string{"document", "organisation_setting", "organisation"}, Packs: []string{"sg-deadlines"}, Run: cpfDue},
 	{Key: "payroll.held-payment-released", Ref: "C.2 #44", Area: "Payroll", Worst: Error, Title: "No payment to a person under a tax-clearance hold was released",
 		Explain: "A salary payment released to a person who was held for tax clearance when it was released (IR21) breaks the hold, which only Nemura's release lifts after IRAS's notice or directive. " +
 			"Fyniq refuses such a release; this finds one that went through a hold that reached Fyniq late, or a payment made outside a batch.",
@@ -239,4 +244,35 @@ func heldPaymentReleased(ctx context.Context, u storage.UnitOfWork, e *Env) (Res
 	}
 	return Found(Error, items, fmt.Sprintf("%d salary batch(es) released payments to people under a hold", len(items)),
 		"Tell the accountant at once: the hold is lifted only by Nemura after IRAS's notice or directive; ask Nemura for the hold's record and recover what was paid if IRAS requires it"), nil
+}
+
+// C.2 #14: the CPF obligations of the statutory calendar due within 14 days or past with nothing recorded (the CPF line of C.2 #15).
+func cpfDue(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	c, err := deadlines.Read(ctx, u, e.Today, e.Today.AddDate(0, 0, deadlines.SoonDays), e.Today)
+	if err != nil {
+		return Result{}, err
+	}
+	var items []Item
+	due := false
+	for _, it := range c.Items {
+		switch {
+		case it.Obligation == "sg-deadlines":
+			return Missing("an sg-deadlines version in force", ""), nil
+		case it.Obligation != "cpf":
+			continue
+		case it.Status == deadlines.Overdue || it.Status == deadlines.DueSoon:
+			due = true
+		case it.Status != deadlines.NotAssessed:
+			continue
+		}
+		items = append(items, calendarItem(it, e.Today))
+	}
+	if len(items) == 0 {
+		return Fine("No CPF payment is due within 14 days or past without its payment recorded"), nil
+	}
+	status := Warning
+	if due {
+		status = Due
+	}
+	return Found(status, items, fmt.Sprintf("%d CPF payment(s) to make", len(items)), "Pay it, then record it on the statutory calendar with the CPF Board's acknowledgement"), nil
 }

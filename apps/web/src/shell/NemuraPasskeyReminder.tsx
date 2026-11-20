@@ -1,4 +1,5 @@
 import { KeyRound } from "lucide-react";
+import { helpText } from "../i18n";
 import { Icon } from "../ui";
 
 // Nemura says this person approves pay runs there, and a pay run's approval is signed with a passkey enrolled here (PRD-001 FR-PPL-09, PPL-19): until one is, Nemura's approval would be refused. A reminder, never a
@@ -6,7 +7,7 @@ import { Icon } from "../ui";
 export function NemuraPasskeyReminder({ needed }: { needed?: boolean }) {
   if (!needed) return null;
   return (
-    <div className="fy-banner fy-banner--warning" role="note">
+    <div className="fy-banner fy-banner--warning" role="note" title={helpText("people.passkey-reminder").tooltip}>
       <Icon of={KeyRound} size={20} />
       <div className="fy-banner__text">
         <strong>Add a passkey to approve pay runs in Nemura</strong>

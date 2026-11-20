@@ -2,6 +2,7 @@ package api
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -54,8 +55,11 @@ func approvalEnumsAreExtensible(api huma.API) {
 // purposes (notifications, invoices, reminders, security) are another, closed list and stay as they are.
 func messagePurposesAreExtensible(api huma.API) {
 	extensible := func(name string, member any) {
-		for _, s := range api.OpenAPI().Components.Schemas.Map() {
+		for schema, s := range api.OpenAPI().Components.Schemas.Map() {
 			p := s.Properties[name]
+			if strings.HasSuffix(schema, "Draft") { // what a client sends stays a closed list: only what it may receive grows
+				continue
+			}
 			if p == nil || !slices.Contains(p.Enum, member) {
 				continue
 			}
@@ -69,4 +73,6 @@ func messagePurposesAreExtensible(api huma.API) {
 	extensible("purpose", any("secretary_reminder"))
 	// The kinds of service a connector provides grow with the catalogue (payment links, bank data, e-invoicing): a client is told to handle a kind it has not seen.
 	extensible("kind", any("payment-provider"))
+	// The bank report formats a source reads grow with the banks' formats (MT942 after CAMT.053): a client is told to handle a format it has not seen.
+	extensible("report_format", any("mt942"))
 }

@@ -30,14 +30,16 @@
     <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="h-title">
       <h2 class="fy-h3" id="h-title">Link health</h2>
       <dl class="fy-dl">
-        <div><dt>Last sync</dt><dd>Today 09:05</dd></div>
-        <div><dt>Waiting or failed</dt><dd class="fy-num">0</dd></div>
+        <div><dt>Nemura queued, Fyniq holds up to</dt><dd class="fy-num">57, 55</dd></div>
+        <div><dt>Waiting, failing, refused</dt><dd class="fy-num">2, 0, 0</dd></div>
+        <div><dt>Missing</dt><dd class="fy-num">9 to 10</dd></div>
       </dl>
-      <button class="fy-btn fy-btn--secondary fy-btn--sm" type="button" style="align-self: flex-start"><i data-icon="refresh-cw"></i>Retry now</button>
+      <p class="fy-small fy-secondary">Nemura says it delivered events 9 and 10 and Fyniq never received them. Nemura sends the current state again, at new numbers, so they show as asked for for a day.</p>
+      <div class="fy-row" style="gap: var(--space-2)"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="refresh-cw"></i>Ask Nemura to send them again</button><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">Check again</button></div>
     </section>
     <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="s-title">
       <h2 class="fy-h3" id="s-title">One sign-in</h2>
-      <p class="fy-small fy-secondary">Nemura signs people in with Fyniq's account. People with rights in both see the Finance and People switch above; HR staff without financial rights land in Nemura.</p>
+      <p class="fy-small fy-secondary">Both apps sign people in through one sign-in provider. People with rights in both see the Finance and People switch above, which opens the other app with the same provider; HR staff without financial rights open Nemura directly. A person Nemura says approves pay runs and has no passkey here sees a reminder on every page: Add a passkey to approve pay runs in Nemura.</p>
     </section>
     <section class="fy-card fy-card--pad fy-stack fy-stack--2" aria-labelledby="p-title">
       <h2 class="fy-h3" id="p-title">Payroll in the books</h2>

@@ -328,6 +328,9 @@ func registerPeopleLink(a *API) {
 			if err := u.PeopleLinks().SavePerson(ctx, cur); err != nil {
 				return PeopleProjectionPerson{}, err
 			}
+			if err := a.tellNemuraAccess(ctx, u, user); err != nil { // now mapped, their identity's access may cross (CrossOnlyMappedMembers)
+				return PeopleProjectionPerson{}, err
+			}
 			return projectionOut(cur), nil
 		})
 		if err != nil {
