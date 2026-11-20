@@ -26,6 +26,7 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"GET /v1/features":                                "HR officer, HR administrator, Payroll administrator, Administrator, Owner",
 	"PUT /v1/features/{feature}":                      "HR administrator, Owner",
 	"PUT /v1/people/{id}/nric":                        "HR officer, HR administrator",
+	"PUT /v1/people/{id}/ir8a-particulars":            "HR officer, HR administrator",
 	"GET /v1/people/{id}/secrets/{field}":             "by Appendix B's NRIC and bank rows: HR officer masked; HR administrator, Payroll administrator and Owner as the matrix says; the person their own in full; everyone else nothing",
 	"POST /v1/people/{id}/work-passes":                "HR officer, HR administrator",
 	"GET /v1/people/{id}/work-passes":                 "HR officer, HR administrator, Payroll administrator, Owner",

@@ -1857,7 +1857,7 @@ components:
           description: "The CSV, base64-encoded. It is not kept: only its manifest is."
           type: string
         file_name:
-          description: "The CPF file's name, which the Board's EZPay expects: <CSN><month paid><advice code>.DTL."
+          description: The CPF file's name, which the Board's EZPay expects (<CSN><month paid><advice code>.DTL), or the IR8A payload's.
           examples:
             - 202312345KPTE01JUN202601.DTL
           type: string
@@ -1868,11 +1868,12 @@ components:
           format: uuid
           type: string
         kind:
-          description: The journal file, the bank payment file or the CPF EZPay file.
+          description: The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload.
           enum:
             - journal
             - payments
             - cpf
+            - ais
           examples:
             - payments
           type: string
@@ -1943,12 +1944,31 @@ components:
             - "01"
           pattern: ^(0[1-9]|[1-9][0-9])$
           type: string
+        authorised_person:
+          description: The person authorised to file the IR8A, as IRAS has them; needed for the IR8A payload (data item A5).
+          examples:
+            - John Adams
+          maxLength: 100
+          type: string
+        contact_number:
+          description: Their contact number, digits only; needed for the IR8A payload (A6).
+          examples:
+            - "91234567"
+          pattern: ^[0-9]{1,12}$
+          type: string
+        email:
+          description: Their email address; needed for the IR8A payload (A7).
+          examples:
+            - abc@email.com.sg
+          maxLength: 320
+          type: string
         kind:
-          description: The journal file, the bank payment file or the CPF EZPay file.
+          description: The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload of the income year the run is paid in.
           enum:
             - journal
             - payments
             - cpf
+            - ais
           examples:
             - payments
           type: string
@@ -1963,6 +1983,15 @@ components:
           examples:
             - "01"
           pattern: ^(0[1-9]|[1-9][0-9])$
+          type: string
+        submission_type:
+          description: O for an original submission (the default), A for an amendment, R for a revision (A8).
+          enum:
+            - O
+            - A
+            - R
+          examples:
+            - O
           type: string
         version:
           description: The approved version to make the file from.
@@ -2641,6 +2670,64 @@ components:
             - "null"
       required:
         - groups
+      type: object
+    IR8AParticulars:
+      additionalProperties: false
+      properties:
+        address_1:
+          description: "The first address line: a real address, never NIL or N.A. (B8)."
+          examples:
+            - "Blk 123 Choa Chu Kang Rd #10-01"
+          maxLength: 100
+          type: string
+        address_2:
+          description: The second address line; only after the first.
+          examples:
+            - Singapore
+          maxLength: 100
+          type: string
+        address_3:
+          description: The third address line; only after the second.
+          examples:
+            - Level 3
+          maxLength: 100
+          type: string
+        address_type:
+          description: L for a Singapore address, F for a foreign one; leave it out when there is no address (B7).
+          enum:
+            - L
+            - F
+          examples:
+            - L
+          type: string
+        country:
+          description: IRAS's country code of a foreign address (B10).
+          examples:
+            - GB
+          maxLength: 3
+          type: string
+        designation:
+          description: A non-resident director's or seaman's designation (B11).
+          examples:
+            - Director
+          maxLength: 30
+          type: string
+        postal_code:
+          description: The six-digit post code of a Singapore address (B9).
+          examples:
+            - "670123"
+          pattern: ^[0-9]{6}$
+          type: string
+        sex:
+          description: M or F, as the IR8A takes it (data item B6).
+          enum:
+            - M
+            - F
+          examples:
+            - F
+          type: string
+      required:
+        - sex
       type: object
     InfoOutputBody:
       additionalProperties: false
@@ -17434,6 +17521,87 @@ paths:
       summary: Record a block of government-paid leave
       tags:
         - Leave
+  /v1/people/{id}/ir8a-particulars:
+    put:
+      description: "Seals the person's sex, address and, for a non-resident director or seaman, designation with the key service, for the Auto-Inclusion Scheme file only: never shown in a list, never in a log or an event, read only with the NRIC's right and audited. The HR officer and the HR administrator. It is audited."
+      operationId: setPersonIR8AParticulars
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IR8AParticulars"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Set the particulars the IR8A asks of a person
+      tags:
+        - People
   /v1/people/{id}/job:
     post:
       description: Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.

@@ -2312,6 +2312,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/ir8a-particulars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the particulars the IR8A asks of a person
+         * @description Seals the person's sex, address and, for a non-resident director or seaman, designation with the key service, for the Auto-Inclusion Scheme file only: never shown in a list, never in a log or an event, read only with the NRIC's right and audited. The HR officer and the HR administrator. It is audited.
+         */
+        put: operations["setPersonIR8AParticulars"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/job": {
         parameters: {
             query?: never;
@@ -4164,7 +4184,7 @@ export interface components {
             /** @description The CSV, base64-encoded. It is not kept: only its manifest is. */
             content_base64: string;
             /**
-             * @description The CPF file's name, which the Board's EZPay expects: <CSN><month paid><advice code>.DTL.
+             * @description The CPF file's name, which the Board's EZPay expects (<CSN><month paid><advice code>.DTL), or the IR8A payload's.
              * @example 202312345KPTE01JUN202601.DTL
              */
             file_name?: string;
@@ -4175,11 +4195,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description The journal file, the bank payment file or the CPF EZPay file.
+             * @description The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload.
              * @example payments
              * @enum {string}
              */
-            kind: "journal" | "payments" | "cpf";
+            kind: "journal" | "payments" | "cpf" | "ais";
             /**
              * Format: int64
              * @description How many lines the file has.
@@ -4228,11 +4248,26 @@ export interface components {
              */
             advice_code?: string;
             /**
-             * @description The journal file, the bank payment file or the CPF EZPay file.
+             * @description The person authorised to file the IR8A, as IRAS has them; needed for the IR8A payload (data item A5).
+             * @example John Adams
+             */
+            authorised_person?: string;
+            /**
+             * @description Their contact number, digits only; needed for the IR8A payload (A6).
+             * @example 91234567
+             */
+            contact_number?: string;
+            /**
+             * @description Their email address; needed for the IR8A payload (A7).
+             * @example abc@email.com.sg
+             */
+            email?: string;
+            /**
+             * @description The journal file, the bank payment file, the CPF EZPay file or the IR8A (Auto-Inclusion Scheme) payload of the income year the run is paid in.
              * @example payments
              * @enum {string}
              */
-            kind: "journal" | "payments" | "cpf";
+            kind: "journal" | "payments" | "cpf" | "ais";
             /**
              * @description The payment type of the employer's CPF Submission Number, as its CPF EZPay account holds it; needed for the CPF file.
              * @example PTE
@@ -4243,6 +4278,12 @@ export interface components {
              * @example 01
              */
             serial?: string;
+            /**
+             * @description O for an original submission (the default), A for an amendment, R for a revision (A8).
+             * @example O
+             * @enum {string}
+             */
+            submission_type?: "O" | "A" | "R";
             /**
              * Format: int64
              * @description The approved version to make the file from.
@@ -4716,6 +4757,50 @@ export interface components {
         GroupsOutputBody: {
             /** @description The pay groups by name. */
             groups: components["schemas"]["PayGroup"][] | null;
+        };
+        IR8AParticulars: {
+            /**
+             * @description The first address line: a real address, never NIL or N.A. (B8).
+             * @example Blk 123 Choa Chu Kang Rd #10-01
+             */
+            address_1?: string;
+            /**
+             * @description The second address line; only after the first.
+             * @example Singapore
+             */
+            address_2?: string;
+            /**
+             * @description The third address line; only after the second.
+             * @example Level 3
+             */
+            address_3?: string;
+            /**
+             * @description L for a Singapore address, F for a foreign one; leave it out when there is no address (B7).
+             * @example L
+             * @enum {string}
+             */
+            address_type?: "L" | "F";
+            /**
+             * @description IRAS's country code of a foreign address (B10).
+             * @example GB
+             */
+            country?: string;
+            /**
+             * @description A non-resident director's or seaman's designation (B11).
+             * @example Director
+             */
+            designation?: string;
+            /**
+             * @description The six-digit post code of a Singapore address (B9).
+             * @example 670123
+             */
+            postal_code?: string;
+            /**
+             * @description M or F, as the IR8A takes it (data item B6).
+             * @example F
+             * @enum {string}
+             */
+            sex: "M" | "F";
         };
         InfoOutputBody: {
             /**
@@ -18512,6 +18597,93 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonIR8AParticulars: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IR8AParticulars"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -965,6 +965,7 @@ person_secret | bank_sealed | bytea | false |
 person_secret | bank_masked | text | false | 
 person_secret | bank_fingerprint | bytea | false | 
 person_secret | updated_at | timestamp with time zone | true | now()
+person_secret | ir8a_sealed | bytea | false | 
 person_terms | organisation_id | uuid | true | nemura.current_org()
 person_terms | id | uuid | true | uuidv7()
 person_terms | person_id | uuid | true | 

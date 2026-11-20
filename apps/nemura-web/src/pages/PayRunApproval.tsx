@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { confirmWithPasskey, signApprovalEnvelope } from "../api/stepup";
 import type { components } from "../api/schema";
 import { PayPayments } from "../components/PayPayments";
+import { StatutoryFiles } from "../components/StatutoryFiles";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -190,6 +191,7 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
                 </div>
               </section>
             )}
+            {hasApproved && <StatutoryFiles run={id} version={approvedNumber} onDone={setNote} />}
             {hasApproved && <PayPayments run={id} />}
             {v.state === "approved" && <button className="fy-btn fy-btn--secondary" type="button" onClick={publish}>{t("approval.publish", { version: String(v.version) })}</button>}
           </>
