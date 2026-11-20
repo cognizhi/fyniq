@@ -923,3 +923,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | sales.invoices: files on a subscription contract (FR-AR-15)
 
 ## [2026-11-20] compile | projects.billing: foreign-currency projects and the month-end draft (FR-PRJ-11)
+
+## [2026-11-20] compile | sales.invoices, settings.organisation: a payment link made when an invoice is issued (FR-AR-13)

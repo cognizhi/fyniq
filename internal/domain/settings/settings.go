@@ -351,7 +351,7 @@ var Catalogue = []Definition{
 		Guide:  guide + "payment-link-in-the-invoice-email", Requirement: "FR-AR-13"},
 	{Key: "invoices.payment_link_on_issue", Group: "Defaults", Label: "Make a payment link when an invoice is issued", Kind: Switch, Recommended: "false",
 		Reason: "Off until your payment provider is connected: when on, issuing an invoice queues a job that asks the provider for its payment link outside the request, and the invoice's email carries the link once it exists (FR-AR-13, rev 0.588)",
-		Guide:  guide + "payment-link-on-issue", Requirement: "FR-AR-13"},
+		Guide:  guide + "payment-link-when-an-invoice-is-issued", Requirement: "FR-AR-13"},
 	{Key: "mcp.clients", Group: "AI apps (MCP)", Label: "AI apps that may connect", Kind: Apps, Recommended: "",
 		Choices: []string{"claude-code", "claude-desktop"},
 		Reason:  "Only an app you list here can connect: one the release has pre-registered, or one that registered itself and you approve; adding one needs a second approver, taking one off takes effect at once and cuts it off",

@@ -307,6 +307,13 @@ what is shown, never what a person may do.
 **Put an invoice's payment link in its email** (on unless changed) adds a line saying where to pay online to an invoice or reminder emailed while the invoice has a
 live payment link. The link is the one already stored; nothing is asked of the payment provider while an email is sent. See [Invoices](invoices.md).
 
+## Payment link when an invoice is issued
+
+**Make a payment link when an invoice is issued** (off unless an Administrator turns it on, once the payment provider is connected and its account collects the
+invoice's currency): issuing an invoice then queues a job that asks the provider for the invoice's payment link, outside the request, so issuing never waits
+for the provider. The link is stored when it is made, and an invoice emailed after that carries it (see **Put an invoice's payment link in its email**); one
+sent before the job has run goes without. A refused request leaves no link and nothing to retry: make it by hand and see why. See [Invoices](invoices.md).
+
 ## Bill reminders
 
 **Remind of bills due within** says how many days ahead the Inbox lists the bills to pay: 3 days unless
