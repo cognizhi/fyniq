@@ -24,8 +24,8 @@ import (
 // PublishPayslips makes the payslip of each person of an approved run version (NM-PAY-04): MOM's twelve items as data, the PDF drawn from them by the renderer, its SHA-256, and a reference.
 // A version that is not approved, or was superseded by a corrected one, is refused; a version is published once. The employer's name is the letterhead's. The audit event of each payslip
 // names it, never an amount. It returns how many were made.
-func PublishPayslips(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, runID uuid.UUID, version int, r letters.Renderer, blobs ports.BlobStore) (int, error) {
-	if r == nil || blobs == nil {
+func PublishPayslips(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, runID uuid.UUID, version int, r letters.Renderer, blobs ports.BlobStore, c ports.Cipher) (int, error) {
+	if r == nil || blobs == nil || c == nil { // the detail is sealed under the person's own key, so a deployment with no key service makes no payslip (NM-SEC-08)
 		return 0, &payroll.Refusal{Code: "NM_UNAVAILABLE", Message: "This deployment has no file store or renderer for payslips yet: ask whoever runs Nemura."}
 	}
 	run, vs, err := RunOf(ctx, tx, runID)
@@ -123,8 +123,12 @@ func PublishPayslips(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time
 			return 0, err
 		}
 		data, _ := json.Marshal(slip)
-		if _, err := tx.Exec(ctx, `INSERT INTO nemura.payslip (id, version_id, person_id, month, pay_date, reference, sha256, blob_key, data, published_by, published_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)`,
-			id, v.ID, l.Person, day(run.Month), day(payDate), ref, sum[:], key, string(data), by, at); err != nil {
+		sealed, err := sealForPerson(ctx, tx, c, org, l.Person, "payslip", data) // the itemised figures are kept sealed under the person's key, which an erasure destroys; the plain column holds a marker
+		if err != nil {
+			return 0, err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO nemura.payslip (id, version_id, person_id, month, pay_date, reference, sha256, blob_key, data, data_sealed, published_by, published_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '{"sealed": true}'::jsonb, $9, $10, $11)`,
+			id, v.ID, l.Person, day(run.Month), day(payDate), ref, sum[:], key, sealed, by, at); err != nil {
 			return 0, runError(err)
 		}
 		if err := Audit(ctx, tx, org, at, user(by), "nemura.payslip.published", audit.Object{Type: "payslip", ID: id}, map[string]audit.Change{"run": {nil, runID.String()}, "version": {nil, version}, "reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum[:])}}, ""); err != nil {
@@ -153,8 +157,8 @@ type PayslipRow struct {
 }
 
 // OwnPayslips lists the payslips of the person the member is, newest month first and, within a month, the newest version first: a corrected payslip is shown above the one it corrects.
-func OwnPayslips(ctx context.Context, tx pgx.Tx, member uuid.UUID) ([]PayslipRow, error) {
-	rows, err := tx.Query(ctx, `SELECT s.id, s.version_id, v.version, s.month, s.pay_date, s.reference, encode(s.sha256, 'hex'), s.data, s.blob_key, s.published_at,
+func OwnPayslips(ctx context.Context, tx pgx.Tx, c ports.Cipher, org, member uuid.UUID) ([]PayslipRow, error) {
+	rows, err := tx.Query(ctx, `SELECT s.id, s.version_id, v.version, s.month, s.pay_date, s.reference, encode(s.sha256, 'hex'), s.data, s.data_sealed, s.person_id, s.blob_key, s.published_at,
  EXISTS (SELECT 1 FROM nemura.payslip s2 JOIN nemura.pay_run_version v2 ON v2.organisation_id = s2.organisation_id AND v2.id = s2.version_id
          WHERE s2.person_id = s.person_id AND s2.month = s.month AND v2.run_id = v.run_id AND v2.version > v.version)
 FROM nemura.payslip s JOIN nemura.pay_run_version v ON v.organisation_id = s.organisation_id AND v.id = s.version_id
@@ -164,19 +168,38 @@ JOIN nemura.person p ON p.organisation_id = s.organisation_id AND p.id = s.perso
 	}
 	defer rows.Close()
 	var out []PayslipRow
+	var plain, sealed [][]byte
+	var people []uuid.UUID
 	for rows.Next() {
 		var r PayslipRow
-		var data []byte
-		if err := rows.Scan(&r.ID, &r.Version, &r.Number, &r.Month, &r.PayDate, &r.Reference, &r.SHA256, &data, &r.BlobKey, &r.PublishedAt, &r.Superseded); err != nil {
+		var data, seal []byte
+		var person uuid.UUID
+		if err := rows.Scan(&r.ID, &r.Version, &r.Number, &r.Month, &r.PayDate, &r.Reference, &r.SHA256, &data, &seal, &person, &r.BlobKey, &r.PublishedAt, &r.Superseded); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(data, &r.Data); err != nil {
-			return nil, err
-		}
-		r.Net = r.Data.Net
-		out = append(out, r)
+		out, plain, sealed, people = append(out, r), append(plain, data), append(sealed, seal), append(people, person)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+	for i := range out {
+		data := plain[i]
+		if sealed[i] != nil { // the itemised figures are sealed under the person's key (NM-SEC-08)
+			if c == nil {
+				return nil, &payroll.Refusal{Code: "NM_UNAVAILABLE", Message: "This deployment has no key service: payslips cannot be read."}
+			}
+			var err error
+			if data, err = openForPerson(ctx, tx, c, org, people[i], "payslip", sealed[i]); err != nil {
+				return nil, err
+			}
+		}
+		if err := json.Unmarshal(data, &out[i].Data); err != nil {
+			return nil, err
+		}
+		out[i].Net = out[i].Data.Net
+	}
+	return out, nil
 }
 
 // ReadPayslip returns the PDF of one of the member's own payslips after checking that the stored bytes still hash to what was recorded: a changed byte is never served.

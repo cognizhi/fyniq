@@ -4,7 +4,7 @@ type: task
 title: Erase a former employee's data
 summary: How an Owner or HR administrator asks for a former employee's data to be erased after its retention, who approves, and what stays
 sources:
-  - docs/user-guide/nemura/erasure.md sha256:6e3bdbea824735af5a695532578fe94451ec3aedbb9ccec0f40b72afdc9e0230
+  - docs/user-guide/nemura/erasure.md sha256:763ccd161cbbf21d275b6b56724f36182fb2c253486aac63e708847400e88b21
 data_class: personal
 taint: trusted
 status: published
@@ -33,7 +33,7 @@ aliases:
 
 ## What is erased, and what stays
 
-- Emptied: names, work and personal email, phone, address, emergency contacts, NRIC or FIN, salary account and reason for leaving; sign-in switched off; files deleted; Fyniq told to clear the name and email it held. Issued letters, payslip figures, pay run lines and leave and sick notes stay, tied to the person's ID with no name, until the people team decides how they are shredded. After a restore the signed record is applied again. (src: docs/user-guide/nemura/erasure.md#what-is-erased-and-what-stays)
+- Emptied: names, work and personal email, phone, address, emergency contacts, NRIC or FIN, salary account and reason for leaving; sign-in switched off; files deleted; Fyniq told to clear the name and email it held. The itemised figures of new payslips are sealed under the person's own key, which erasing destroys. Issued letters, older payslip figures, pay run lines and leave and sick notes stay, tied to the person's ID with no name, until the people team decides how they are shredded. After a restore the signed record is applied again. (src: docs/user-guide/nemura/erasure.md#what-is-erased-and-what-stays)
 
 ## When it looks wrong
 

@@ -82,6 +82,7 @@ person_contact | nemura_migrator | true | true
 person_dependant | nemura_migrator | true | true
 person_document | nemura_migrator | true | true
 person_job | nemura_migrator | true | true
+person_key | nemura_migrator | true | true
 person_pay | nemura_migrator | true | true
 person_pay_item | nemura_migrator | true | true
 person_secret | nemura_migrator | true | true
@@ -902,6 +903,7 @@ payslip | blob_key | text | true |
 payslip | data | jsonb | true | 
 payslip | published_by | uuid | true | 
 payslip | published_at | timestamp with time zone | true | 
+payslip | data_sealed | bytea | false | 
 person | organisation_id | uuid | true | nemura.current_org()
 person | id | uuid | true | uuidv7()
 person | member_id | uuid | false | 
@@ -969,6 +971,10 @@ person_job | worksite | text | true | 'SG'::text
 person_job | employment_type | text | true | 
 person_job | manager_person_id | uuid | false | 
 person_job | created_at | timestamp with time zone | true | now()
+person_key | organisation_id | uuid | true | nemura.current_org()
+person_key | person_id | uuid | true | 
+person_key | wrapped | bytea | true | 
+person_key | created_at | timestamp with time zone | true | now()
 person_pay | organisation_id | uuid | true | nemura.current_org()
 person_pay | id | uuid | true | uuidv7()
 person_pay | person_id | uuid | true | 
@@ -2342,6 +2348,7 @@ payslip | payslip_published_at_not_null | NOT NULL published_at
 payslip | payslip_published_by_not_null | NOT NULL published_by
 payslip | payslip_reference_not_null | NOT NULL reference
 payslip | payslip_reference_once | UNIQUE (organisation_id, reference)
+payslip | payslip_sealed_has_marker | CHECK (((data_sealed IS NULL) OR (data = '{"sealed": true}'::jsonb)))
 payslip | payslip_sha | CHECK ((octet_length(sha256) = 32))
 payslip | payslip_sha256_not_null | NOT NULL sha256
 payslip | payslip_version_fkey | FOREIGN KEY (organisation_id, version_id) REFERENCES nemura.pay_run_version(organisation_id, id)
@@ -2447,6 +2454,13 @@ person_job | person_job_type_known | CHECK ((employment_type = ANY (ARRAY['full_
 person_job | person_job_worksite_not_null | NOT NULL worksite
 person_job | person_job_worksite_shape | CHECK ((worksite ~ '^[A-Z]{2}(-[A-Z0-9]{1,8})?$'::text))
 person_job | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_key | person_key_created_at_not_null | NOT NULL created_at
+person_key | person_key_organisation_id_not_null | NOT NULL organisation_id
+person_key | person_key_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+person_key | person_key_person_id_not_null | NOT NULL person_id
+person_key | person_key_pkey | PRIMARY KEY (organisation_id, person_id)
+person_key | person_key_wrapped_length | CHECK (((octet_length(wrapped) >= 16) AND (octet_length(wrapped) <= 512)))
+person_key | person_key_wrapped_not_null | NOT NULL wrapped
 person_pay | person_pay_basic | CHECK (((basic_monthly >= (0)::numeric) AND (basic_monthly = round(basic_monthly, 2))))
 person_pay | person_pay_basic_monthly_not_null | NOT NULL basic_monthly
 person_pay | person_pay_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
@@ -2843,6 +2857,7 @@ CREATE INDEX person_document_person_idx ON nemura.person_document USING btree (o
 CREATE UNIQUE INDEX person_document_pkey ON nemura.person_document USING btree (organisation_id, id)
 CREATE INDEX person_job_person_idx ON nemura.person_job USING btree (organisation_id, person_id, effective_from)
 CREATE UNIQUE INDEX person_job_pkey ON nemura.person_job USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_key_pkey ON nemura.person_key USING btree (organisation_id, person_id)
 CREATE UNIQUE INDEX person_member_key ON nemura.person USING btree (organisation_id, member_id)
 CREATE INDEX person_name_idx ON nemura.person USING btree (organisation_id, lower(legal_name))
 CREATE UNIQUE INDEX person_pay_item_key_once ON nemura.person_pay_item USING btree (organisation_id, pay_id, key)
@@ -3008,6 +3023,7 @@ CREATE TRIGGER person_document_append_only BEFORE DELETE OR UPDATE ON nemura.per
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person_document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person_document', 'id')
 CREATE TRIGGER person_job_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_job FOR EACH ROW EXECUTE FUNCTION nemura.person_job_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person_job DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person_job', 'id')
+CREATE TRIGGER person_key_guard BEFORE INSERT OR UPDATE ON nemura.person_key FOR EACH ROW EXECUTE FUNCTION nemura.person_key_guard()
 CREATE TRIGGER person_pay_guard BEFORE DELETE OR UPDATE ON nemura.person_pay FOR EACH ROW EXECUTE FUNCTION nemura.person_pay_guard()
 CREATE TRIGGER person_pay_overlap BEFORE INSERT OR UPDATE ON nemura.person_pay FOR EACH ROW EXECUTE FUNCTION nemura.person_pay_overlap()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person_pay DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person_pay', 'id')
@@ -3118,6 +3134,7 @@ person_contact | tenant_isolation | (organisation_id = nemura.current_org()) | (
 person_dependant | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_document | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_job | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+person_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_pay | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_pay_item | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_secret | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -4306,6 +4323,22 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.person_key_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    RAISE EXCEPTION 'A person''s key is written once and never changed' USING ERRCODE = 'NM205';
+  END IF;
+  IF EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.erased_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'No key is made for a person whose data was erased' USING ERRCODE = 'NM205';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.person_pay_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -4381,16 +4414,16 @@ DECLARE
 BEGIN
   SELECT * INTO p FROM nemura.person WHERE id = p_person;
   IF NOT FOUND THEN
-    RETURN false; -- the restored database does not have the person: nothing to scrub
+    RETURN false;
   END IF;
   IF p.leaving_date IS NULL OR p_on < (p.leaving_date + interval '12 months')::date THEN
     RAISE EXCEPTION 'A register entry cannot erase a person who has not left a year ago' USING ERRCODE = 'NM204';
   END IF;
-  -- true only when something of the person had come back: a second run finds nothing and reports false
   IF p.erased_at IS NULL OR p.legal_name <> 'Former employee' OR p.preferred_name IS NOT NULL OR p.work_email IS NOT NULL OR p.phone IS NOT NULL OR p.leaving_reason IS NOT NULL
      OR EXISTS (SELECT 1 FROM nemura.person_contact c WHERE c.person_id = p_person AND (c.personal_email IS NOT NULL OR c.address IS NOT NULL OR c.postal_code IS NOT NULL))
      OR EXISTS (SELECT 1 FROM nemura.emergency_contact e WHERE e.person_id = p_person)
      OR EXISTS (SELECT 1 FROM nemura.person_secret x WHERE x.person_id = p_person AND (x.nric_sealed IS NOT NULL OR x.bank_sealed IS NOT NULL OR x.ir8a_sealed IS NOT NULL OR x.bank_code IS NOT NULL OR x.bank_name IS NOT NULL))
+     OR EXISTS (SELECT 1 FROM nemura.person_key k WHERE k.person_id = p_person)
      OR EXISTS (SELECT 1 FROM nemura.member m WHERE m.id = p.member_id AND m.display_name <> 'Former employee') THEN
     PERFORM nemura.scrub_person(p_person, p_on::timestamptz);
     RETURN true;
@@ -4555,6 +4588,7 @@ BEGIN
   DELETE FROM nemura.emergency_contact WHERE person_id = p_person;
   UPDATE nemura.person_secret SET nric_sealed = NULL, nric_masked = NULL, nric_fingerprint = NULL, bank_sealed = NULL, bank_masked = NULL, bank_fingerprint = NULL,
          bank_code = NULL, bank_name = NULL, ir8a_sealed = NULL, updated_at = p_on WHERE person_id = p_person;
+  DELETE FROM nemura.person_key WHERE person_id = p_person;
   IF m IS NOT NULL THEN
     UPDATE nemura.member SET display_name = 'Former employee', deactivated_at = coalesce(deactivated_at, p_on) WHERE id = m;
   END IF;
