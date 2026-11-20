@@ -4,9 +4,12 @@ Nemura's migrations are in `db/nemura/migrations` (continue from the highest num
 
 ## 1. Letter verification (NM-LTR-05)
 - [x] 1.1 A verification code printed on each issued letter and a public, rate-limited operation answering valid, revoked or not found; the employee revokes. `// req: NM-LTR-05`
-  (Built, 21 Nov 2026, PRD-002 rev 0.61: migration 000061 (a global directory of hashes behind definer functions), `CheckLetter` prints an 80-bit code and `SignLetter` makes it valid, `VerifyLetter`, `POST /v1/letter-verification` (10 tries a reference an hour, 300 a minute, in process), `POST /v1/me/letters/{id}/verification/withdrawal`; `TestALetterIsVerifiedByItsReferenceAndCodeAndShowsOnlyItsOwnFacts`. **Left:** the upload-and-compare-hash look-up and the employee's disclosure link; a button to withdraw on My letters; a shared limiter for several API instances.)
+  (Built, 21 Nov 2026, PRD-002 rev 0.61: migration 000061 (a global directory of hashes behind definer functions), `CheckLetter` prints an 80-bit code and `SignLetter` makes it valid, `VerifyLetter`, `POST /v1/letter-verification` (10 tries a reference an hour, 300 a minute, in process), `POST /v1/me/letters/{id}/verification/withdrawal`; `TestALetterIsVerifiedByItsReferenceAndCodeAndShowsOnlyItsOwnFacts`. **Left:** see 1.3.)
 - [x] 1.2 The page `nm-verify-letter`, help keys, guide page and kb page. `// req: QA-UI-05`
   (Built: `/verify`, help key `verify.page`, the guide `nemura.verify-letter` and its kb page; the design fragment `NmVerifyLetter` already existed.)
+
+- [x] 1.3 The gaps of 1.1: the look-up by the document's hash, the employee's disclosure link for personal facts, a Withdraw verification button on My letters and a limit shared across API instances. `// req: NM-LTR-05`
+  (Built, 21 Nov 2026, PRD-002 rev 0.62: migration 000062 (`content_hash` in the directory, `letter_disclosure` revocable once, `public_rate_hit`), `POST /v1/letter-verification/file` (the browser sends only the SHA-256), `POST /v1/letter-disclosure`, `POST|GET /v1/me/letters/{id}/disclosure-links`, `POST /v1/me/letter-disclosure-links/{id}/revocation`; `LetterShares` on My letters; `TestADocumentIsVerifiedByItsHashAndAPersonSharesTheirLettersFactsThroughARevocableLink`, `TestThePublicLimitIsSharedByEveryInstance`. **Left:** the *replaced* state, which needs a replacement flow for issued letters; the disclosure page is the verification page with `#token`, its design fragment `NmVerifyLetter` shows the file look-up and the link note but not the facts list.)
 
 ## 2. Grievances (NM-SEC-06)
 - [ ] 2.1 Inquiries with restricted access, routing away from a handler who is the subject, a written outcome; data-inventory class, Appendix B row, attack tests. `// req: NM-SEC-06`

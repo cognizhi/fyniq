@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { confirmWithPasskey } from "../api/stepup";
 import type { components } from "../api/schema";
 import { t } from "../i18n";
+import { LetterShares } from "./LetterShares";
 
 type Request = components["schemas"]["LetterRequest"];
 type Note = { ok: boolean; text: string } | null;
@@ -99,6 +100,7 @@ export function LetterList({ mine, roles }: { mine: boolean; roles: readonly str
                 {r.state === "issued" && <button className="fy-btn fy-btn--secondary" type="button" onClick={() => link(r)}>{t("letters.link")}</button>}
                 {mine && (r.state === "requested" || r.state === "checked") && <button className="fy-btn fy-btn--secondary" type="button" onClick={() => withdraw(r)}>{t("letters.withdraw")}</button>}
               </div>
+              {mine && r.state === "issued" && r.issued_id && <LetterShares issued={r.issued_id} reference={r.reference ?? r.id} />}
             </li>
           ))}
         </ul>

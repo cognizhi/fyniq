@@ -62,6 +62,9 @@ export const registry: Entry[] = [
   { kind: "route", id: "packs", path: "/settings/packs", signedIn: true, screen: "nm-country-pack", mode: "expert", help: "packs.page", guide: "nemura.packs" },
   { kind: "route", id: "policy", path: "/settings/policy", signedIn: true, screen: "nm-leave-policy", mode: "expert", help: "policy.page", guide: "nemura.packs" },
   { kind: "action", id: "workspace-switch", mode: "basic", help: "workspace.switch", guide: "nemura.fyniq-link#the-finance-and-people-switch" },
+  { kind: "action", id: "verify-file", mode: "basic", help: "verify.file", guide: "nemura.verify-letter#compare-a-document-instead" },
+  { kind: "action", id: "letter-unverify", mode: "basic", help: "letters.unverify", guide: "nemura.verify-letter#withdraw-the-verification-of-your-own-letter" },
+  { kind: "action", id: "letter-share", mode: "basic", help: "letters.share", guide: "nemura.verify-letter#share-what-your-letter-says-about-you" },
   { kind: "action", id: "sign-out", mode: "basic", help: "nav.signOut", guide: "nemura.sign-in#signing-out" },
 ];
 

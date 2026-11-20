@@ -887,6 +887,26 @@ describe("letters", () => {
     expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
   });
 
+  // part of NM-LTR-05
+  it("lets a person withdraw their own letter's verification and share and revoke its facts, with the link shown once", async () => {
+    const issued = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00";
+    answer("GET /v1/letters", { status: 200, body: { requests: [{ ...base, state: "issued", reference: "EC-2026-0001", issued_id: issued }] } });
+    answer(`GET /v1/me/letters/${issued}/disclosure-links`, { status: 200, body: { links: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91", created_at: "2026-11-20T10:00:00Z", expires_at: "2026-11-27T10:00:00Z" }] } });
+    answer(`POST /v1/me/letters/${issued}/disclosure-links`, { status: 201, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e92", token: "ORG.secrettoken", expires_at: "2026-11-27T10:00:00Z" } });
+    answer("POST /v1/me/letter-disclosure-links/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e91/revocation", { status: 200, body: { revoked: true } });
+    answer(`POST /v1/me/letters/${issued}/verification/withdrawal`, { status: 200, body: { withdrawn: true } });
+    const { LetterList } = await import("./components/LetterList");
+    const { fireEvent } = await import("@testing-library/react");
+    render(<LetterList mine roles={["employee"]} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Share what it says about me" }));
+    expect(await screen.findByText(/\/verify#ORG\.secrettoken\. It shows what this letter says about you until 2026-11-27T10:00:00Z/)).toBeTruthy();
+    expect(bodies.get(`POST /v1/me/letters/${issued}/disclosure-links`)).toEqual({ days: 7 });
+    fireEvent.click(await screen.findByRole("button", { name: "Revoke" }));
+    expect(await screen.findByText(/The letter and its verification are unchanged/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw verification" }));
+    expect(await screen.findByText(/The verification is withdrawn/)).toBeTruthy();
+  });
+
   it("sets the letterhead, switches a type on, saves a draft and publishes it, and shows the API's problems in words", async () => {
     answer("GET /v1/letters/types", { status: 200, body: types });
     answer("GET /v1/letters/settings", { status: 200, body: { set: true, settings: { company_name: "Acme", uen: "201912345A", address: "1 Raffles Place" } } });
@@ -1781,5 +1801,29 @@ describe("verifying a letter", () => {
     answer("POST /v1/letter-verification", { status: 200, body: { found: false } });
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText(/Nothing matches that reference and code/)).toBeTruthy();
+  });
+
+  it("compares a file by its fingerprint alone and shows what a shared link shows, and not found when the link has ended", async () => {
+    const { fireEvent, waitFor } = await import("@testing-library/react");
+    answer("POST /v1/letter-verification/file", { status: 200, body: { found: true, status: "withdrawn", type: "employment_confirmation", issued_on: "2026-11-20", company: "Acme Pte. Ltd." } });
+    const { container } = render(<VerifyLetter />);
+    const file = new File(["%PDF-1.4 the letter"], "letter.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("Compare a document"), { target: { files: [file] } });
+    expect(await screen.findByText("Withdrawn: do not rely on this letter")).toBeTruthy();
+    const sent = bodies.get("POST /v1/letter-verification/file") as { sha256: string };
+    expect(sent.sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(sent)).not.toContain("PDF");
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    window.location.hash = "#ORG.secrettoken";
+    answer("POST /v1/letter-disclosure", { status: 200, body: { found: true, status: "valid", type: "employment_confirmation", issued_on: "2026-11-20", company: "Acme Pte. Ltd.", expires_at: "2026-11-27T10:00:00Z", facts: [{ label: "Job title", value: "Designer" }] } });
+    render(<VerifyLetter />);
+    expect(await screen.findByText("Job title: Designer")).toBeTruthy();
+    expect(bodies.get("POST /v1/letter-disclosure")).toEqual({ token: "ORG.secrettoken" });
+    cleanup();
+    answer("POST /v1/letter-disclosure", { status: 200, body: { found: false } });
+    render(<VerifyLetter />);
+    await waitFor(() => expect(screen.getByText(/This link does not work/)).toBeTruthy());
+    window.location.hash = "";
   });
 });
