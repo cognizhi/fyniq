@@ -945,3 +945,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/equity-register.md, statutory-calendar.md → equity.register, compliance.calendar, compliance.record-filing (investors' information rights as calendar tasks, FR-EQ-28)
 
 ## [2026-11-20] compile | invoices: the provider's credit notes mirrored and issued at the provider's total (FR-PSP-07, rev 0.601)
+
+## [2026-11-20] compile | docs/user-guide/webhooks.md → settings.webhooks (webhooks and events, FR-INT-12); organisation-settings: the features.webhooks switch
