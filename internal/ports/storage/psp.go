@@ -95,10 +95,12 @@ type PSPAccount struct {
 	DisputesAccountID *uuid.UUID
 	// DisputeLossAccountID is the expense account a lost dispute's draft journal writes its money off to; none: not prepared.
 	DisputeLossAccountID *uuid.UUID
-	SweptThrough         *time.Time
-	SweptAt              *time.Time
-	SweepError           string
-	Version              int
+	// RevenueAccountID is the chart account a Model B provider's invoices book revenue to (FR-PSP-03); none: they wait for a person.
+	RevenueAccountID *uuid.UUID
+	SweptThrough     *time.Time
+	SweptAt          *time.Time
+	SweepError       string
+	Version          int
 }
 
 // NewPSPAccount sets a provider money account up, or changes its setup at Version (0 for new).
@@ -109,6 +111,7 @@ type NewPSPAccount struct {
 	FeeAccountID         uuid.UUID
 	DisputesAccountID    *uuid.UUID
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 	At                   time.Time
 }
 

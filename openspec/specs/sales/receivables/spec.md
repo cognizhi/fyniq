@@ -309,6 +309,13 @@ Source: PRD-001 §8.5 · Priority S · Phase P1 / P2 (disputes and promise-to-pa
 - **THEN** it brings the balance forward, lists each invoice, credit note, payment received, refund, write-off and void with a running balance, and shows the balance due with an ageing that adds up to it
 - **AND** one whose lines do not come to the balance due is never made; made, it is numbered ST-, kept as it said, never voided (FY204), and emailed with its PDF
 
+#### Scenario: A dispute or promise as built (rev 0.521)
+- **GIVEN** an overdue issued invoice that is due a reminder
+- **WHEN** a person records that the customer disputes 40.00 of it with a reason, or promises to pay on a day within 90 days
+- **THEN** its reminders are paused until the dispute is resolved, or the promised day has passed
+- **AND** AR ageing shows the disputed amount apart while its rows still count it
+- **AND** a dispute above what is open, one without a reason, a day in the past or a second open record of a kind is refused in words
+
 ### Requirement: FR-AR-09 Customer deposits and retainers
 The system SHALL record customer deposits and retainers and apply them to invoices.
 
@@ -467,6 +474,11 @@ Source: PRD-001 §8.5 · Priority S · Phase P2
 - **WHEN** the relief is read on 10 Mar 2027
 - **THEN** a claim may be made from 10 Mar 2027 and until 14 Jan 2031, and a debtor insolvent before 15 Jan 2027 would not wait for the twelve months
 
+#### Scenario: The queue shows the GST in the part written off (rev 0.546)
+- **GIVEN** an invoice of S$10.90 with S$0.90 of GST, written off for S$10.00
+- **WHEN** the relief queue is read
+- **THEN** it shows S$0.83 of GST and the pack's dates for the supply
+
 ### Requirement: FR-AR-17 Write-off of a receivable or payable residual
 The system SHALL write off a receivable or payable residual only by a reason-coded, approval-gated write-off with evidence, posted to the account the reason names.
 
@@ -561,6 +573,21 @@ Source: PRD-001 §8.5 · Priority C · Phase P2
 #### Scenario: Download statements
 - **WHEN** a customer is in the portal
 - **THEN** they can download their statements
+
+#### Scenario: A customer sees only their own documents through a private link (rev 0.520)
+- **GIVEN** two customers of one organisation, each with an issued invoice and a portal link
+- **WHEN** the first customer opens their portal, an invoice PDF and a statement
+- **THEN** only their own invoices and statement lines appear
+- **AND** the other customer's invoice ID, a draft and one that does not exist answer the same PORTAL-01
+
+#### Scenario: A link that ended, was revoked or never existed (rev 0.520)
+- **WHEN** a link is unknown, malformed, expired or revoked
+- **THEN** one message answers, which says nothing about which links existed
+- **AND** the link's token is never in a log, an audit event or the staff's list of links
+
+#### Scenario: No other principal and no other route (rev 0.520)
+- **WHEN** a staff, integration or AI token is sent to the portal, or the portal's token to any other route
+- **THEN** the portal shows nothing and the other route answers 401
 
 ### Requirement: FR-AR-15 Subscription revenue schedules
 The system SHALL keep subscription revenue schedules (start, end, MRR) that feed deferred revenue and KPIs, and SHALL record contract changes (upgrade, downgrade, cancel).

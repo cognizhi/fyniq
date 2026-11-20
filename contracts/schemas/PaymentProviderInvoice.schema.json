@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_count": {
+      "description": "The provider's payment attempts so far; Fyniq never retries or charges.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "contact_id": {
+      "description": "The contact the provider's customer was made into.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "customer": {
+      "description": "The customer's name, as the provider has it; its ID when it has none.",
+      "examples": [
+        "Lumen Health Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The AR document made of it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "finalized_on": {
+      "description": "The day the provider finalised it.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "hosted_url": {
+      "description": "The provider's page for the invoice.",
+      "examples": [
+        "https://invoice.stripe.com/i/acct/test_1"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The mirror's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "next_attempt_on": {
+      "description": "When the provider will try next.",
+      "examples": [
+        "2026-11-27"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "number": {
+      "description": "The provider's invoice number.",
+      "examples": [
+        "ACME-0001"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "How the provider says it ended.",
+      "enum": [
+        "paid",
+        "uncollectible",
+        "void"
+      ],
+      "examples": [
+        "paid"
+      ],
+      "type": "string"
+    },
+    "parked_reason": {
+      "description": "Why a parked invoice waits.",
+      "examples": [
+        "Not made into an invoice: it has a discount (FR-PSP-07). A person decides it."
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The provider's connector.",
+      "examples": [
+        "stripe"
+      ],
+      "type": "string"
+    },
+    "provider_invoice_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "in_1Q9"
+      ],
+      "type": "string"
+    },
+    "seen_at": {
+      "description": "When Fyniq last read it.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "state": {
+      "description": "mirrored: read, no AR document yet; drafted: its AR document made, not issued; posted: issued; parked: for a person.",
+      "enum": [
+        "mirrored",
+        "drafted",
+        "posted",
+        "parked"
+      ],
+      "examples": [
+        "posted"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "The provider's status of the invoice.",
+      "enum": [
+        "draft",
+        "open",
+        "paid",
+        "uncollectible",
+        "void"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    },
+    "total": {
+      "$ref": "Money.schema.json",
+      "description": "The provider's total, tax included."
+    }
+  },
+  "required": [
+    "id",
+    "provider",
+    "provider_invoice_id",
+    "customer",
+    "status",
+    "total",
+    "attempt_count",
+    "state",
+    "seen_at"
+  ],
+  "title": "PaymentProviderInvoice",
+  "type": "object"
+}

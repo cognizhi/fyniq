@@ -364,7 +364,7 @@ func (r peopleLinks) SavePerson(ctx context.Context, p peoplelink.Person) error 
 }
 
 func peopleAccessOf(x sqlcdb.PeopleLinkAccessRow) storage.PeopleAccess {
-	return storage.PeopleAccess{ID: x.ID, Issuer: x.Issuer, Subject: x.Subject, PeopleAccess: x.PeopleAccess, PayrollApprover: x.PayrollApprover, Version: x.Version, ReceivedAt: x.ReceivedAt}
+	return storage.PeopleAccess{ID: x.ID, Issuer: x.Issuer, Subject: x.Subject, PeopleAccess: x.PeopleAccess, PayrollApprover: x.PayrollApprover, Version: x.Version, Epoch: int(x.Epoch), ReceivedAt: x.ReceivedAt}
 }
 
 func (r peopleLinks) Access(ctx context.Context, issuer, subject string) (storage.PeopleAccess, error) {
@@ -400,7 +400,7 @@ func (r peopleLinks) SaveAccess(ctx context.Context, a storage.PeopleAccess) (bo
 	if err := r.u.check(); err != nil {
 		return false, err
 	}
-	id, err := r.u.q.SavePeopleLinkAccess(ctx, sqlcdb.SavePeopleLinkAccessParams{Issuer: a.Issuer, Subject: a.Subject, PeopleAccess: a.PeopleAccess, PayrollApprover: a.PayrollApprover, Version: a.Version, ReceivedAt: a.ReceivedAt})
+	id, err := r.u.q.SavePeopleLinkAccess(ctx, sqlcdb.SavePeopleLinkAccessParams{Issuer: a.Issuer, Subject: a.Subject, PeopleAccess: a.PeopleAccess, PayrollApprover: a.PayrollApprover, Version: a.Version, Epoch: int32(a.Epoch), ReceivedAt: a.ReceivedAt}) // #nosec G115 -- an epoch is small
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil // not newer than what is held
 	}
@@ -408,4 +408,46 @@ func (r peopleLinks) SaveAccess(ctx context.Context, a storage.PeopleAccess) (bo
 		return false, mapError(err)
 	}
 	return true, r.u.event(ctx, "people_link_access.changed", "people_link_access", id, nil, map[string][2]any{"people_access": {nil, a.PeopleAccess}, "payroll_approver": {nil, a.PayrollApprover}})
+}
+
+func (r peopleLinks) InboxSequences(ctx context.Context, link uuid.UUID, from, to int64) ([]int64, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	out, err := r.u.q.PeopleInboxSequences(ctx, sqlcdb.PeopleInboxSequencesParams{LinkID: link, FromSequence: from, ToSequence: to})
+	return out, mapError(err)
+}
+
+func (r peopleLinks) RecordReplay(ctx context.Context, link uuid.UUID, from, to int64, at time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	id, err := r.u.q.InsertPeopleLinkReplay(ctx, sqlcdb.InsertPeopleLinkReplayParams{LinkID: link, FromSequence: from, ToSequence: to, AskedAt: at})
+	if err != nil {
+		return mapError(err)
+	}
+	return r.u.event(ctx, "people_link_replay.asked", "people_link_replay", id, nil, map[string][2]any{"from_sequence": {nil, from}, "to_sequence": {nil, to}})
+}
+
+func (r peopleLinks) ReplaysSince(ctx context.Context, link uuid.UUID, since time.Time) ([][2]int64, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.PeopleLinkReplaysSince(ctx, sqlcdb.PeopleLinkReplaysSinceParams{LinkID: link, Since: since})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([][2]int64, len(rows))
+	for i, x := range rows {
+		out[i] = [2]int64{x.FromSequence, x.ToSequence}
+	}
+	return out, nil
+}
+
+func (r peopleLinks) ProjectionDepartment(ctx context.Context, user uuid.UUID) (uuid.UUID, error) {
+	if err := r.u.check(); err != nil {
+		return uuid.Nil, err
+	}
+	d, err := r.u.q.ProjectionDepartmentOfUser(ctx, user)
+	return d, mapError(err)
 }

@@ -1058,6 +1058,7 @@
    "content": [
     "Rows: customer, plan (e.g. S$49 a month), provider, status (active, past due, unpaid, cancelled, paused), service period, next invoice, collection attempts",
     "Read-only mirror badge for provider-billed (Model B) subscriptions",
+    "Built (rev 0.524): subscriptions with what each bills and its status; invoices with the provider's status, attempts and next retry beside Fyniq's state (read, draft made, issued, waiting for a person); Issue the drafts; a banner for a parked invoice and for one the provider voided after it was issued",
     "Parked items with ⚠ for the accountant (usage prices, trials with add-ons)",
     "P2: contract amendments (upgrade, downgrade, cancel) with dated schedule changes and evidence",
     "Booked MRR vs contracted MRR, each named"
@@ -4376,7 +4377,10 @@
    "content": [
     "Open invoices with pay actions; paid history",
     "Statement download by date range",
-    "Company branding"
+    "Company branding",
+    "No sign-in: a private link scoped to one customer (token in the address's fragment, never in a path or log), 30 days by default and at most 90, revoked by staff at once; one message for a link that ended, was revoked or never existed",
+    "Pay now only where the company already made a payment link for the invoice; an invoice PDF each; the statement of account over a chosen period (30 days by default, never after today)",
+    "Staff side, on the customer's record: Make a portal link (shown once, copied by the person), the list of links with made, ends and first opened, Revoke"
    ],
    "states": [
     "nothing due",

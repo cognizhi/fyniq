@@ -1929,6 +1929,95 @@ type FyniqInvitationCode struct {
 	Owner    uuid.UUID
 }
 
+type FyniqInvoiceDispute struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	InvoiceID      uuid.UUID
+	Kind           string
+	Amount         *string
+	Currency       *string
+	Reason         *string
+	PromisedOn     pgtype.Date
+	Status         string
+	Resolution     *string
+	Version        int32
+	CreatedBy      string
+	CreatedAt      time.Time
+	ResolvedBy     *string
+	ResolvedAt     *time.Time
+}
+
+type FyniqInvoicenowContingency struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PeriodFrom     time.Time
+	PeriodTo       time.Time
+	Reason         string
+	Evidence       string
+	RequestedBy    string
+	RequestedAt    time.Time
+	ApprovedBy     *string
+	ApprovedAt     *time.Time
+	WithdrawnAt    *time.Time
+}
+
+type FyniqInvoicenowEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SubmissionID   uuid.UUID
+	At             time.Time
+	Status         string
+	Detail         *string
+	Actor          string
+}
+
+type FyniqInvoicenowExclusion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	Reason         string
+	Detail         *string
+	RecordedBy     string
+	RecordedAt     time.Time
+	WithdrawnAt    *time.Time
+	WithdrawnBy    *string
+}
+
+type FyniqInvoicenowInbound struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MessageID      string
+	Cursor         string
+	Sender         string
+	Number         string
+	ReceivedAt     time.Time
+	Sha256         []byte
+	Payload        []byte
+	Status         string
+	BillID         *uuid.UUID
+	Note           *string
+	CreatedBy      string
+}
+
+type FyniqInvoicenowSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	DocumentUuid   uuid.UUID
+	Version        int32
+	Kind           string
+	Direction      string
+	Status         string
+	Recipient      *string
+	TransmissionID *string
+	IrasAck        *string
+	LastError      *string
+	PayloadSha256  []byte
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	CreatedBy      string
+}
+
 type FyniqIpRateWindow struct {
 	Client      string
 	Kind        string
@@ -2900,6 +2989,7 @@ type FyniqPeopleLinkAccess struct {
 	PayrollApprover bool
 	Version         int64
 	ReceivedAt      time.Time
+	Epoch           int32
 }
 
 type FyniqPeopleLinkAskKey struct {
@@ -2936,6 +3026,15 @@ type FyniqPeopleLinkKey struct {
 	LinkPublic     []byte
 	ClientPublic   []byte
 	Sequence       int64
+}
+
+type FyniqPeopleLinkReplay struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	LinkID         uuid.UUID
+	FromSequence   int64
+	ToSequence     int64
+	AskedAt        time.Time
 }
 
 type FyniqPeopleLinkSecret struct {
@@ -3099,6 +3198,26 @@ type FyniqPolicyVersion struct {
 	PublishedAt    time.Time
 }
 
+type FyniqPortalLink struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Label          *string
+	TokenHash      string
+	ExpiresAt      time.Time
+	CreatedBy      string
+	CreatedAt      time.Time
+	FirstOpenedAt  *time.Time
+	RevokedAt      *time.Time
+	RevokedBy      *string
+}
+
+type FyniqPortalLinkToken struct {
+	TokenHash string
+	Owner     uuid.UUID
+	LinkID    uuid.UUID
+}
+
 type FyniqPracticeOrganisation struct {
 	OrganisationID       uuid.UUID
 	CreatedBy            uuid.UUID
@@ -3201,6 +3320,7 @@ type FyniqPspAccount struct {
 	CreatedAt            time.Time
 	Version              int32
 	DisputeLossAccountID *uuid.UUID
+	RevenueAccountID     *uuid.UUID
 }
 
 type FyniqPspBalance struct {
@@ -3210,6 +3330,26 @@ type FyniqPspBalance struct {
 	Currency       string
 	Amount         string
 	TakenAt        time.Time
+}
+
+type FyniqPspChargeInvoice struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	ConnectorID       uuid.UUID
+	ChargeID          string
+	ProviderInvoiceID string
+	SeenAt            time.Time
+}
+
+type FyniqPspCustomer struct {
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	ConnectorID        uuid.UUID
+	ProviderCustomerID string
+	Name               *string
+	Email              *string
+	ContactID          *uuid.UUID
+	SeenAt             time.Time
 }
 
 type FyniqPspDisputeCredit struct {
@@ -3259,6 +3399,32 @@ type FyniqPspEvent struct {
 	LastError      *string
 }
 
+type FyniqPspInvoice struct {
+	OrganisationID         uuid.UUID
+	ID                     uuid.UUID
+	ConnectorID            uuid.UUID
+	ProviderInvoiceID      string
+	ProviderCustomerID     string
+	ProviderSubscriptionID *string
+	Number                 *string
+	Status                 string
+	Currency               string
+	Total                  string
+	AmountPaid             string
+	AttemptCount           int32
+	NextAttemptOn          pgtype.Date
+	Outcome                *string
+	HostedUrl              *string
+	FinalizedOn            pgtype.Date
+	DueOn                  pgtype.Date
+	DraftLines             []byte
+	State                  string
+	ParkedReason           *string
+	DocumentID             *uuid.UUID
+	Version                int32
+	SeenAt                 time.Time
+}
+
 type FyniqPspPayout struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -3271,6 +3437,24 @@ type FyniqPspPayout struct {
 	Automatic      bool
 	ProviderAt     time.Time
 	SeenAt         time.Time
+}
+
+type FyniqPspSubscription struct {
+	OrganisationID         uuid.UUID
+	ID                     uuid.UUID
+	ConnectorID            uuid.UUID
+	ProviderSubscriptionID string
+	ProviderCustomerID     string
+	Status                 string
+	Currency               string
+	Amount                 string
+	IntervalUnit           string
+	IntervalCount          int32
+	PeriodStart            pgtype.Date
+	PeriodEnd              pgtype.Date
+	CancelAtPeriodEnd      bool
+	CanceledOn             pgtype.Date
+	SeenAt                 time.Time
 }
 
 type FyniqPspTxn struct {

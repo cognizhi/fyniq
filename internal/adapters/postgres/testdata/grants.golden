@@ -320,6 +320,23 @@ fyniq_api       UPDATE    investor_update (asks, edit, highlights, recipients, s
 fyniq_api       INSERT    investor_update_read (read_at, update_id, user_id)
 fyniq_api       SELECT    investor_update_read
 fyniq_api       EXECUTE   invite_super_admin()
+fyniq_api       INSERT    invoice_dispute (amount, created_at, created_by, currency, invoice_id, kind, promised_on, reason)
+fyniq_api       SELECT    invoice_dispute
+fyniq_api       UPDATE    invoice_dispute (resolution, resolved_at, resolved_by, status, version)
+fyniq_api       INSERT    invoicenow_contingency (evidence, period_from, period_to, reason, requested_at, requested_by)
+fyniq_api       SELECT    invoicenow_contingency
+fyniq_api       UPDATE    invoicenow_contingency (approved_at, approved_by, withdrawn_at)
+fyniq_api       INSERT    invoicenow_event (actor, at, detail, status, submission_id)
+fyniq_api       SELECT    invoicenow_event
+fyniq_api       INSERT    invoicenow_exclusion (detail, document_id, reason, recorded_at, recorded_by)
+fyniq_api       SELECT    invoicenow_exclusion
+fyniq_api       UPDATE    invoicenow_exclusion (withdrawn_at, withdrawn_by)
+fyniq_api       INSERT    invoicenow_inbound (bill_id, created_by, cursor, message_id, note, number, payload, received_at, sender, sha256, status)
+fyniq_api       SELECT    invoicenow_inbound
+fyniq_api       UPDATE    invoicenow_inbound (bill_id, note, status)
+fyniq_api       INSERT    invoicenow_submission (created_at, created_by, direction, document_id, document_uuid, kind, payload_sha256, recipient, updated_at, version)
+fyniq_api       SELECT    invoicenow_submission
+fyniq_api       UPDATE    invoicenow_submission (iras_ack, last_error, status, transmission_id, updated_at)
 fyniq_api       EXECUTE   is_owner()
 fyniq_api       EXECUTE   is_super_admin()
 fyniq_api       INSERT    item (code, description, gst_code, name, revenue_account_id, type, unit)
@@ -485,9 +502,9 @@ fyniq_api       SELECT    pd_transfer
 fyniq_api       INSERT    people_link (approval_id, changed_at, client_id, created_at, created_by, epoch, id, link_key, nemura_organisation_id, nemura_origin, state)
 fyniq_api       SELECT    people_link
 fyniq_api       UPDATE    people_link (changed_at, client_id, state, version)
-fyniq_api       INSERT    people_link_access (id, issuer, payroll_approver, people_access, received_at, subject, version)
+fyniq_api       INSERT    people_link_access (epoch, id, issuer, payroll_approver, people_access, received_at, subject, version)
 fyniq_api       SELECT    people_link_access
-fyniq_api       UPDATE    people_link_access (payroll_approver, people_access, received_at, version)
+fyniq_api       UPDATE    people_link_access (epoch, payroll_approver, people_access, received_at, version)
 fyniq_api       INSERT    people_link_ask_key (ask_private, ask_public, link_id, nemura_ask_client_id)
 fyniq_api       SELECT    people_link_ask_key
 fyniq_api       INSERT    people_link_inbox (code, epoch, event_id, link_id, object_id, object_type, object_version, outcome, payload_sha256, received_at, sequence, type)
@@ -495,6 +512,8 @@ fyniq_api       SELECT    people_link_inbox
 fyniq_api       INSERT    people_link_key (client_public, link_id, link_public, nemura_client_id)
 fyniq_api       SELECT    people_link_key
 fyniq_api       UPDATE    people_link_key (sequence)
+fyniq_api       INSERT    people_link_replay (asked_at, from_sequence, link_id, to_sequence)
+fyniq_api       SELECT    people_link_replay
 fyniq_api       INSERT    people_link_secret (client_private, link_id, link_private)
 fyniq_api       INSERT    people_source (approval_id, effective_from, feature, set_at, source)
 fyniq_api       SELECT    people_source
@@ -524,6 +543,10 @@ fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by,
 fyniq_api       SELECT    policy_draft
 fyniq_api       INSERT    policy_version (body, from_draft, key, published_at, published_by, sha256, title, version)
 fyniq_api       SELECT    policy_version
+fyniq_api       INSERT    portal_link (contact_id, created_at, created_by, expires_at, label, token_hash)
+fyniq_api       SELECT    portal_link
+fyniq_api       UPDATE    portal_link (first_opened_at, revoked_at, revoked_by)
+fyniq_api       EXECUTE   portal_link_route()
 fyniq_api       EXECUTE   private_endpoints()
 fyniq_api       EXECUTE   private_endpoints_for()
 fyniq_api       INSERT    project (billing_method, budget_amount, budget_minutes, currency, customer_id, ends_on, id, minor_units, starts_on, status)
@@ -539,10 +562,13 @@ fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
-fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dispute_loss_account_id, disputes_account_id, fee_account_id, money_account_id, payout_account_id)
+fyniq_api       EXECUTE   projection_department()
+fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dispute_loss_account_id, disputes_account_id, fee_account_id, money_account_id, payout_account_id, revenue_account_id)
 fyniq_api       SELECT    psp_account
-fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, version)
+fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, revenue_account_id, version)
 fyniq_api       SELECT    psp_balance
+fyniq_api       SELECT    psp_charge_invoice
+fyniq_api       SELECT    psp_customer
 fyniq_api       INSERT    psp_dispute_credit (amount, connector_id, created_at, created_by, credit_note_id, currency, dispute_id, refund_id)
 fyniq_api       SELECT    psp_dispute_credit
 fyniq_api       INSERT    psp_dispute_loss (accepted_overstated_revenue, amount, connector_id, created_at, created_by, currency, dispute_id, document_id, reason)
@@ -550,7 +576,10 @@ fyniq_api       SELECT    psp_dispute_loss
 fyniq_api       INSERT    psp_event (api_version, connector_id, event_id, event_type, id, object_id, object_kind, parser_version, payload, payload_sha256, provider, received_at)
 fyniq_api       SELECT    psp_event
 fyniq_api       UPDATE    psp_event (last_error, parked_reason, processed_at, status)
+fyniq_api       SELECT    psp_invoice
+fyniq_api       UPDATE    psp_invoice (parked_reason, state, version)
 fyniq_api       SELECT    psp_payout
+fyniq_api       SELECT    psp_subscription
 fyniq_api       SELECT    psp_txn
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
@@ -949,6 +978,12 @@ fyniq_readonly  SELECT    inbound_file
 fyniq_readonly  SELECT    inbound_message
 fyniq_readonly  SELECT    investor_update
 fyniq_readonly  SELECT    investor_update_read
+fyniq_readonly  SELECT    invoice_dispute
+fyniq_readonly  SELECT    invoicenow_contingency
+fyniq_readonly  SELECT    invoicenow_event
+fyniq_readonly  SELECT    invoicenow_exclusion
+fyniq_readonly  SELECT    invoicenow_inbound
+fyniq_readonly  SELECT    invoicenow_submission
 fyniq_readonly  SELECT    item
 fyniq_readonly  SELECT    item_price
 fyniq_readonly  SELECT    job_slots
@@ -1015,6 +1050,7 @@ fyniq_readonly  SELECT    people_link
 fyniq_readonly  SELECT    people_link_access
 fyniq_readonly  SELECT    people_link_inbox
 fyniq_readonly  SELECT    people_link_key
+fyniq_readonly  SELECT    people_link_replay
 fyniq_readonly  SELECT    people_source
 fyniq_readonly  SELECT    period
 fyniq_readonly  SELECT    period_close
@@ -1026,6 +1062,7 @@ fyniq_readonly  SELECT    person_projection
 fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
+fyniq_readonly  SELECT    portal_link
 fyniq_readonly  SELECT    project
 fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
@@ -1033,10 +1070,14 @@ fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
+fyniq_readonly  SELECT    psp_charge_invoice
+fyniq_readonly  SELECT    psp_customer
 fyniq_readonly  SELECT    psp_dispute_credit
 fyniq_readonly  SELECT    psp_dispute_loss
 fyniq_readonly  SELECT    psp_event
+fyniq_readonly  SELECT    psp_invoice
 fyniq_readonly  SELECT    psp_payout
+fyniq_readonly  SELECT    psp_subscription
 fyniq_readonly  SELECT    psp_txn
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
@@ -1216,6 +1257,7 @@ fyniq_worker    SELECT    control_state
 fyniq_worker    UPDATE    control_state (changed_at, checks, detail, failing_since, run_at, status, version)
 fyniq_worker    SELECT    conversion_step
 fyniq_worker    EXECUTE   count_super_admins()
+fyniq_worker    EXECUTE   create_provider_invoice_draft()
 fyniq_worker    EXECUTE   create_scheduled_bill_draft()
 fyniq_worker    EXECUTE   create_scheduled_draft()
 fyniq_worker    EXECUTE   create_scheduled_invoice_draft()
@@ -1284,6 +1326,14 @@ fyniq_worker    EXECUTE   installation_connectors()
 fyniq_worker    EXECUTE   installation_org()
 fyniq_worker    SELECT    investor_update
 fyniq_worker    SELECT    investor_update_read
+fyniq_worker    SELECT    invoice_dispute
+fyniq_worker    SELECT    invoicenow_contingency
+fyniq_worker    INSERT    invoicenow_event (actor, at, detail, status, submission_id)
+fyniq_worker    SELECT    invoicenow_event
+fyniq_worker    SELECT    invoicenow_exclusion
+fyniq_worker    SELECT    invoicenow_inbound
+fyniq_worker    SELECT    invoicenow_submission
+fyniq_worker    UPDATE    invoicenow_submission (iras_ack, last_error, status, transmission_id, updated_at)
 fyniq_worker    SELECT    item
 fyniq_worker    SELECT    item_price
 fyniq_worker    SELECT    job_slots
@@ -1378,6 +1428,7 @@ fyniq_worker    SELECT    people_link
 fyniq_worker    SELECT    people_link_access
 fyniq_worker    SELECT    people_link_inbox
 fyniq_worker    SELECT    people_link_key
+fyniq_worker    SELECT    people_link_replay
 fyniq_worker    SELECT    people_link_secret
 fyniq_worker    SELECT    people_source
 fyniq_worker    SELECT    period
@@ -1392,6 +1443,7 @@ fyniq_worker    SELECT    person_projection
 fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
+fyniq_worker    SELECT    portal_link
 fyniq_worker    EXECUTE   private_endpoints_for()
 fyniq_worker    SELECT    project
 fyniq_worker    SELECT    project_billed_item
@@ -1402,13 +1454,24 @@ fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)
 fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
 fyniq_worker    SELECT    psp_balance
+fyniq_worker    INSERT    psp_charge_invoice (charge_id, connector_id, provider_invoice_id, seen_at)
+fyniq_worker    SELECT    psp_charge_invoice
+fyniq_worker    INSERT    psp_customer (connector_id, email, name, provider_customer_id, seen_at)
+fyniq_worker    SELECT    psp_customer
+fyniq_worker    UPDATE    psp_customer (email, name, seen_at)
 fyniq_worker    SELECT    psp_dispute_credit
 fyniq_worker    SELECT    psp_dispute_loss
 fyniq_worker    SELECT    psp_event
 fyniq_worker    UPDATE    psp_event (last_error, parked_reason, processed_at, status)
+fyniq_worker    INSERT    psp_invoice (amount_paid, attempt_count, connector_id, currency, draft_lines, due_on, finalized_on, hosted_url, next_attempt_on, number, outcome, provider_customer_id, provider_invoice_id, provider_subscription_id, seen_at, status, total)
+fyniq_worker    SELECT    psp_invoice
+fyniq_worker    UPDATE    psp_invoice (amount_paid, attempt_count, draft_lines, due_on, finalized_on, hosted_url, next_attempt_on, number, outcome, parked_reason, provider_subscription_id, seen_at, state, status, total, version)
 fyniq_worker    INSERT    psp_payout (amount, arrival_date, automatic, connector_id, currency, payout_id, provider_at, seen_at, status)
 fyniq_worker    SELECT    psp_payout
 fyniq_worker    UPDATE    psp_payout (arrival_date, automatic, status)
+fyniq_worker    INSERT    psp_subscription (amount, cancel_at_period_end, canceled_on, connector_id, currency, interval_count, interval_unit, period_end, period_start, provider_customer_id, provider_subscription_id, seen_at, status)
+fyniq_worker    SELECT    psp_subscription
+fyniq_worker    UPDATE    psp_subscription (amount, cancel_at_period_end, canceled_on, currency, interval_count, interval_unit, period_end, period_start, provider_customer_id, seen_at, status)
 fyniq_worker    INSERT    psp_txn (available_on, category, connector_id, currency, fee, gross, net, payout_id, provider_at, seen_at, source_id, source_kind, txn_id, type)
 fyniq_worker    SELECT    psp_txn
 fyniq_worker    UPDATE    psp_txn (payout_id)

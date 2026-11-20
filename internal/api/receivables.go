@@ -2,13 +2,17 @@ package api
 
 import (
 	"context"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/disputes"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/receivables"
@@ -35,6 +39,8 @@ type ReceivablesCustomer struct {
 	ID   string           `json:"id" format:"uuid" doc:"The customer's contact ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
 	Name string           `json:"name" doc:"The customer's legal name." example:"Acme Analytics Pte Ltd"`
 	Rows []ReceivablesRow `json:"rows" nullable:"false" doc:"A row per currency."`
+	// Disputed is the part of what they owe that they dispute (FR-AR-08, P2), a total per currency; the rows still count it.
+	Disputed []Money `json:"disputed" nullable:"false" doc:"What of their open invoices they dispute (open disputes, FR-AR-08), a total per currency: the rows above include it, so what is undisputed is the rows less this."`
 }
 
 // ReceivablesExposure is the unrealised FX on what customers owe in one foreign currency.
@@ -115,8 +121,36 @@ func registerReceivables(a *API) {
 				if err != nil {
 					return err
 				}
+				disputed, err := disputes.Disputed(ctx, u)
+				if err != nil {
+					return err
+				}
+				byCustomer := map[uuid.UUID]map[string]money.Money{}
+				for _, cu := range l.Customers {
+					for _, it := range cu.Items {
+						m, ok := disputed[it.DocumentID]
+						if !ok || it.Kind != receivables.KindInvoice {
+							continue
+						}
+						if c, err := m.Cmp(it.Open); err == nil && c > 0 {
+							m = it.Open // part of the invoice was paid since: what is disputed is at most what is still open
+						}
+						if byCustomer[cu.ID] == nil {
+							byCustomer[cu.ID] = map[string]money.Money{}
+						}
+						code := m.Currency().Code
+						sum := byCustomer[cu.ID][code]
+						if sum.Currency().Code == "" {
+							sum = money.Zero(m.Currency())
+						}
+						byCustomer[cu.ID][code], _ = sum.Add(m)
+					}
+				}
 				for _, c := range ageing.Customers {
-					x := ReceivablesCustomer{ID: c.ID.String(), Name: c.Name, Rows: []ReceivablesRow{}}
+					x := ReceivablesCustomer{ID: c.ID.String(), Name: c.Name, Rows: []ReceivablesRow{}, Disputed: []Money{}}
+					for _, code := range slices.Sorted(maps.Keys(byCustomer[c.ID])) {
+						x.Disputed = append(x.Disputed, moneyOut(byCustomer[c.ID][code]))
+					}
 					for _, r := range c.Rows {
 						x.Rows = append(x.Rows, receivablesRowOf(r))
 					}

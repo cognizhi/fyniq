@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "In Singapore dollars: positive adds to the profit, negative takes off.",
+      "examples": [
+        "15000.00"
+      ],
+      "pattern": "^-?[0-9]{1,13}(\\.[0-9]{1,2})?$",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "Whether evidence is attached to it elsewhere (the working paper does not keep files yet).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "kind": {
+      "description": "non_deductible: an expense the Act does not allow, added back; capital_allowance_difference: the allowances less the depreciation, negative to take them off.",
+      "enum": [
+        "non_deductible",
+        "capital_allowance_difference",
+        "other"
+      ],
+      "examples": [
+        "non_deductible"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why: the tax agent signs the working.",
+      "examples": [
+        "Client entertainment"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "amount",
+    "reason"
+  ],
+  "title": "TaxAdjustment",
+  "type": "object"
+}

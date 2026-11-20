@@ -97,9 +97,12 @@ what is open on the invoice, with the invoice's number as its reference, and sho
 - When the customer pays, HitPay's charge arrives on the provider's clearing account and **Reconcile now**
   (or the hourly one) records the receipt on the invoice by itself, once. A payment of another amount, a
   second payment on the same link, or one on a link you cancelled is not matched: it stays in the queue
-  with the reason **link mismatch**, for a person to decide.
+  with the reason **link mismatch**, for a person to decide. A payment above the per-line limit of automatic
+  reconciliation (S$500 by default) also waits for a person, as every large line does.
 - **Cancel the link** closes it in Fyniq, with a reason, so a new one can be made. HitPay's page stays
   payable until it expires, so a payment made on it afterwards waits for a person.
+- A link shows as **Expired** after its date (30 days after the invoice's due date) and as **Paid** once the
+  invoice has nothing open; an expired link is replaced by making a new one.
 - A foreign-currency invoice needs a provider account in that currency. The PayNow QR image of the
   checkout and Stripe payment links are not built yet.
 
@@ -131,6 +134,44 @@ document as its PDF shows it, the amount due or the total, and **Download the PD
 still valid, the customer accepts it with their name, or declines it, with a comment kept as a record of
 the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
 opened the invoice shows **Viewed**.
+
+## Subscriptions a provider bills
+
+If your customers subscribe and pay through a billing provider such as Stripe, name a **revenue account** on its provider account
+(under **Banking › Provider payouts**; an Owner or someone with the bank-connections right does it once). Fyniq then mirrors the
+provider's customers, subscriptions and invoices, read-only, on **Sales › Subscriptions** (Expert mode): each invoice with what the
+provider says (its status, the payment attempts so far, the next retry) beside what Fyniq made of it.
+
+- An open or paid invoice becomes a **draft invoice** by itself, dated the day the provider finalised it, to a contact made from the
+  provider's customer the first time, with each line at the provider's amount, spread over the months of its service period.
+- **Issue the drafts** (an Accountant or an AR specialist; also done when you press **Reconcile now**) issues a draft only when its
+  total, GST included, is the provider's to the cent. Any other, or one with a discount, a credit line or more lines than a page, waits
+  for a person with the reason shown; nothing is posted for it.
+- When the provider's charge for the invoice arrives, **Reconcile now** records the receipt once. A charge above the per-line limit
+  (S$500 by default) waits for a person.
+- Fyniq never retries a payment or charges anyone, and its payment reminders do not run on these invoices. If the provider voids an
+  invoice you issued, or marks it uncollectible, the page says so: void or write it off under **Invoices**.
+- Not built yet: the provider's credit notes, and mixed-currency or tiered prices (they wait for a person).
+
+## A disputed invoice or a promise to pay
+
+When a customer disputes part of an issued invoice, or promises to pay it on a day, record it on the invoice (an Accountant or an AR
+specialist): select **Record it** under **Dispute or promise to pay**.
+
+- A **dispute** has the amount in dispute (at most what is open) and why. Its reminders are paused until you **Resolve** it with how it
+  ended, such as "credit note issued"; AR ageing then shows the disputed part apart (the rows still count it).
+- A **promise** has the day the customer says they will pay, from today to 90 days away. Its reminders are paused until that day has
+  passed, or you resolve it sooner.
+- An invoice has at most one open dispute and one open promise, and a record is resolved once; record a new one if the customer says
+  something new. Nothing is posted: to correct the invoice itself, issue a credit note.
+
+## The customer portal
+
+The customer's side of the portal, opened through the private link their supplier sent them (see **Contacts**, "The customer
+portal"), is a page with no sign-in: **Your account** lists the invoices still due with a **Pay now** button where the supplier
+made a payment link, a **PDF** for each, and a **Statement of account** over a period you choose (30 days by default, never
+ending after today). It shows only that customer's invoices, is never cached or indexed, and the link ends on its date or when the
+supplier withdraws it. Where there is no Pay button, pay as the invoice says: the supplier records it when it arrives.
 
 ## Invoices above the self-approval threshold
 

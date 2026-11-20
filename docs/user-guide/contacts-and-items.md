@@ -121,6 +121,20 @@ notes, receipts, statements and reminder letters; a supplier receives remittance
 orders. Only published templates can be chosen: see [Design your documents with
 templates](document-templates.md).
 
+## The customer portal
+
+A customer of the organisation can have a private **customer portal**: one link where they see the invoices still due, pay
+where a payment link exists, download each invoice as a PDF and read their statement of account. On a customer's page, an
+Accountant or an AR specialist selects **Make a portal link**, may add a note about who it is for, and copies the link that
+appears: it is shown **only once**, because Fyniq keeps just a fingerprint of it. Send it to the customer yourself.
+
+- The link works for 30 days (at most 90) or until you **Revoke** it. A link that has ended, was revoked or never existed shows
+  the same plain message, so a leaked address tells nobody anything.
+- It shows that customer's documents and nothing else: never another customer's, and nobody signs in. Anyone who holds the
+  link sees what the customer sees, so send it only to the customer's own address.
+- The list on the customer's page shows when each link was made, when it ends and when it was first opened, never the link.
+- A **Pay now** button appears only for an invoice that already has a payment link (see invoices); the portal never makes one.
+
 ## Items and prices
 
 1. Open **Contacts → Items and prices** and select **New item**.

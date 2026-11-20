@@ -105,6 +105,8 @@ var PlatformSchedules = []Schedule{
 	// Daily at 07:35 Singapore time, after the bills to pay, each organisation's statutory deadlines 30, 14, 7 and 1 days
 	// ahead, and the day after one passed (FR-TAX-07, CMP-02; p1-gst design D10).
 	{Job: "notify.deadlines", Every: 24 * time.Hour, Offset: 23*time.Hour + 35*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Every fifteen minutes, the InvoiceNow submissions queued are sent and the ones sent are read up to IRAS's acknowledgement ID (FR-AR-12, FR-TAX-10; p2-invoicenow).
+	{Job: "invoicenow.dispatch", Every: 15 * time.Minute, Offset: 0, Lease: 10 * time.Minute, Stale: time.Hour},
 	// Daily at 07:40 Singapore time, after the deadlines, each organisation's 60-day cash projection against its buffer
 	// line, once per crossing (FR-PLN-09, FR-NTF-01; p1-planning design D7).
 	{Job: "notify.cash_buffer", Every: 24 * time.Hour, Offset: 23*time.Hour + 40*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},

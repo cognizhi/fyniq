@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ import (
 type LinkAuthenticator interface {
 	Events(ctx context.Context, authorization string) (linkauth.Caller, error)
 	Ask(ctx context.Context, authorization string) (linkauth.Caller, error)
+	Sync(ctx context.Context, authorization string) (linkauth.Caller, error)
 }
 
 // LinkHold is a person's tax-clearance hold as Nemura, the hold's authority, answers it (PRD-002 NM-INT-08).
@@ -38,6 +40,30 @@ type LinkHold struct {
 // LinkHolds answers the ask at release for the asking client: it checks the call against the live link (the same link, epoch and client) and reads the hold's latest version.
 type LinkHolds interface {
 	Hold(ctx context.Context, caller linkauth.Caller, person uuid.UUID) (LinkHold, error)
+}
+
+// LinkSyncs reads the link's event log by identity for the read-only client: it checks the call against the live link (the same link, epoch and client) and reads, never writes.
+type LinkSyncs interface {
+	Sync(ctx context.Context, caller linkauth.Caller, after int64, limit int) (LinkSync, error)
+}
+
+// LinkSyncEvent is one event Nemura queued for Fyniq, by its identity: never a payload.
+type LinkSyncEvent struct {
+	Sequence      int64  `json:"sequence" doc:"The event's number on the link: Nemura's events are numbered 1, 2, 3 in the order they were committed." example:"41"`
+	EventID       string `json:"event_id" format:"uuid" doc:"The event's ID, which Fyniq's inbox dedupes by." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	Type          string `json:"type" doc:"The event type." example:"people.tax_hold.changed"`
+	ObjectType    string `json:"object_type" doc:"What the event is about." example:"tax_hold"`
+	ObjectID      string `json:"object_id" doc:"The object's ID." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	ObjectVersion int    `json:"object_version" doc:"The object's version the event carries." example:"2"`
+	State         string `json:"state" enum:"queued,sent,failed,refused" doc:"Where it stands: waiting, sent, failing, or refused by Fyniq for good." example:"sent"`
+}
+
+// LinkSync is the link's event log by identity.
+type LinkSync struct {
+	Epoch           int             `json:"epoch" doc:"The link's epoch." example:"1"`
+	HighestSequence int64           `json:"highest_sequence" doc:"The highest sequence Nemura has queued: a number Fyniq's inbox has not seen is a gap." example:"57"`
+	Events          []LinkSyncEvent `json:"events" doc:"The events after the cursor, oldest first."`
+	NextCursor      string          `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"41"`
 }
 
 // LinkInbox receives one event Fyniq sent, for the link's client: it verifies the envelope against the link and applies the payload once. The outcome is applied, ignored_older or duplicate; a
@@ -384,5 +410,51 @@ func (a *API) registerLinkHold() {
 			out.Body.HoldID = h.HoldID.String()
 		}
 		return out, nil
+	})
+}
+
+type linkSyncInput struct {
+	Authorization string `header:"Authorization" doc:"Bearer, then the access token Fyniq's read-only link client got from Nemura's OAuth server for the audience nemura-api with the scope link.sync.read." example:"Bearer ory_at_…"`
+	Cursor        string `query:"cursor" doc:"The sequence to read after: the next_cursor of the last page; absent for the first." example:"41"`
+	PageSize      int    `query:"page_size" minimum:"1" maximum:"500" default:"200" doc:"How many events to return, at most." example:"200"`
+}
+
+type linkSyncOutput struct{ Body LinkSync }
+
+func (a *API) registerLinkSync() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getLinkSync", Method: http.MethodGet, Path: "/v1/link/sync", Tags: []string{"Link"}, Summary: "Read the link's event log by identity",
+		Description: "Fyniq reads here which events Nemura queued for it, to find a gap in what its inbox received and to show the link's health (PRD-001 FR-PPL-08, PRD-002 NM-INT-10, NM-INT-04). " +
+			"Only Fyniq's read-only link client may call it, with a bearer token for the audience nemura-api and the scope link.sync.read, for the live link at its epoch: the client that sends events cannot read it, and no session, person " +
+			"or ordinary API client can. It answers each event's sequence, ID, type, object, version and state, newest numbers last, and never a payload, a figure, a name or a bank detail; it changes nothing. It is on the never-list for the AI and MCP surfaces.",
+		Errors: []int{401, 403, 409, 503},
+	}, func(ctx context.Context, in *linkSyncInput) (*linkSyncOutput, error) {
+		if a.d.LinkAuth == nil || a.d.LinkSync == nil {
+			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
+		}
+		caller, err := a.d.LinkAuth.Sync(ctx, in.Authorization)
+		if err != nil {
+			if errors.Is(err, linkauth.ErrUnauthenticated) || errors.Is(err, linkauth.ErrNotLink) {
+				return nil, linkProblem(err)
+			}
+			return nil, Err(CodeUnavailable, "The OAuth server could not be asked to check the token: try again.")
+		}
+		var after int64
+		if in.Cursor != "" {
+			n, perr := strconv.ParseInt(in.Cursor, 10, 64)
+			if perr != nil || n < 0 {
+				return nil, Err(CodeInvalid, "query.cursor is not a cursor this operation gave.")
+			}
+			after = n
+		}
+		size := in.PageSize
+		if size <= 0 {
+			size = 200
+		}
+		got, err := a.d.LinkSync.Sync(ctx, caller, after, size)
+		if err != nil {
+			return nil, linkProblem(err)
+		}
+		return &linkSyncOutput{Body: got}, nil
 	})
 }

@@ -58,6 +58,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/deposit"
 	"github.com/cognizhi/fyniq/internal/domain/dimension"
 	"github.com/cognizhi/fyniq/internal/domain/director"
+	"github.com/cognizhi/fyniq/internal/domain/disputes"
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
@@ -80,6 +81,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/paymentlink"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
+	"github.com/cognizhi/fyniq/internal/domain/portal"
 	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
@@ -165,6 +167,7 @@ const (
 	CodeIdempotencyOld    = "API-IDEMPOTENCY-03" // the key expired (422)
 	CodeFailure           = "API-FAILURE-01"     // something went wrong on our side
 	CodeUnavailable       = "API-UNAVAILABLE-01" // the service is not configured for this
+	CodeInvoiceNowGate    = "API-INVOICENOW-01"  // a GST F5 filing waits for InvoiceNow submissions (FR-TAX-11)
 	CodeSessionRequired   = "API-AUTHZ-04"       // the operation needs a person signed in, not an OAuth client or the AI
 	CodeSetupRefused      = "API-SETUP-01"       // the setup code is not valid, or setup is done
 	CodeStepUpRequired    = "API-AUTHZ-05"       // the operation needs step-up authentication in the last 5 minutes
@@ -203,6 +206,7 @@ var codeFacts = map[string]struct {
 	CodeIdempotencyOld:            {422, "The Idempotency-Key expired"},
 	CodeFailure:                   {500, "Something went wrong"},
 	CodeUnavailable:               {503, "Not available here"},
+	CodeInvoiceNowGate:            {409, "The GST return waits for InvoiceNow submissions"},
 	audit.CodeRange:               {422, "The range cannot be verified at once"},
 	CodeSessionRequired:           {403, "A person must be signed in"},
 	CodeSetupRefused:              {409, "Setup refused"},
@@ -953,21 +957,27 @@ var codeFacts = map[string]struct {
 	banking.CodeDecided:     {403, "You recorded the bank transactions this sign-off covers (SOD-5)"},
 
 	// A money account's payment file (FR-BNK-12, rev 0.157).
-	paymentfile.CodeProvider: {422, "The payment file is not one the account's bank takes"},
-	paymentfile.CodeNotBuilt: {422, "The payment file is not available yet"},
-	CodePSPNotProvider:       {422, "The money account is not a payment provider's"},
-	CodePSPPayout:            {422, "The account payouts land in cannot take them"},
-	CodePSPFee:               {422, "The account fees post to cannot take them"},
-	CodePSPDisputes:          {422, "The account a dispute waits in cannot hold it"},
-	CodePSPDisputeState:      {409, "The dispute cannot be written off now"},
-	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
-	CodePSPEventState:        {409, "The event is not waiting for a person"},
-	CodePSPCredit:            {422, "The credit cannot settle the dispute"},
+	paymentfile.CodeProvider:  {422, "The payment file is not one the account's bank takes"},
+	paymentfile.CodeNotBuilt:  {422, "The payment file is not available yet"},
+	CodePSPNotProvider:        {422, "The money account is not a payment provider's"},
+	CodePSPPayout:             {422, "The account payouts land in cannot take them"},
+	CodePSPFee:                {422, "The account fees post to cannot take them"},
+	CodePSPDisputes:           {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:       {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:       {422, "The dispute is above the expense limit"},
+	CodePSPEventState:         {409, "The event is not waiting for a person"},
+	CodePSPCredit:             {422, "The credit cannot settle the dispute"},
 	paymentlink.CodeNotIssued: {422, "A payment link is for an issued invoice with something open"},
 	paymentlink.CodeNoAccount: {422, "No provider account collects the invoice's currency"},
 	paymentlink.CodeLive:      {409, "The invoice has a payment link already"},
 	CodeLinkConnector:         {422, "No payment-link connector is enabled"},
 	CodeLinkClosed:            {409, "The payment link is not live"},
+	portal.CodeLink:           {404, "This link does not open anything"},
+	disputes.CodeNotOpen:      {422, "A dispute or promise is for an invoice with something open"},
+	disputes.CodeAmount:       {422, "The disputed amount is not valid"},
+	disputes.CodeDate:         {422, "The promised day is not valid"},
+	disputes.CodeOpen:         {409, "The invoice has an open record of that kind"},
+	disputes.CodeWords:        {422, "A reason or resolution is needed"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1143,6 +1153,7 @@ var codeFacts = map[string]struct {
 	storage.CodeAcraExtract:          {422, "The ACRA extract does not keep that"},
 	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
+	storage.CodeInvoiceNow:           {409, "The InvoiceNow record does not keep that"},
 	storage.CodeForecast:             {422, "The forecast does not keep that"},
 	storage.CodeBudget:               {422, "The budget does not keep that"},
 	storage.CodeFeasibility:          {422, "The feasibility study does not keep that"},
@@ -1335,6 +1346,8 @@ var storageFixes = map[string]string{
 	storage.CodeBudget:               "Send the budget as the API takes it: a name, original or revised, its year's first day, and at most 5,000 lines of an account, its dimension values and an amount for each month",
 	storage.CodeFeasibility:          "Send the study as the API takes it: a name, 1 to 10 years, a life of 1 to 50 years, its figures as decimal strings, rates at most 1, changes above -1, and a salvage no more than the investment",
 	storage.CodeForecast:             "Send the forecast as the API takes it: a name, a horizon of 12 to 60 months, its drivers as decimal strings, and its rows and scenarios within their limits",
+	CodeInvoiceNowGate:               "Send each document the gate lists to IRAS through InvoiceNow, or record why it is left out, or have a contingency approved for the outage",
+	storage.CodeInvoiceNow:           "Queue the document again after a failure, record one live exclusion for a document and ask someone else to approve a contingency you requested",
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
@@ -1480,6 +1493,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		cne *connector.Error
 		bke *banking.Error
 		plk *paymentlink.Error
+		dsp *disputes.Error
 		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
@@ -1580,6 +1594,8 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return problem(pye.Code, sentence(pye.Message), sentence(pye.Fix))
 	case errors.As(err, &pyp) && len(pyp) > 0:
 		return payeeProblems(pyp).(*Problem)
+	case errors.As(err, &dsp):
+		return problem(dsp.Code, sentence(dsp.Message), sentence(dsp.Fix))
 	case errors.As(err, &plk):
 		return problem(plk.Code, sentence(plk.Message), sentence(plk.Fix))
 	case errors.As(err, &bke):

@@ -34,10 +34,19 @@ const (
 // Recipients are the roles that are told, as NM-NFR-05 names them.
 var Recipients = []authz.Role{authz.PayrollAdmin, authz.Owner}
 
+// The kinds of the link's alerts (PRD-001 FR-PPL-08, PRD-002 NM-INT-04): events for Fyniq that have waited or failed for an hour while a pay run waits for Fyniq's posting, and for 24 hours at any time.
+const (
+	KindLinkNearPayDay = PayDayPrefix + "link_events_stuck" // the 1-hour alert near pay day: a pay-day job in all but name
+	KindLink24Hours    = "link.events_failing_24h"          // the 24-hour notice to the Owner and the Payroll administrator
+)
+
 // IsPayDay reports whether kind is a job of the pay-day path.
 func IsPayDay(kind string) bool {
 	return strings.HasPrefix(kind, PayDayPrefix) && len(kind) > len(PayDayPrefix)
 }
+
+// IsNotice reports whether kind is one a notice may carry: a pay-day job that died, or one of the link's alerts.
+func IsNotice(kind string) bool { return IsPayDay(kind) || kind == KindLink24Hours }
 
 // Payload is a notice: which person, which job died, and when. It holds no personal data, only identifiers and a kind.
 type Payload struct {
@@ -73,7 +82,7 @@ func (l LogNotifier) Notify(ctx context.Context, org uuid.UUID, p Payload, late 
 func Work(n Notifier, clock ports.Clock) outbox.Work {
 	return func(ctx context.Context, org uuid.UUID, row outbox.Row) error {
 		var p Payload
-		if err := json.Unmarshal(row.Payload, &p); err != nil || p.Member == uuid.Nil || !IsPayDay(p.Kind) {
+		if err := json.Unmarshal(row.Payload, &p); err != nil || p.Member == uuid.Nil || !IsNotice(p.Kind) {
 			return fmt.Errorf("the alert row %s is not a notice: %v", row.ID, err)
 		}
 		return n.Notify(ctx, org, p, clock.Now().After(p.DueBy()))

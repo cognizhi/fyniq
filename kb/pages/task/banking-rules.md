@@ -4,7 +4,7 @@ type: task
 title: Make, test and approve bank rules
 summary: Make a bank rule that suggests how to code recurring lines, test it against the lines held, and ask for it to apply by itself
 sources:
-  - docs/user-guide/banking.md sha256:1f8e4ad3777dfc03197a1acf5b0909c3ece5813a95dd6214784a634d60cdcbc8
+  - docs/user-guide/banking.md sha256:3a9112663e374a3fc4360d3c0f9cd8b13514f04bced020feb3eb6206c8170058
 data_class: general
 taint: trusted
 status: draft

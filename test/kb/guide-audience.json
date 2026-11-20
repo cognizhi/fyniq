@@ -160,6 +160,17 @@
     "status": "published"
   },
   {
+    "file": "bad-debts.md",
+    "key": "sales.bad-debts",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "banking.md",
     "key": "banking.accounts",
     "roles": [
@@ -552,6 +563,18 @@
     "status": "draft"
   },
   {
+    "file": "filing-packs.md",
+    "key": "compliance.filing-packs",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "financial-statements.md",
     "key": "reports.statements",
     "roles": [
@@ -680,6 +703,18 @@
       "owner",
       "controller",
       "accountant"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "invoicenow.md",
+    "key": "compliance.invoicenow",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent"
     ],
     "status": "draft"
   },

@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjustments": {
+      "description": "Their net.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "chargeable_income": {
+      "description": "Never below zero.",
+      "examples": [
+        "300000.00"
+      ],
+      "type": "string"
+    },
+    "cit_pack": {
+      "description": "The sg-cit version worked with.",
+      "examples": [
+        "sg-cit@2026.1"
+      ],
+      "type": "string"
+    },
+    "exempt": {
+      "description": "The exemption of the scheme, exact.",
+      "examples": [
+        "102500.00"
+      ],
+      "type": "string"
+    },
+    "form": {
+      "description": "The form the revenue calls for.",
+      "examples": [
+        "C-S"
+      ],
+      "type": "string"
+    },
+    "forms_pack": {
+      "description": "The sg-tax-filings version the form limits come from.",
+      "examples": [
+        "sg-tax-filings@2026.1"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The financial year's first day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "loss_forward": {
+      "description": "The loss the year leaves, when the adjusted profit is below zero.",
+      "examples": [
+        "0.00"
+      ],
+      "type": "string"
+    },
+    "normal_chargeable": {
+      "description": "What is taxed at the rate.",
+      "examples": [
+        "197500.00"
+      ],
+      "type": "string"
+    },
+    "optional_form": {
+      "description": "The form a company of that revenue may file instead.",
+      "examples": [
+        "C-S"
+      ],
+      "type": "string"
+    },
+    "profit_before_tax": {
+      "description": "The year's profit before tax from the ledger.",
+      "examples": [
+        "300000.00"
+      ],
+      "type": "string"
+    },
+    "rate": {
+      "description": "The rate, as a fraction.",
+      "examples": [
+        "0.17"
+      ],
+      "type": "string"
+    },
+    "rebate": {
+      "description": "The Year of Assessment's rebate with the cash grant taken off when eligible.",
+      "examples": [
+        "16787.50"
+      ],
+      "type": "string"
+    },
+    "revenue": {
+      "description": "The year's revenue from the ledger, in Singapore dollars.",
+      "examples": [
+        "850000.00"
+      ],
+      "type": "string"
+    },
+    "tax_before_rebate": {
+      "description": "Exact.",
+      "examples": [
+        "33575.00"
+      ],
+      "type": "string"
+    },
+    "tax_payable": {
+      "description": "Exact, before the cash grant is paid.",
+      "examples": [
+        "16787.50"
+      ],
+      "type": "string"
+    },
+    "tax_payable_rounded": {
+      "description": "To the cent, half away from zero [accountant to confirm].",
+      "examples": [
+        "16787.50"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "Its last day.",
+      "examples": [
+        "2026-12-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ya": {
+      "description": "The Year of Assessment.",
+      "examples": [
+        2027
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ya",
+    "from",
+    "to",
+    "revenue",
+    "profit_before_tax",
+    "adjustments",
+    "chargeable_income",
+    "loss_forward",
+    "exempt",
+    "normal_chargeable",
+    "rate",
+    "tax_before_rebate",
+    "rebate",
+    "tax_payable",
+    "tax_payable_rounded",
+    "form",
+    "cit_pack",
+    "forms_pack"
+  ],
+  "title": "TaxWorkingPaper",
+  "type": "object"
+}

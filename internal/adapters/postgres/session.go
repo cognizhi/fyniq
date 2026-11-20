@@ -81,3 +81,9 @@ func (s *Store) EndUserSession(ctx context.Context, userID uuid.UUID, tokenHash 
 	}
 	return nil
 }
+
+// EndSessionsOfUser implements storage.Sessions: every live session of the user ends, whichever sign-in made it.
+func (s *Store) EndSessionsOfUser(ctx context.Context, userID uuid.UUID, now time.Time) (int, error) {
+	n, err := s.q().EndUserSessions(ctx, sqlcdb.EndUserSessionsParams{UserID: userID, KeepIssuer: "", KeepSubject: "", RemovedSubjects: []string{}, Now: now})
+	return int(n), mapError(err)
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "Required when the reason is other.",
+      "examples": [
+        "Supplied under a customer accounting arrangement"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The document to leave out.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c8a02"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason.",
+      "enum": [
+        "reverse_charge",
+        "import_permit",
+        "deemed_supply",
+        "financial_services",
+        "unregistered_supplier",
+        "blocked_input_tax",
+        "out_of_scope",
+        "other"
+      ],
+      "examples": [
+        "The InvoiceNow requirement is not marked as applying (setting invoicenow.applies)."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "reason"
+  ],
+  "title": "InvoiceNowExcludeBody",
+  "type": "object"
+}

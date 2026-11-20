@@ -34,6 +34,38 @@ describe("people and HR settings", () => {
     await noViolations(document.body);
   });
 
+  it("shows how the link stands, a gap Nemura delivered and Fyniq never received, and asks Nemura to send it again", async () => {
+    const seen = answer({
+      "GET /v1/people-link": { status: 200, body: link },
+      "GET /v1/people-link/health": { status: 200, body: { state: "active", reachable: true, checked_at: "2026-11-21T09:00:00Z", nemura_highest_sequence: 10, received_highest_sequence: 8, waiting: 1, failing: 1, refused: 0, missing: [{ from: 4, to: 4 }, { from: 9, to: 10 }], requested: [{ from: 20, to: 22 }] } },
+      "GET /v1/payroll-arrangements": { status: 200, body: { month: "2026-11", in_force: [], missing: [], met: true } },
+      "GET /v1/payroll-imports": { status: 200, body: { items: [] } },
+      "POST /v1/people-link/repair": { status: 200, body: { requested: [{ from: 4, to: 4 }, { from: 9, to: 10 }], health: {} } },
+    });
+    renderPage(PeopleHrSettings, { path: "/settings/people", session: owner });
+    expect(await screen.findByText(/Nemura has queued 10 events for Fyniq; Fyniq's inbox holds up to 8\./)).toBeTruthy();
+    expect(screen.getByText(/1 waiting to be delivered, 1 failing, 0 refused\./)).toBeTruthy();
+    expect(screen.getByText(/never received: 4, 9 to 10\./)).toBeTruthy();
+    expect(screen.getByText(/Asked Nemura to send these again in the last day: 20 to 22\./)).toBeTruthy();
+    await noViolations(document.body);
+    fireEvent.click(screen.getByRole("button", { name: "Ask Nemura to send them again" }));
+    expect(await screen.findByText("Asked Nemura to send 2 runs of events again.")).toBeTruthy();
+    expect(seen.some((s) => s.method === "POST" && s.path.endsWith("/v1/people-link/repair"))).toBe(true);
+  });
+
+  it("says when Nemura's log could not be read and invents no number", async () => {
+    answer({
+      "GET /v1/people-link": { status: 200, body: link },
+      "GET /v1/people-link/health": { status: 200, body: { state: "active", reachable: false, note: "Nemura did not answer: try again in a minute.", checked_at: "2026-11-21T09:00:00Z", nemura_highest_sequence: 0, received_highest_sequence: 5, waiting: 0, failing: 0, refused: 0, missing: [], requested: [] } },
+      "GET /v1/payroll-arrangements": { status: 200, body: { month: "2026-11", in_force: [], missing: [], met: true } },
+      "GET /v1/payroll-imports": { status: 200, body: { items: [] } },
+    });
+    renderPage(PeopleHrSettings, { path: "/settings/people", session: owner });
+    expect(await screen.findByText("Nemura's log could not be read.")).toBeTruthy();
+    expect(screen.getByText("Nemura did not answer: try again in a minute.")).toBeTruthy();
+    expect(screen.queryByText(/has queued/)).toBeNull();
+  });
+
   it("records an arrangement with its evidence", async () => {
     const seen = answer({
       "GET /v1/people-link": { status: 200, body: { ...link, state: "none", sources: [], inbox: [] } },

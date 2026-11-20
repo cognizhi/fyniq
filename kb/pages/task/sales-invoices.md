@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:f1f5ca615611b67f7d4f5d0ef86bac439a3c64a00520fc4952bd2cee4a234eb7
+  - docs/user-guide/invoices.md sha256:7ea06a4c4fedf3e655a1bea1da549fcda128cf0c6ebd952648142bb53be2bdcd
 data_class: general
 taint: trusted
 status: draft
@@ -55,6 +55,14 @@ aliases:
   - likely paid
   - incoming-funds alert
   - payment link
+  - customer portal
+  - disputed invoice
+  - Stripe subscription
+  - provider invoice
+  - billing provider
+  - promise to pay
+  - dispute an invoice
+  - customer statement online
   - pay online
   - HitPay link
   - link mismatch
@@ -108,7 +116,7 @@ aliases:
 
 - With HitPay connected and a provider account set up, **Add a payment link** on an issued invoice (an Accountant or an AR specialist) asks HitPay for a page that collects what is open, with the invoice's number as its reference; copy or open the link.
 - The amount is always the invoice's open balance, read when the link is made, never typed; a draft, void or paid invoice has no link, and an invoice has one live link at a time.
-- When the customer pays, **Reconcile now** records the receipt on the invoice once. Another amount, a second payment or a payment on a cancelled link stays in the queue as **link mismatch** for a person.
+- When the customer pays, **Reconcile now** records the receipt on the invoice once. Another amount, a second payment or a payment on a cancelled link stays in the queue as **link mismatch** for a person, and a payment above the per-line limit (S$500 by default) waits for a person too. A link shows as Expired after its date and as Paid once the invoice has nothing open.
 - **Cancel the link** closes it here with a reason; HitPay's page stays payable until it expires. A foreign-currency invoice needs a provider account in that currency; the PayNow QR image and Stripe payment links are not built yet.
 
 (src: docs/user-guide/invoices.md#a-payment-link-on-an-invoice)
@@ -131,6 +139,29 @@ aliases:
 - The email's secure link opens the invoice or quote without signing in: the document as its PDF shows it, the amount due or total, and **Download the PDF**; on a sent quote still valid, the customer accepts with their name or declines, with a comment kept as a record ([[sales.quotes]]). It shows nothing else, works until it ends or is revoked, and the first opening marks the invoice **Viewed**.
 
 (src: docs/user-guide/invoices.md#what-the-customer-sees)
+
+## Subscriptions a provider bills
+
+- Name a revenue account on a Stripe provider account (Banking › Provider payouts) and Fyniq mirrors the provider's customers, subscriptions and invoices read-only on **Sales › Subscriptions** (Expert mode), with the provider's status, payment attempts and next retry beside the invoice Fyniq made.
+- An open or paid invoice becomes a draft invoice, dated the day the provider finalised it, to a contact made from the provider's customer, each line at the provider's amount spread over its service period's months. **Issue the drafts** (also done by Reconcile now) issues one only when its total, GST included, is the provider's to the cent; any other, or one with a discount or credit line, waits for a person with the reason shown.
+- The provider's charge for the invoice is received once by Reconcile now (a charge above S$500 waits for a person). Fyniq never retries or charges and its reminders skip these invoices. A provider-voided or uncollectible invoice you issued is voided or written off under Invoices. Credit notes and tiered prices are not built yet.
+
+(src: docs/user-guide/invoices.md#subscriptions-a-provider-bills)
+
+## A disputed invoice or a promise to pay
+
+- **Record it** on an issued invoice (an Accountant or an AR specialist) notes that the customer disputes an amount (at most what is open, with why) or promises to pay on a day (from today to 90 days away).
+- A dispute pauses the invoice's reminders until you **Resolve** it with how it ended; a promise until its day has passed. AR ageing shows the disputed part apart; the rows still count it.
+- At most one open dispute and one open promise per invoice; a record is resolved once. Nothing is posted: correct the invoice with a credit note.
+
+(src: docs/user-guide/invoices.md#a-disputed-invoice-or-a-promise-to-pay)
+
+## The customer portal
+
+- The customer's side opens through the private link their supplier sent (no sign-in): **Your account** lists the invoices still due with **Pay now** where a payment link exists, a **PDF** for each, and a **Statement of account** over a chosen period (30 days by default, never after today).
+- It shows only that customer's invoices, is never cached or indexed, and ends on its date or when the supplier withdraws it. Where there is no Pay button, pay as the invoice says; the supplier records it when it arrives.
+
+(src: docs/user-guide/invoices.md#the-customer-portal)
 
 ## Approval
 

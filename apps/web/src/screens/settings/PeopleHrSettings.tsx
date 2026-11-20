@@ -115,6 +115,96 @@ function Arrange({ month, onDone }: { month: string; onDone: (what: string) => v
   );
 }
 
+// LinkHealth shows how the link stands, by identity (FR-PPL-08, FR-PPL-15; NM-INT-04): what Nemura says it queued against what Fyniq received, the runs of sequence numbers Nemura delivered and Fyniq never
+// received, and one action that asks Nemura to send them again. It holds no payload, name or figure.
+function LinkHealth({ onDone }: { onDone: (what: string) => void }) {
+  const queries = useQueryClient();
+  const h = helpText("people.health");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const health = useQuery({
+    queryKey: ["people-link-health"],
+    queryFn: async () => {
+      const r = await api.GET("/v1/people-link/health", {});
+      if (r.error) throw r.error;
+      return r.data;
+    },
+  });
+  if (health.isError) return <Refusal problem={problemOf(health.error)} title="The link's health could not be read" />;
+  const d = health.data;
+  if (!d) return <p className="fy-secondary">Checking the link…</p>;
+  const repair = async () => {
+    setBusy(true);
+    setProblem(null);
+    const out = await api.POST("/v1/people-link/repair", { params: { header: { "Idempotency-Key": newKey() } } });
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone(out.data.requested.length === 0 ? "Nothing was missing." : `Asked Nemura to send ${out.data.requested.length === 1 ? "one run" : `${out.data.requested.length} runs`} of events again.`);
+    void queries.invalidateQueries({ queryKey: ["people-link-health"] });
+  };
+  return (
+    <section aria-label="Link health" className="fy-stack fy-stack--2">
+      <h2 className="fy-h2" title={h.tooltip}>
+        {h.label}
+      </h2>
+      {problem && <Refusal problem={problem} title="Nemura could not be asked" />}
+      {!d.reachable ? (
+        <div className="fy-banner fy-banner--warning" role="note">
+          <Icon of={Hourglass} size={20} />
+          <div className="fy-banner__text">
+            <span className="fy-strong">Nemura's log could not be read.</span>
+            <span className="fy-small">{d.note}</span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <ul className="fy-stack fy-stack--1">
+            <li>
+              Nemura has queued {d.nemura_highest_sequence} events for Fyniq; Fyniq's inbox holds up to {d.received_highest_sequence}.
+            </li>
+            <li>
+              {d.waiting} waiting to be delivered, {d.failing} failing, {d.refused} refused.
+            </li>
+          </ul>
+          {d.requested.length > 0 && (
+            <p className="fy-secondary">
+              <Icon of={Hourglass} /> Asked Nemura to send these again in the last day: {d.requested.map((m) => (m.from === m.to ? `${m.from}` : `${m.from} to ${m.to}`)).join(", ")}. Nemura sends the current state at new numbers, so these numbers do not arrive; they show as missing again after a day.
+            </p>
+          )}
+          {d.missing.length === 0 ? (
+            d.requested.length === 0 && (
+              <p className="fy-secondary">
+                <Icon of={CircleCheck} /> Nothing is missing: every event Nemura says it delivered reached Fyniq.
+              </p>
+            )
+          ) : (
+            <div className="fy-banner fy-banner--warning" role="note">
+              <Icon of={CircleX} size={20} />
+              <div className="fy-banner__text">
+                <span className="fy-strong">
+                  Nemura says it delivered events that Fyniq never received: {d.missing.map((m) => (m.from === m.to ? `${m.from}` : `${m.from} to ${m.to}`)).join(", ")}.
+                </span>
+                <span className="fy-small">Ask Nemura to send them again: it sends the current state of what they were about, never an old payload.</span>
+              </div>
+              <div className="fy-banner__action">
+                <Button variant="secondary" size="sm" type="button" onClick={() => void repair()} disabled={busy}>
+                  Ask Nemura to send them again
+                </Button>
+              </div>
+            </div>
+          )}
+          {d.truncated && <p className="fy-secondary">Nemura's log is longer than one look reads: the oldest part was left out.</p>}
+        </>
+      )}
+      <div className="fy-row gap-2">
+        <Button variant="ghost" size="sm" type="button" onClick={() => void health.refetch()} disabled={health.isFetching}>
+          Check again
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 // PeopleHrSettings is Settings › People and HR (docs/design/screens PeopleHrSettings; FR-PPL-01, FR-PPL-08, FR-PAY-15): where each feature lives, the link's state and what it received, and how the
 // month's statutory payroll outputs are met. Linking, changing a source and unlinking need the Owner and a second approver and are asked for through the API (Left: their forms).
 export function PeopleHrSettings() {
@@ -204,6 +294,7 @@ export function PeopleHrSettings() {
               </p>
             )}
           </section>
+          {l.state === "active" && <LinkHealth onDone={setStatus} />}
           {l.inbox.length > 0 && (
             <section aria-label="What Fyniq received" className="fy-stack fy-stack--2">
               <h2 className="fy-h2">What Fyniq received from Nemura</h2>

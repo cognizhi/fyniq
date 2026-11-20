@@ -47,6 +47,7 @@ type Manifest struct {
 	Note      string    `json:"note"`
 	Skipped   []Skipped `json:"skipped"`
 	Reference string    `json:"reference,omitempty"`
+	FileName  string    `json:"file_name,omitempty"`
 }
 
 // safeCell keeps a spreadsheet from running a cell as a formula: a value that starts with =, +, - or @ (or a tab or return) is prefixed with an apostrophe.
@@ -212,4 +213,103 @@ func bankForPayment(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUI
 	}
 	plain, err := c.Open(ctx, sealed, aad(org, person, "bank"))
 	return string(plain), err
+}
+
+// CPFInput is what only the employer knows of its CPF EZPay submission: the payment type, serial number and advice code of its CPF Submission Number, as its CPF EZPay account holds
+// them. They are never guessed (p2-payroll-outputs design D1).
+type CPFInput struct{ PaymentType, Serial, AdviceCode string }
+
+// ExportCPF makes the CPF EZPay (FTP) file of an approved version (PRD-002 NM-PAY-13): the CPF Board's own layout, one detail record for each person with a contribution and one for each
+// self-help group fund they pay, the skills development levy as its own summary, the employer's UEN from the letter settings, and each person's CPF account number, which is their NRIC,
+// opened from its sealed form with each read audited. A person is left out, and listed in the manifest with why, when no NRIC is on record or it is not an S or T number (a CPF account), or
+// the person has no contribution this month. A file is never proof that CPF was submitted or paid.
+func ExportCPF(ctx context.Context, tx pgx.Tx, c ports.Cipher, org uuid.UUID, at time.Time, by, run uuid.UUID, version int, in CPFInput) ([]byte, Manifest, error) {
+	r, v, err := approvedVersion(ctx, tx, run, version)
+	if err != nil {
+		return nil, Manifest{}, err
+	}
+	var uen string
+	if err := tx.QueryRow(ctx, "SELECT uen FROM nemura.letter_settings").Scan(&uen); errors.Is(err, pgx.ErrNoRows) {
+		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The company's UEN is not set: record it under the letter settings first, as the CPF file names the employer by it."}
+	} else if err != nil {
+		return nil, Manifest{}, err
+	}
+	lines, err := RunLines(ctx, tx, v.ID)
+	if err != nil {
+		return nil, Manifest{}, err
+	}
+	e := payroll.CPFEmployer{ID: strings.ToUpper(strings.TrimSpace(uen)), PaymentType: strings.ToUpper(in.PaymentType), Serial: in.Serial, AdviceCode: in.AdviceCode, Month: r.Month,
+		SDL: dec(v.Totals.SDLPayable), Made: at}
+	if err := e.Check(); err != nil {
+		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeInvalid, Message: err.Error()}
+	}
+	var people []payroll.CPFPerson
+	var skipped []Skipped
+	total := dec("0")
+	for _, l := range lines {
+		cpf, shg := dec(l.CPFTotal), dec(l.SHG)
+		if cpf.Sign() <= 0 && shg.Sign() <= 0 {
+			continue
+		}
+		skip := func(why string) {
+			skipped = append(skipped, Skipped{PersonID: l.Person.String(), Person: l.PersonName, Reason: why})
+		}
+		var sealed []byte
+		var start time.Time
+		var leaving *time.Time
+		var fund *string
+		if err := tx.QueryRow(ctx, `SELECT p.employment_start, p.leaving_date, s.nric_sealed,
+  (SELECT shg_fund FROM nemura.person_pay pp WHERE pp.person_id = p.id AND pp.effective_from <= $2 AND (pp.effective_to IS NULL OR pp.effective_to > $2) ORDER BY pp.effective_from DESC LIMIT 1)
+FROM nemura.person p LEFT JOIN nemura.person_secret s ON s.person_id = p.id WHERE p.id = $1`, l.Person, day(r.Month)).Scan(&start, &leaving, &sealed, &fund); err != nil {
+			return nil, Manifest{}, err
+		}
+		if sealed == nil {
+			skip("No NRIC is on record: the CPF account number of a citizen or permanent resident is their NRIC.")
+			continue
+		}
+		if err := auditRead(ctx, tx, org, at, by, l.Person, CapNRIC, access.Full); err != nil {
+			return nil, Manifest{}, err
+		}
+		plain, err := c.Open(ctx, sealed, aad(org, l.Person, "nric"))
+		if err != nil {
+			return nil, Manifest{}, err
+		}
+		account := strings.ToUpper(strings.TrimSpace(string(plain)))
+		if !strings.HasPrefix(account, "S") && !strings.HasPrefix(account, "T") {
+			skip("The identification number is not an S or T number, so it is not a CPF account number.")
+			continue
+		}
+		status := "E"
+		inMonth := func(t time.Time) bool { return t.Year() == r.Month.Year() && t.Month() == r.Month.Month() }
+		joined, left := inMonth(start), leaving != nil && inMonth(*leaving)
+		switch {
+		case joined && left:
+			status = "O"
+		case joined:
+			status = "N"
+		case left:
+			status = "L"
+		}
+		p := payroll.CPFPerson{Account: account, Name: l.PersonName, Status: status, OW: dec(l.OWSubject), AW: dec(l.AWSubject), CPF: cpf}
+		if fund != nil && shg.Sign() > 0 {
+			p.Fund, p.SHG = *fund, shg
+		}
+		people = append(people, p)
+		total = addDec(addDec(total, cpf), shg)
+	}
+	if len(people) == 0 {
+		return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeConflict, Message: "Nobody in this version has a contribution that can go in the file."}
+	}
+	file, err := payroll.CPFFile(e, people)
+	if err != nil {
+		var ce *payroll.CPFError
+		if errors.As(err, &ce) {
+			return nil, Manifest{}, &payroll.Refusal{Code: payroll.CodeInvalid, Message: ce.Error()}
+		}
+		return nil, Manifest{}, err
+	}
+	total = addDec(total, dec(v.Totals.SDLPayable))
+	m, err := record(ctx, tx, org, at, by, run, v, "cpf", file, len(people), skipped, cents2(total), r)
+	m.FileName = payroll.CPFFileName(e)
+	return file, m, err
 }

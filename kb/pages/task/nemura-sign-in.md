@@ -4,7 +4,7 @@ type: task
 title: Sign in to Nemura and sign out
 summary: How a person signs in to Nemura, joins with an invitation or the one-time setup code, what the page says when it is not ready, and how to sign out
 sources:
-  - docs/user-guide/nemura/sign-in.md sha256:0243599e8a4c765f5062a6ed4d7376e001f6c509bd10224c30ea046928ced4b0
+  - docs/user-guide/nemura/sign-in.md sha256:ad074fab24c1a9ab4da9195372ee2657645169ce5c767bb79123fe4b8a894d09
 data_class: general
 taint: trusted
 status: published
@@ -63,7 +63,8 @@ aliases:
 
 ## Sign out
 
-- **Sign out** is at the top of every page. It ends the session on this device only; other devices stay signed in. (src: docs/user-guide/nemura/sign-in.md#signing-out)
+- **Sign out** is at the top of every page. It ends the session on this device only; other devices stay signed in.
+- When the company links Nemura to Fyniq and the person is mapped to a person there, signing out here also signs them out of Fyniq on every device, and being removed from Nemura does the same, within a minute or so. Fyniq ends nothing for a person nobody mapped, and the person stays a member there with their roles and passkeys. Being removed from Fyniq ends their Nemura sessions in the same way; signing out of Fyniq on its own does not yet. (src: docs/user-guide/nemura/sign-in.md#signing-out)
 
 ## When it fails
 

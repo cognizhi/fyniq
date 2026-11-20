@@ -1516,6 +1516,77 @@ investor_update_read | user_id | uuid | not null |
 investor_update_read | read_at | timestamp with time zone | not null | 
 invitation_code | code_hash | bytea | not null | 
 invitation_code | owner | uuid | not null | 
+invoice_dispute | organisation_id | uuid | not null | current_org()
+invoice_dispute | id | uuid | not null | uuidv7()
+invoice_dispute | invoice_id | uuid | not null | 
+invoice_dispute | kind | text | not null | 
+invoice_dispute | amount | numeric(20,4) | null | 
+invoice_dispute | currency | text | null | 
+invoice_dispute | reason | text | null | 
+invoice_dispute | promised_on | date | null | 
+invoice_dispute | status | text | not null | 'open'::text
+invoice_dispute | resolution | text | null | 
+invoice_dispute | version | integer | not null | 1
+invoice_dispute | created_by | text | not null | 
+invoice_dispute | created_at | timestamp with time zone | not null | 
+invoice_dispute | resolved_by | text | null | 
+invoice_dispute | resolved_at | timestamp with time zone | null | 
+invoicenow_contingency | organisation_id | uuid | not null | current_org()
+invoicenow_contingency | id | uuid | not null | uuidv7()
+invoicenow_contingency | period_from | date | not null | 
+invoicenow_contingency | period_to | date | not null | 
+invoicenow_contingency | reason | text | not null | 
+invoicenow_contingency | evidence | text | not null | 
+invoicenow_contingency | requested_by | text | not null | 
+invoicenow_contingency | requested_at | timestamp with time zone | not null | 
+invoicenow_contingency | approved_by | text | null | 
+invoicenow_contingency | approved_at | timestamp with time zone | null | 
+invoicenow_contingency | withdrawn_at | timestamp with time zone | null | 
+invoicenow_event | organisation_id | uuid | not null | current_org()
+invoicenow_event | id | uuid | not null | uuidv7()
+invoicenow_event | submission_id | uuid | not null | 
+invoicenow_event | at | timestamp with time zone | not null | 
+invoicenow_event | status | text | not null | 
+invoicenow_event | detail | text | null | 
+invoicenow_event | actor | text | not null | 
+invoicenow_exclusion | organisation_id | uuid | not null | current_org()
+invoicenow_exclusion | id | uuid | not null | uuidv7()
+invoicenow_exclusion | document_id | uuid | not null | 
+invoicenow_exclusion | reason | text | not null | 
+invoicenow_exclusion | detail | text | null | 
+invoicenow_exclusion | recorded_by | text | not null | 
+invoicenow_exclusion | recorded_at | timestamp with time zone | not null | 
+invoicenow_exclusion | withdrawn_at | timestamp with time zone | null | 
+invoicenow_exclusion | withdrawn_by | text | null | 
+invoicenow_inbound | organisation_id | uuid | not null | current_org()
+invoicenow_inbound | id | uuid | not null | uuidv7()
+invoicenow_inbound | message_id | text | not null | 
+invoicenow_inbound | cursor | text | not null | 
+invoicenow_inbound | sender | text | not null | 
+invoicenow_inbound | number | text | not null | 
+invoicenow_inbound | received_at | timestamp with time zone | not null | 
+invoicenow_inbound | sha256 | bytea | not null | 
+invoicenow_inbound | payload | bytea | not null | 
+invoicenow_inbound | status | text | not null | 'received'::text
+invoicenow_inbound | bill_id | uuid | null | 
+invoicenow_inbound | note | text | null | 
+invoicenow_inbound | created_by | text | not null | 
+invoicenow_submission | organisation_id | uuid | not null | current_org()
+invoicenow_submission | id | uuid | not null | uuidv7()
+invoicenow_submission | document_id | uuid | not null | 
+invoicenow_submission | document_uuid | uuid | not null | 
+invoicenow_submission | version | integer | not null | 
+invoicenow_submission | kind | text | not null | 
+invoicenow_submission | direction | text | not null | 
+invoicenow_submission | status | text | not null | 'queued'::text
+invoicenow_submission | recipient | text | null | 
+invoicenow_submission | transmission_id | text | null | 
+invoicenow_submission | iras_ack | text | null | 
+invoicenow_submission | last_error | text | null | 
+invoicenow_submission | payload_sha256 | bytea | null | 
+invoicenow_submission | created_at | timestamp with time zone | not null | 
+invoicenow_submission | updated_at | timestamp with time zone | not null | 
+invoicenow_submission | created_by | text | not null | 
 ip_rate_window | client | text | not null | 
 ip_rate_window | kind | text | not null | 
 ip_rate_window | window_start | timestamp with time zone | not null | 
@@ -2273,6 +2344,7 @@ people_link_access | people_access | boolean | not null |
 people_link_access | payroll_approver | boolean | not null | 
 people_link_access | version | bigint | not null | 
 people_link_access | received_at | timestamp with time zone | not null | 
+people_link_access | epoch | integer | not null | 1
 people_link_ask_key | organisation_id | uuid | not null | current_org()
 people_link_ask_key | id | uuid | not null | uuidv7()
 people_link_ask_key | link_id | uuid | not null | 
@@ -2300,6 +2372,12 @@ people_link_key | nemura_client_id | text | not null |
 people_link_key | link_public | bytea | not null | 
 people_link_key | client_public | jsonb | not null | 
 people_link_key | sequence | bigint | not null | 0
+people_link_replay | organisation_id | uuid | not null | current_org()
+people_link_replay | id | uuid | not null | uuidv7()
+people_link_replay | link_id | uuid | not null | 
+people_link_replay | from_sequence | bigint | not null | 
+people_link_replay | to_sequence | bigint | not null | 
+people_link_replay | asked_at | timestamp with time zone | not null | 
 people_link_secret | organisation_id | uuid | not null | current_org()
 people_link_secret | id | uuid | not null | uuidv7()
 people_link_secret | link_id | uuid | not null | 
@@ -2422,6 +2500,20 @@ policy_version | sha256 | bytea | not null |
 policy_version | from_draft | text | not null | 
 policy_version | published_by | text | not null | 
 policy_version | published_at | timestamp with time zone | not null | 
+portal_link | organisation_id | uuid | not null | current_org()
+portal_link | id | uuid | not null | uuidv7()
+portal_link | contact_id | uuid | not null | 
+portal_link | label | text | null | 
+portal_link | token_hash | text | not null | 
+portal_link | expires_at | timestamp with time zone | not null | 
+portal_link | created_by | text | not null | 
+portal_link | created_at | timestamp with time zone | not null | 
+portal_link | first_opened_at | timestamp with time zone | null | 
+portal_link | revoked_at | timestamp with time zone | null | 
+portal_link | revoked_by | text | null | 
+portal_link_token | token_hash | text | not null | 
+portal_link_token | owner | uuid | not null | 
+portal_link_token | link_id | uuid | not null | 
 practice_organisation | organisation_id | uuid | not null | 
 practice_organisation | created_by | uuid | not null | 
 practice_organisation | source_organisation_id | uuid | not null | 
@@ -2502,12 +2594,27 @@ psp_account | created_by | text | not null |
 psp_account | created_at | timestamp with time zone | not null | 
 psp_account | version | integer | not null | 1
 psp_account | dispute_loss_account_id | uuid | null | 
+psp_account | revenue_account_id | uuid | null | 
 psp_balance | organisation_id | uuid | not null | current_org()
 psp_balance | id | uuid | not null | uuidv7()
 psp_balance | connector_id | uuid | not null | 
 psp_balance | currency | text | not null | 
 psp_balance | amount | numeric(20,4) | not null | 
 psp_balance | taken_at | timestamp with time zone | not null | 
+psp_charge_invoice | organisation_id | uuid | not null | current_org()
+psp_charge_invoice | id | uuid | not null | uuidv7()
+psp_charge_invoice | connector_id | uuid | not null | 
+psp_charge_invoice | charge_id | text | not null | 
+psp_charge_invoice | provider_invoice_id | text | not null | 
+psp_charge_invoice | seen_at | timestamp with time zone | not null | 
+psp_customer | organisation_id | uuid | not null | current_org()
+psp_customer | id | uuid | not null | uuidv7()
+psp_customer | connector_id | uuid | not null | 
+psp_customer | provider_customer_id | text | not null | 
+psp_customer | name | text | null | 
+psp_customer | email | text | null | 
+psp_customer | contact_id | uuid | null | 
+psp_customer | seen_at | timestamp with time zone | not null | 
 psp_dispute_credit | organisation_id | uuid | not null | current_org()
 psp_dispute_credit | id | uuid | not null | uuidv7()
 psp_dispute_credit | connector_id | uuid | not null | 
@@ -2546,6 +2653,29 @@ psp_event | status | text | not null | 'received'::text
 psp_event | parked_reason | text | null | 
 psp_event | processed_at | timestamp with time zone | null | 
 psp_event | last_error | text | null | 
+psp_invoice | organisation_id | uuid | not null | current_org()
+psp_invoice | id | uuid | not null | uuidv7()
+psp_invoice | connector_id | uuid | not null | 
+psp_invoice | provider_invoice_id | text | not null | 
+psp_invoice | provider_customer_id | text | not null | 
+psp_invoice | provider_subscription_id | text | null | 
+psp_invoice | number | text | null | 
+psp_invoice | status | text | not null | 
+psp_invoice | currency | text | not null | 
+psp_invoice | total | numeric(20,4) | not null | 
+psp_invoice | amount_paid | numeric(20,4) | not null | 0
+psp_invoice | attempt_count | integer | not null | 0
+psp_invoice | next_attempt_on | date | null | 
+psp_invoice | outcome | text | null | 
+psp_invoice | hosted_url | text | null | 
+psp_invoice | finalized_on | date | null | 
+psp_invoice | due_on | date | null | 
+psp_invoice | draft_lines | jsonb | not null | '[]'::jsonb
+psp_invoice | state | text | not null | 'mirrored'::text
+psp_invoice | parked_reason | text | null | 
+psp_invoice | document_id | uuid | null | 
+psp_invoice | version | integer | not null | 1
+psp_invoice | seen_at | timestamp with time zone | not null | 
 psp_payout | organisation_id | uuid | not null | current_org()
 psp_payout | id | uuid | not null | uuidv7()
 psp_payout | connector_id | uuid | not null | 
@@ -2557,6 +2687,21 @@ psp_payout | arrival_date | date | null |
 psp_payout | automatic | boolean | not null | true
 psp_payout | provider_at | timestamp with time zone | not null | 
 psp_payout | seen_at | timestamp with time zone | not null | 
+psp_subscription | organisation_id | uuid | not null | current_org()
+psp_subscription | id | uuid | not null | uuidv7()
+psp_subscription | connector_id | uuid | not null | 
+psp_subscription | provider_subscription_id | text | not null | 
+psp_subscription | provider_customer_id | text | not null | 
+psp_subscription | status | text | not null | 
+psp_subscription | currency | text | not null | 
+psp_subscription | amount | numeric(20,4) | not null | 
+psp_subscription | interval_unit | text | not null | 
+psp_subscription | interval_count | integer | not null | 
+psp_subscription | period_start | date | null | 
+psp_subscription | period_end | date | null | 
+psp_subscription | cancel_at_period_end | boolean | not null | false
+psp_subscription | canceled_on | date | null | 
+psp_subscription | seen_at | timestamp with time zone | not null | 
 psp_txn | organisation_id | uuid | not null | current_org()
 psp_txn | id | uuid | not null | uuidv7()
 psp_txn | connector_id | uuid | not null | 
@@ -3925,7 +4070,7 @@ api_client | api_client_owner_id_not_null | NOT NULL owner_id
 api_client | api_client_pkey | PRIMARY KEY (organisation_id, id)
 api_client | api_client_reason_format | CHECK (((length(revoke_reason) >= 1) AND (length(revoke_reason) <= 500)))
 api_client | api_client_revoked_together | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_at IS NULL) = (revoke_reason IS NULL))))
-api_client | api_client_scopes_format | CHECK ((((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 16)) AND (((kind <> 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^fyniq\.(read|write)\.[a-z]+( fyniq\.(read|write)\.[a-z]+)*$'::text)) OR ((kind = 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^(people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit)( (people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit))*$'::text)))))
+api_client | api_client_scopes_format | CHECK ((((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 16)) AND (((kind <> 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^fyniq\.(read|write)\.[a-z]+( fyniq\.(read|write)\.[a-z]+)*$'::text)) OR ((kind = 'link'::text) AND (array_to_string(scopes, ' '::text) ~ '^(people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit|identity\.sessions\.write)( (people\.projection\.write|people\.availability\.write|people\.holds\.write|people\.holds\.read|payroll\.journal\.submit|payroll\.payments\.submit|identity\.sessions\.write))*$'::text)))))
 api_client | api_client_scopes_not_null | NOT NULL scopes
 api_client | api_client_version_not_null | NOT NULL version
 api_client | api_client_version_positive | CHECK ((version >= 1))
@@ -5511,6 +5656,115 @@ invitation_code | invitation_code_code_hash_not_null | NOT NULL code_hash
 invitation_code | invitation_code_hash_length | CHECK ((octet_length(code_hash) = 32))
 invitation_code | invitation_code_owner_not_null | NOT NULL owner
 invitation_code | invitation_code_pkey | PRIMARY KEY (code_hash, owner)
+invoice_dispute | invoice_dispute_by_form | CHECK (((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((resolved_by IS NULL) OR (resolved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoice_dispute | invoice_dispute_created_at_not_null | NOT NULL created_at
+invoice_dispute | invoice_dispute_created_by_not_null | NOT NULL created_by
+invoice_dispute | invoice_dispute_dispute_form | CHECK (((kind <> 'dispute'::text) OR ((amount IS NOT NULL) AND (amount <> 'NaN'::numeric) AND (amount > (0)::numeric) AND (currency ~ '^[A-Z]{3}$'::text) AND (reason IS NOT NULL) AND ((length(reason) >= 1) AND (length(reason) <= 500)) AND (promised_on IS NULL))))
+invoice_dispute | invoice_dispute_id_not_null | NOT NULL id
+invoice_dispute | invoice_dispute_invoice_fkey | FOREIGN KEY (organisation_id, invoice_id) REFERENCES document(organisation_id, id)
+invoice_dispute | invoice_dispute_invoice_id_not_null | NOT NULL invoice_id
+invoice_dispute | invoice_dispute_kind_known | CHECK ((kind = ANY (ARRAY['dispute'::text, 'promise'::text])))
+invoice_dispute | invoice_dispute_kind_not_null | NOT NULL kind
+invoice_dispute | invoice_dispute_organisation_id_not_null | NOT NULL organisation_id
+invoice_dispute | invoice_dispute_pkey | PRIMARY KEY (organisation_id, id)
+invoice_dispute | invoice_dispute_promise_form | CHECK (((kind <> 'promise'::text) OR ((promised_on IS NOT NULL) AND (amount IS NULL) AND (currency IS NULL) AND (reason IS NULL))))
+invoice_dispute | invoice_dispute_resolved_form | CHECK (((status = 'resolved'::text) = ((resolved_at IS NOT NULL) AND (resolved_by IS NOT NULL) AND (resolution IS NOT NULL) AND ((length(resolution) >= 1) AND (length(resolution) <= 500)))))
+invoice_dispute | invoice_dispute_status_known | CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))
+invoice_dispute | invoice_dispute_status_not_null | NOT NULL status
+invoice_dispute | invoice_dispute_version_not_null | NOT NULL version
+invoice_dispute | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_contingency | invoicenow_contingency_approved_whole | CHECK (((approved_at IS NULL) = (approved_by IS NULL)))
+invoicenow_contingency | invoicenow_contingency_approver_differs | CHECK (((approved_by IS NULL) OR (approved_by <> requested_by)))
+invoicenow_contingency | invoicenow_contingency_by_format | CHECK (((requested_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((approved_by IS NULL) OR (approved_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoicenow_contingency | invoicenow_contingency_evidence_length | CHECK (((length(btrim(evidence)) >= 10) AND (length(btrim(evidence)) <= 4000)))
+invoicenow_contingency | invoicenow_contingency_evidence_not_null | NOT NULL evidence
+invoicenow_contingency | invoicenow_contingency_id_not_null | NOT NULL id
+invoicenow_contingency | invoicenow_contingency_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_contingency | invoicenow_contingency_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_contingency | invoicenow_contingency_period | CHECK ((period_to >= period_from))
+invoicenow_contingency | invoicenow_contingency_period_from_not_null | NOT NULL period_from
+invoicenow_contingency | invoicenow_contingency_period_to_not_null | NOT NULL period_to
+invoicenow_contingency | invoicenow_contingency_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_contingency | invoicenow_contingency_reason_length | CHECK (((length(btrim(reason)) >= 10) AND (length(btrim(reason)) <= 1000)))
+invoicenow_contingency | invoicenow_contingency_reason_not_null | NOT NULL reason
+invoicenow_contingency | invoicenow_contingency_requested_at_not_null | NOT NULL requested_at
+invoicenow_contingency | invoicenow_contingency_requested_by_not_null | NOT NULL requested_by
+invoicenow_contingency | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_event | invoicenow_event_actor_format | CHECK ((actor ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_event | invoicenow_event_actor_not_null | NOT NULL actor
+invoicenow_event | invoicenow_event_at_not_null | NOT NULL at
+invoicenow_event | invoicenow_event_detail_length | CHECK (((detail IS NULL) OR (length(detail) <= 1000)))
+invoicenow_event | invoicenow_event_id_not_null | NOT NULL id
+invoicenow_event | invoicenow_event_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_event | invoicenow_event_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_event | invoicenow_event_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'sent'::text, 'acknowledged'::text, 'failed'::text])))
+invoicenow_event | invoicenow_event_status_not_null | NOT NULL status
+invoicenow_event | invoicenow_event_submission_fkey | FOREIGN KEY (organisation_id, submission_id) REFERENCES invoicenow_submission(organisation_id, id)
+invoicenow_event | invoicenow_event_submission_id_not_null | NOT NULL submission_id
+invoicenow_exclusion | invoicenow_exclusion_by_format | CHECK (((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text) AND ((withdrawn_by IS NULL) OR (withdrawn_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+invoicenow_exclusion | invoicenow_exclusion_detail_length | CHECK (((detail IS NULL) OR (length(detail) <= 500)))
+invoicenow_exclusion | invoicenow_exclusion_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+invoicenow_exclusion | invoicenow_exclusion_document_id_not_null | NOT NULL document_id
+invoicenow_exclusion | invoicenow_exclusion_id_not_null | NOT NULL id
+invoicenow_exclusion | invoicenow_exclusion_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_exclusion | invoicenow_exclusion_other_says | CHECK (((reason <> 'other'::text) OR (length(btrim(COALESCE(detail, ''::text))) >= 3)))
+invoicenow_exclusion | invoicenow_exclusion_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_exclusion | invoicenow_exclusion_reason_known | CHECK ((reason = ANY (ARRAY['reverse_charge'::text, 'import_permit'::text, 'deemed_supply'::text, 'financial_services'::text, 'unregistered_supplier'::text, 'blocked_input_tax'::text, 'out_of_scope'::text, 'other'::text])))
+invoicenow_exclusion | invoicenow_exclusion_reason_not_null | NOT NULL reason
+invoicenow_exclusion | invoicenow_exclusion_recorded_at_not_null | NOT NULL recorded_at
+invoicenow_exclusion | invoicenow_exclusion_recorded_by_not_null | NOT NULL recorded_by
+invoicenow_exclusion | invoicenow_exclusion_withdrawn_whole | CHECK (((withdrawn_at IS NULL) = (withdrawn_by IS NULL)))
+invoicenow_exclusion | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_inbound | invoicenow_inbound_bill_fkey | FOREIGN KEY (organisation_id, bill_id) REFERENCES document(organisation_id, id)
+invoicenow_inbound | invoicenow_inbound_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_inbound | invoicenow_inbound_created_by_not_null | NOT NULL created_by
+invoicenow_inbound | invoicenow_inbound_cursor_not_null | NOT NULL cursor
+invoicenow_inbound | invoicenow_inbound_drafted_has_bill | CHECK (((status = 'drafted'::text) = (bill_id IS NOT NULL)))
+invoicenow_inbound | invoicenow_inbound_id_not_null | NOT NULL id
+invoicenow_inbound | invoicenow_inbound_message_id_not_null | NOT NULL message_id
+invoicenow_inbound | invoicenow_inbound_message_key | UNIQUE (organisation_id, message_id)
+invoicenow_inbound | invoicenow_inbound_note_length | CHECK (((note IS NULL) OR (length(note) <= 1000)))
+invoicenow_inbound | invoicenow_inbound_number_not_null | NOT NULL number
+invoicenow_inbound | invoicenow_inbound_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_inbound | invoicenow_inbound_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_inbound | invoicenow_inbound_payload_not_null | NOT NULL payload
+invoicenow_inbound | invoicenow_inbound_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_inbound | invoicenow_inbound_received_at_not_null | NOT NULL received_at
+invoicenow_inbound | invoicenow_inbound_sender_form | CHECK (((sender ~ '^[0-9]{4}:[!-~]{1,100}$'::text) OR (sender = ''::text)))
+invoicenow_inbound | invoicenow_inbound_sender_not_null | NOT NULL sender
+invoicenow_inbound | invoicenow_inbound_sha | CHECK ((octet_length(sha256) = 32))
+invoicenow_inbound | invoicenow_inbound_sha256_not_null | NOT NULL sha256
+invoicenow_inbound | invoicenow_inbound_size | CHECK (((octet_length(payload) >= 1) AND (octet_length(payload) <= 10485760)))
+invoicenow_inbound | invoicenow_inbound_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'drafted'::text, 'refused'::text])))
+invoicenow_inbound | invoicenow_inbound_status_not_null | NOT NULL status
+invoicenow_inbound | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+invoicenow_submission | invoicenow_submission_ack_with_status | CHECK (((status = 'acknowledged'::text) = ((iras_ack IS NOT NULL) AND ((length(iras_ack) >= 1) AND (length(iras_ack) <= 100)))))
+invoicenow_submission | invoicenow_submission_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+invoicenow_submission | invoicenow_submission_created_at_not_null | NOT NULL created_at
+invoicenow_submission | invoicenow_submission_created_by_not_null | NOT NULL created_by
+invoicenow_submission | invoicenow_submission_direction_kind | CHECK ((((kind = 'extracted_purchase'::text) = (direction = 'purchase'::text)) OR (kind = 'aggregated'::text)))
+invoicenow_submission | invoicenow_submission_direction_known | CHECK ((direction = ANY (ARRAY['sale'::text, 'purchase'::text])))
+invoicenow_submission | invoicenow_submission_direction_not_null | NOT NULL direction
+invoicenow_submission | invoicenow_submission_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+invoicenow_submission | invoicenow_submission_document_id_not_null | NOT NULL document_id
+invoicenow_submission | invoicenow_submission_document_uuid_not_null | NOT NULL document_uuid
+invoicenow_submission | invoicenow_submission_error_length | CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))
+invoicenow_submission | invoicenow_submission_id_not_null | NOT NULL id
+invoicenow_submission | invoicenow_submission_kind_known | CHECK ((kind = ANY (ARRAY['peppol'::text, 'extracted_sale'::text, 'extracted_purchase'::text, 'aggregated'::text])))
+invoicenow_submission | invoicenow_submission_kind_not_null | NOT NULL kind
+invoicenow_submission | invoicenow_submission_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+invoicenow_submission | invoicenow_submission_organisation_id_not_null | NOT NULL organisation_id
+invoicenow_submission | invoicenow_submission_peppol_recipient | CHECK (((kind <> 'peppol'::text) OR (recipient IS NOT NULL)))
+invoicenow_submission | invoicenow_submission_pkey | PRIMARY KEY (organisation_id, id)
+invoicenow_submission | invoicenow_submission_recipient_form | CHECK (((recipient IS NULL) OR (recipient ~ '^[0-9]{4}:[!-~]{1,100}$'::text)))
+invoicenow_submission | invoicenow_submission_sha | CHECK (((payload_sha256 IS NULL) OR (octet_length(payload_sha256) = 32)))
+invoicenow_submission | invoicenow_submission_status_known | CHECK ((status = ANY (ARRAY['queued'::text, 'sent'::text, 'acknowledged'::text, 'failed'::text])))
+invoicenow_submission | invoicenow_submission_status_not_null | NOT NULL status
+invoicenow_submission | invoicenow_submission_updated_at_not_null | NOT NULL updated_at
+invoicenow_submission | invoicenow_submission_version_key | UNIQUE (organisation_id, document_id, version)
+invoicenow_submission | invoicenow_submission_version_not_null | NOT NULL version
+invoicenow_submission | invoicenow_submission_version_positive | CHECK ((version > 0))
+invoicenow_submission | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ip_rate_window | ip_rate_window_client_hash | CHECK ((client ~ '^[0-9a-f]{64}$'::text))
 ip_rate_window | ip_rate_window_client_not_null | NOT NULL client
 ip_rate_window | ip_rate_window_kind_known | CHECK ((kind = ANY (ARRAY['signin'::text, 'join'::text, 'public'::text, 'setup'::text])))
@@ -6144,7 +6398,7 @@ money_account_source | money_account_source_by_form | CHECK ((set_by ~ '^[a-z][a
 money_account_source | money_account_source_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
 money_account_source | money_account_source_connector_kind | CHECK (((kind = 'connector'::text) = (connector_id IS NOT NULL)))
 money_account_source | money_account_source_email_senders | CHECK (((kind <> 'email'::text) OR (((cardinality(senders) >= 1) AND (cardinality(senders) <= 10)) AND (report_format IS NOT NULL))))
-money_account_source | money_account_source_format_known | CHECK ((report_format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text])))
+money_account_source | money_account_source_format_known | CHECK ((report_format = ANY (ARRAY['csv'::text, 'xlsx'::text, 'ofx'::text, 'camt053'::text, 'mt940'::text, 'mt940_sap'::text, 'mt942'::text])))
 money_account_source | money_account_source_from_date_not_null | NOT NULL from_date
 money_account_source | money_account_source_from_key | UNIQUE (organisation_id, money_account_id, from_date)
 money_account_source | money_account_source_id_not_null | NOT NULL id
@@ -6716,6 +6970,7 @@ people_link | people_link_unlinked_no_client | CHECK (((state <> 'unlinked'::tex
 people_link | people_link_version_not_null | NOT NULL version
 people_link | people_link_version_positive | CHECK ((version >= 1))
 people_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_access | people_link_access_epoch_not_null | NOT NULL epoch
 people_link_access | people_link_access_id_not_null | NOT NULL id
 people_link_access | people_link_access_identity_key | UNIQUE (organisation_id, issuer, subject)
 people_link_access | people_link_access_issuer | CHECK (((char_length(issuer) >= 1) AND (char_length(issuer) <= 500)))
@@ -6779,6 +7034,16 @@ people_link_key | people_link_key_public_size | CHECK ((octet_length(link_public
 people_link_key | people_link_key_sequence | CHECK ((sequence >= 0))
 people_link_key | people_link_key_sequence_not_null | NOT NULL sequence
 people_link_key | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_replay | people_link_replay_asked_at_not_null | NOT NULL asked_at
+people_link_replay | people_link_replay_from_sequence_not_null | NOT NULL from_sequence
+people_link_replay | people_link_replay_id_not_null | NOT NULL id
+people_link_replay | people_link_replay_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+people_link_replay | people_link_replay_link_id_not_null | NOT NULL link_id
+people_link_replay | people_link_replay_organisation_id_not_null | NOT NULL organisation_id
+people_link_replay | people_link_replay_pkey | PRIMARY KEY (organisation_id, id)
+people_link_replay | people_link_replay_range | CHECK (((from_sequence >= 1) AND (to_sequence >= from_sequence) AND ((to_sequence - from_sequence) < 10000)))
+people_link_replay | people_link_replay_to_sequence_not_null | NOT NULL to_sequence
+people_link_replay | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 people_link_secret | people_link_secret_client_private_not_null | NOT NULL client_private
 people_link_secret | people_link_secret_id_key | UNIQUE (organisation_id, id)
 people_link_secret | people_link_secret_id_not_null | NOT NULL id
@@ -6987,6 +7252,25 @@ policy_version | policy_version_title_length | CHECK (((length(btrim(title)) >= 
 policy_version | policy_version_title_not_null | NOT NULL title
 policy_version | policy_version_version_not_null | NOT NULL version
 policy_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link | portal_link_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+portal_link | portal_link_contact_id_not_null | NOT NULL contact_id
+portal_link | portal_link_created_at_not_null | NOT NULL created_at
+portal_link | portal_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+portal_link | portal_link_created_by_not_null | NOT NULL created_by
+portal_link | portal_link_expires_at_not_null | NOT NULL expires_at
+portal_link | portal_link_expires_later | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '90 days'::interval))))
+portal_link | portal_link_id_not_null | NOT NULL id
+portal_link | portal_link_label_length | CHECK (((label IS NULL) OR ((length(label) >= 1) AND (length(label) <= 200))))
+portal_link | portal_link_organisation_id_not_null | NOT NULL organisation_id
+portal_link | portal_link_pkey | PRIMARY KEY (organisation_id, id)
+portal_link | portal_link_revoked_by | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND ((revoked_by IS NULL) OR (revoked_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))))
+portal_link | portal_link_token_format | CHECK ((token_hash ~ '^[0-9a-f]{64}$'::text))
+portal_link | portal_link_token_hash_not_null | NOT NULL token_hash
+portal_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+portal_link_token | portal_link_token_link_id_not_null | NOT NULL link_id
+portal_link_token | portal_link_token_owner_not_null | NOT NULL owner
+portal_link_token | portal_link_token_pkey | PRIMARY KEY (token_hash)
+portal_link_token | portal_link_token_token_hash_not_null | NOT NULL token_hash
 practice_organisation | practice_organisation_created_at_not_null | NOT NULL created_at
 practice_organisation | practice_organisation_created_by_not_null | NOT NULL created_by
 practice_organisation | practice_organisation_one_each | UNIQUE (created_by)
@@ -7112,6 +7396,7 @@ psp_account | psp_account_organisation_id_not_null | NOT NULL organisation_id
 psp_account | psp_account_payout_fkey | FOREIGN KEY (organisation_id, payout_account_id) REFERENCES money_account(organisation_id, id)
 psp_account | psp_account_payout_other | CHECK (((payout_account_id IS NULL) OR (payout_account_id <> money_account_id)))
 psp_account | psp_account_pkey | PRIMARY KEY (organisation_id, money_account_id)
+psp_account | psp_account_revenue_fkey | FOREIGN KEY (organisation_id, revenue_account_id) REFERENCES account(organisation_id, id)
 psp_account | psp_account_sweep_pair | CHECK (((swept_through IS NULL) = (swept_at IS NULL)))
 psp_account | psp_account_version_not_null | NOT NULL version
 psp_account | psp_account_version_positive | CHECK ((version >= 1))
@@ -7127,6 +7412,28 @@ psp_balance | psp_balance_organisation_id_not_null | NOT NULL organisation_id
 psp_balance | psp_balance_pkey | PRIMARY KEY (organisation_id, id)
 psp_balance | psp_balance_taken_at_not_null | NOT NULL taken_at
 psp_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_charge_invoice | psp_charge_invoice_charge_id_not_null | NOT NULL charge_id
+psp_charge_invoice | psp_charge_invoice_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_charge_invoice | psp_charge_invoice_connector_id_not_null | NOT NULL connector_id
+psp_charge_invoice | psp_charge_invoice_id_not_null | NOT NULL id
+psp_charge_invoice | psp_charge_invoice_lengths | CHECK ((((length(charge_id) >= 1) AND (length(charge_id) <= 255)) AND ((length(provider_invoice_id) >= 1) AND (length(provider_invoice_id) <= 255))))
+psp_charge_invoice | psp_charge_invoice_once | UNIQUE (organisation_id, connector_id, charge_id)
+psp_charge_invoice | psp_charge_invoice_organisation_id_not_null | NOT NULL organisation_id
+psp_charge_invoice | psp_charge_invoice_pkey | PRIMARY KEY (organisation_id, id)
+psp_charge_invoice | psp_charge_invoice_provider_invoice_id_not_null | NOT NULL provider_invoice_id
+psp_charge_invoice | psp_charge_invoice_seen_at_not_null | NOT NULL seen_at
+psp_charge_invoice | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_customer | psp_customer_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_customer | psp_customer_connector_id_not_null | NOT NULL connector_id
+psp_customer | psp_customer_contact_fkey | FOREIGN KEY (organisation_id, contact_id) REFERENCES contact(organisation_id, id)
+psp_customer | psp_customer_id_not_null | NOT NULL id
+psp_customer | psp_customer_lengths | CHECK ((((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(name) >= 1) AND (length(name) <= 200)) AND ((length(email) >= 3) AND (length(email) <= 254))))
+psp_customer | psp_customer_organisation_id_not_null | NOT NULL organisation_id
+psp_customer | psp_customer_pkey | PRIMARY KEY (organisation_id, id)
+psp_customer | psp_customer_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_customer | psp_customer_provider_once | UNIQUE (organisation_id, connector_id, provider_customer_id)
+psp_customer | psp_customer_seen_at_not_null | NOT NULL seen_at
+psp_customer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_dispute_credit | psp_dispute_credit_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
 psp_dispute_credit | psp_dispute_credit_amount_not_null | NOT NULL amount
 psp_dispute_credit | psp_dispute_credit_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -7188,6 +7495,37 @@ psp_event | psp_event_received_at_not_null | NOT NULL received_at
 psp_event | psp_event_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'processed'::text, 'parked'::text, 'failed'::text])))
 psp_event | psp_event_status_not_null | NOT NULL status
 psp_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_invoice | psp_invoice_amount_paid_not_null | NOT NULL amount_paid
+psp_invoice | psp_invoice_amounts | CHECK (((total <> 'NaN'::numeric) AND (total >= (0)::numeric) AND (amount_paid <> 'NaN'::numeric) AND (amount_paid >= (0)::numeric)))
+psp_invoice | psp_invoice_attempt_count_not_null | NOT NULL attempt_count
+psp_invoice | psp_invoice_attempts | CHECK (((attempt_count >= 0) AND (attempt_count <= 1000)))
+psp_invoice | psp_invoice_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_invoice | psp_invoice_connector_id_not_null | NOT NULL connector_id
+psp_invoice | psp_invoice_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_invoice | psp_invoice_currency_not_null | NOT NULL currency
+psp_invoice | psp_invoice_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+psp_invoice | psp_invoice_document_once | UNIQUE (organisation_id, document_id)
+psp_invoice | psp_invoice_draft_lines_not_null | NOT NULL draft_lines
+psp_invoice | psp_invoice_id_not_null | NOT NULL id
+psp_invoice | psp_invoice_lengths | CHECK ((((length(provider_invoice_id) >= 1) AND (length(provider_invoice_id) <= 255)) AND ((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(number) >= 1) AND (length(number) <= 100)) AND ((length(hosted_url) >= 1) AND (length(hosted_url) <= 2048)) AND ((length(parked_reason) >= 1) AND (length(parked_reason) <= 500))))
+psp_invoice | psp_invoice_lines_array | CHECK (((jsonb_typeof(draft_lines) = 'array'::text) AND (octet_length((draft_lines)::text) <= 262144)))
+psp_invoice | psp_invoice_organisation_id_not_null | NOT NULL organisation_id
+psp_invoice | psp_invoice_outcome_known | CHECK (((outcome IS NULL) OR (outcome = ANY (ARRAY['paid'::text, 'uncollectible'::text, 'void'::text]))))
+psp_invoice | psp_invoice_parked_reason | CHECK (((state = 'parked'::text) = (parked_reason IS NOT NULL)))
+psp_invoice | psp_invoice_pkey | PRIMARY KEY (organisation_id, id)
+psp_invoice | psp_invoice_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_invoice | psp_invoice_provider_invoice_id_not_null | NOT NULL provider_invoice_id
+psp_invoice | psp_invoice_provider_once | UNIQUE (organisation_id, connector_id, provider_invoice_id)
+psp_invoice | psp_invoice_seen_at_not_null | NOT NULL seen_at
+psp_invoice | psp_invoice_state_document | CHECK ((((state = ANY (ARRAY['drafted'::text, 'posted'::text])) = (document_id IS NOT NULL)) OR (state = 'parked'::text)))
+psp_invoice | psp_invoice_state_known | CHECK ((state = ANY (ARRAY['mirrored'::text, 'drafted'::text, 'posted'::text, 'parked'::text])))
+psp_invoice | psp_invoice_state_not_null | NOT NULL state
+psp_invoice | psp_invoice_status_known | CHECK ((status = ANY (ARRAY['draft'::text, 'open'::text, 'paid'::text, 'uncollectible'::text, 'void'::text])))
+psp_invoice | psp_invoice_status_not_null | NOT NULL status
+psp_invoice | psp_invoice_total_not_null | NOT NULL total
+psp_invoice | psp_invoice_version_not_null | NOT NULL version
+psp_invoice | psp_invoice_version_positive | CHECK ((version >= 1))
+psp_invoice | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_payout | psp_payout_amount | CHECK ((amount <> 'NaN'::numeric))
 psp_payout | psp_payout_amount_not_null | NOT NULL amount
 psp_payout | psp_payout_automatic_not_null | NOT NULL automatic
@@ -7205,6 +7543,26 @@ psp_payout | psp_payout_provider_at_not_null | NOT NULL provider_at
 psp_payout | psp_payout_seen_at_not_null | NOT NULL seen_at
 psp_payout | psp_payout_status_not_null | NOT NULL status
 psp_payout | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_subscription | psp_subscription_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric)))
+psp_subscription | psp_subscription_amount_not_null | NOT NULL amount
+psp_subscription | psp_subscription_cancel_at_period_end_not_null | NOT NULL cancel_at_period_end
+psp_subscription | psp_subscription_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_subscription | psp_subscription_connector_id_not_null | NOT NULL connector_id
+psp_subscription | psp_subscription_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_subscription | psp_subscription_currency_not_null | NOT NULL currency
+psp_subscription | psp_subscription_id_not_null | NOT NULL id
+psp_subscription | psp_subscription_interval | CHECK (((interval_unit = ANY (ARRAY['day'::text, 'week'::text, 'month'::text, 'year'::text])) AND ((interval_count >= 1) AND (interval_count <= 3650))))
+psp_subscription | psp_subscription_interval_count_not_null | NOT NULL interval_count
+psp_subscription | psp_subscription_interval_unit_not_null | NOT NULL interval_unit
+psp_subscription | psp_subscription_lengths | CHECK ((((length(provider_subscription_id) >= 1) AND (length(provider_subscription_id) <= 255)) AND ((length(provider_customer_id) >= 1) AND (length(provider_customer_id) <= 255)) AND ((length(status) >= 1) AND (length(status) <= 40))))
+psp_subscription | psp_subscription_organisation_id_not_null | NOT NULL organisation_id
+psp_subscription | psp_subscription_pkey | PRIMARY KEY (organisation_id, id)
+psp_subscription | psp_subscription_provider_customer_id_not_null | NOT NULL provider_customer_id
+psp_subscription | psp_subscription_provider_once | UNIQUE (organisation_id, connector_id, provider_subscription_id)
+psp_subscription | psp_subscription_provider_subscription_id_not_null | NOT NULL provider_subscription_id
+psp_subscription | psp_subscription_seen_at_not_null | NOT NULL seen_at
+psp_subscription | psp_subscription_status_not_null | NOT NULL status
+psp_subscription | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 psp_txn | psp_txn_amounts | CHECK (((gross <> 'NaN'::numeric) AND (fee <> 'NaN'::numeric) AND (net <> 'NaN'::numeric) AND (net = (gross - fee))))
 psp_txn | psp_txn_category_known | CHECK ((category = ANY (ARRAY['charge'::text, 'refund'::text, 'dispute'::text, 'dispute_reversal'::text, 'fee'::text, 'payout'::text, 'other'::text])))
 psp_txn | psp_txn_category_not_null | NOT NULL category
@@ -8240,6 +8598,12 @@ CREATE INDEX inbound_file_message ON fyniq.inbound_file USING btree (organisatio
 CREATE INDEX inbound_message_sender ON fyniq.inbound_message USING btree (organisation_id, sender, address_id) WHERE (status = 'quarantined'::text)
 CREATE INDEX inbound_message_status ON fyniq.inbound_message USING btree (organisation_id, status, received_at)
 CREATE INDEX installation_change_pending ON fyniq.installation_change USING btree (connector) WHERE (status = 'pending'::text)
+CREATE INDEX invoice_dispute_invoice ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, created_at)
+CREATE INDEX invoicenow_contingency_period ON fyniq.invoicenow_contingency USING btree (organisation_id, period_from, period_to)
+CREATE INDEX invoicenow_event_submission ON fyniq.invoicenow_event USING btree (organisation_id, submission_id, at)
+CREATE INDEX invoicenow_inbound_sender_number ON fyniq.invoicenow_inbound USING btree (organisation_id, sender, number)
+CREATE INDEX invoicenow_submission_status ON fyniq.invoicenow_submission USING btree (organisation_id, status, created_at)
+CREATE INDEX invoicenow_submission_uuid ON fyniq.invoicenow_submission USING btree (organisation_id, document_uuid)
 CREATE INDEX ip_rate_window_start ON fyniq.ip_rate_window USING btree (window_start)
 CREATE INDEX join_domain_organisation ON fyniq.join_domain USING btree (claiming_organisation)
 CREATE INDEX journal_entry_period_idx ON fyniq.journal_entry USING btree (organisation_id, period_id)
@@ -8291,6 +8655,7 @@ CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (org
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
 CREATE INDEX people_link_inbox_object ON fyniq.people_link_inbox USING btree (organisation_id, object_type, object_id, object_version)
+CREATE INDEX people_link_replay_link ON fyniq.people_link_replay USING btree (organisation_id, link_id, asked_at)
 CREATE INDEX people_source_latest ON fyniq.people_source USING btree (organisation_id, feature, set_at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
@@ -8298,6 +8663,7 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX person_projection_manager ON fyniq.person_projection USING btree (organisation_id, line_manager_person_id)
+CREATE INDEX portal_link_contact ON fyniq.portal_link USING btree (organisation_id, contact_id, created_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
 CREATE INDEX project_billed_item_invoice_idx ON fyniq.project_billed_item USING btree (organisation_id, invoice_id)
 CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING btree (organisation_id, project_id, kind)
@@ -8308,6 +8674,9 @@ CREATE INDEX psp_account_connector ON fyniq.psp_account USING btree (organisatio
 CREATE INDEX psp_balance_latest ON fyniq.psp_balance USING btree (organisation_id, connector_id, currency, taken_at DESC)
 CREATE INDEX psp_event_object ON fyniq.psp_event USING btree (organisation_id, connector_id, object_kind, object_id)
 CREATE INDEX psp_event_status ON fyniq.psp_event USING btree (organisation_id, status, received_at)
+CREATE INDEX psp_invoice_customer ON fyniq.psp_invoice USING btree (organisation_id, connector_id, provider_customer_id)
+CREATE INDEX psp_invoice_state ON fyniq.psp_invoice USING btree (organisation_id, state)
+CREATE INDEX psp_subscription_customer ON fyniq.psp_subscription USING btree (organisation_id, connector_id, provider_customer_id)
 CREATE INDEX psp_txn_payout ON fyniq.psp_txn USING btree (organisation_id, connector_id, payout_id) WHERE (payout_id IS NOT NULL)
 CREATE INDEX psp_txn_source ON fyniq.psp_txn USING btree (organisation_id, connector_id, source_kind, source_id)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
@@ -8569,6 +8938,16 @@ CREATE UNIQUE INDEX investor_update_pkey ON fyniq.investor_update USING btree (o
 CREATE UNIQUE INDEX investor_update_read_once ON fyniq.investor_update_read USING btree (organisation_id, update_id, user_id)
 CREATE UNIQUE INDEX investor_update_read_pkey ON fyniq.investor_update_read USING btree (organisation_id, id)
 CREATE UNIQUE INDEX invitation_code_pkey ON fyniq.invitation_code USING btree (code_hash, owner)
+CREATE UNIQUE INDEX invoice_dispute_one_open ON fyniq.invoice_dispute USING btree (organisation_id, invoice_id, kind) WHERE (status = 'open'::text)
+CREATE UNIQUE INDEX invoice_dispute_pkey ON fyniq.invoice_dispute USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_contingency_pkey ON fyniq.invoicenow_contingency USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_event_pkey ON fyniq.invoicenow_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_exclusion_live ON fyniq.invoicenow_exclusion USING btree (organisation_id, document_id) WHERE (withdrawn_at IS NULL)
+CREATE UNIQUE INDEX invoicenow_exclusion_pkey ON fyniq.invoicenow_exclusion USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_inbound_message_key ON fyniq.invoicenow_inbound USING btree (organisation_id, message_id)
+CREATE UNIQUE INDEX invoicenow_inbound_pkey ON fyniq.invoicenow_inbound USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_submission_pkey ON fyniq.invoicenow_submission USING btree (organisation_id, id)
+CREATE UNIQUE INDEX invoicenow_submission_version_key ON fyniq.invoicenow_submission USING btree (organisation_id, document_id, version)
 CREATE UNIQUE INDEX ip_rate_window_pkey ON fyniq.ip_rate_window USING btree (client, kind, window_start)
 CREATE UNIQUE INDEX item_code_key ON fyniq.item USING btree (organisation_id, code)
 CREATE UNIQUE INDEX item_pkey ON fyniq.item USING btree (organisation_id, id)
@@ -8698,6 +9077,7 @@ CREATE UNIQUE INDEX people_link_key_id_key ON fyniq.people_link_key USING btree 
 CREATE UNIQUE INDEX people_link_key_pkey ON fyniq.people_link_key USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_link_one_live ON fyniq.people_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
 CREATE UNIQUE INDEX people_link_pkey ON fyniq.people_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_link_replay_pkey ON fyniq.people_link_replay USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_secret_id_key ON fyniq.people_link_secret USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_secret_pkey ON fyniq.people_link_secret USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_source_pkey ON fyniq.people_source USING btree (organisation_id, id)
@@ -8720,6 +9100,8 @@ CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_pkey ON fyniq.portal_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX portal_link_token_pkey ON fyniq.portal_link_token USING btree (token_hash)
 CREATE UNIQUE INDEX practice_organisation_one_each ON fyniq.practice_organisation USING btree (created_by)
 CREATE UNIQUE INDEX practice_organisation_pkey ON fyniq.practice_organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
@@ -8735,14 +9117,23 @@ CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (
 CREATE UNIQUE INDEX psp_account_id_key ON fyniq.psp_account USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_account_pkey ON fyniq.psp_account USING btree (organisation_id, money_account_id)
 CREATE UNIQUE INDEX psp_balance_pkey ON fyniq.psp_balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_charge_invoice_once ON fyniq.psp_charge_invoice USING btree (organisation_id, connector_id, charge_id)
+CREATE UNIQUE INDEX psp_charge_invoice_pkey ON fyniq.psp_charge_invoice USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_customer_pkey ON fyniq.psp_customer USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_customer_provider_once ON fyniq.psp_customer USING btree (organisation_id, connector_id, provider_customer_id)
 CREATE UNIQUE INDEX psp_dispute_credit_once ON fyniq.psp_dispute_credit USING btree (organisation_id, connector_id, dispute_id)
 CREATE UNIQUE INDEX psp_dispute_credit_pkey ON fyniq.psp_dispute_credit USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_dispute_loss_once ON fyniq.psp_dispute_loss USING btree (organisation_id, connector_id, dispute_id)
 CREATE UNIQUE INDEX psp_dispute_loss_pkey ON fyniq.psp_dispute_loss USING btree (organisation_id, id)
 CREATE UNIQUE INDEX psp_event_once ON fyniq.psp_event USING btree (organisation_id, connector_id, event_id)
 CREATE UNIQUE INDEX psp_event_pkey ON fyniq.psp_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_invoice_document_once ON fyniq.psp_invoice USING btree (organisation_id, document_id)
+CREATE UNIQUE INDEX psp_invoice_pkey ON fyniq.psp_invoice USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_invoice_provider_once ON fyniq.psp_invoice USING btree (organisation_id, connector_id, provider_invoice_id)
 CREATE UNIQUE INDEX psp_payout_once ON fyniq.psp_payout USING btree (organisation_id, connector_id, payout_id)
 CREATE UNIQUE INDEX psp_payout_pkey ON fyniq.psp_payout USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_subscription_pkey ON fyniq.psp_subscription USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_subscription_provider_once ON fyniq.psp_subscription USING btree (organisation_id, connector_id, provider_subscription_id)
 CREATE UNIQUE INDEX psp_txn_once ON fyniq.psp_txn USING btree (organisation_id, connector_id, txn_id)
 CREATE UNIQUE INDEX psp_txn_pkey ON fyniq.psp_txn USING btree (organisation_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
@@ -8933,6 +9324,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_transfer', 'transfer_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_ask_key DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_ask_key', 'link_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_key DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_key', 'link_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_link_replay DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_replay', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_source', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
@@ -8943,6 +9335,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledge
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_balance', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_charge_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_charge_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_credit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_credit', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_loss DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_loss', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
@@ -9023,6 +9416,11 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.fx_rate 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.gst_registration DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('gst_registration', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'message_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.investor_update DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('investor_update', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoice_dispute DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoice_dispute', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_contingency DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_contingency', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_exclusion DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_exclusion', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_inbound DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_inbound', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.invoicenow_submission DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('invoicenow_submission', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
@@ -9045,12 +9443,16 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_l
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link_access DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link_access', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.person_projection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_projection', 'person_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.portal_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('portal_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_account', 'money_account_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_customer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_customer', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_payout DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_payout', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_subscription DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_subscription', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_txn DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_txn', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
@@ -9310,6 +9712,18 @@ CREATE TRIGGER investor_update_read_no_truncate BEFORE TRUNCATE ON fyniq.investo
 CREATE TRIGGER invitation_code_guard BEFORE DELETE OR UPDATE ON fyniq.invitation_code FOR EACH ROW EXECUTE FUNCTION invitation_code_guard()
 CREATE TRIGGER invitation_code_no_truncate BEFORE TRUNCATE ON fyniq.invitation_code FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER invitation_code_registered AFTER INSERT ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION invitation_code_registered()
+CREATE TRIGGER invoice_dispute_guard BEFORE DELETE OR UPDATE ON fyniq.invoice_dispute FOR EACH ROW EXECUTE FUNCTION invoice_dispute_guard()
+CREATE TRIGGER invoice_dispute_no_truncate BEFORE TRUNCATE ON fyniq.invoice_dispute FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_contingency_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_contingency FOR EACH ROW EXECUTE FUNCTION invoicenow_contingency_guard()
+CREATE TRIGGER invoicenow_contingency_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_contingency FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_event_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_event FOR EACH ROW EXECUTE FUNCTION invoicenow_event_guard()
+CREATE TRIGGER invoicenow_event_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_exclusion_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_exclusion FOR EACH ROW EXECUTE FUNCTION invoicenow_exclusion_guard()
+CREATE TRIGGER invoicenow_exclusion_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_exclusion FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_inbound_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_inbound FOR EACH ROW EXECUTE FUNCTION invoicenow_inbound_guard()
+CREATE TRIGGER invoicenow_inbound_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_inbound FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER invoicenow_submission_guard BEFORE DELETE OR UPDATE ON fyniq.invoicenow_submission FOR EACH ROW EXECUTE FUNCTION invoicenow_submission_guard()
+CREATE TRIGGER invoicenow_submission_no_truncate BEFORE TRUNCATE ON fyniq.invoicenow_submission FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER journal_entry_asset_depreciation BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = 'asset_depreciation'::text) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_asset_depreciation()
 CREATE TRIGGER journal_entry_assign BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW EXECUTE FUNCTION journal_entry_assign()
 CREATE TRIGGER journal_entry_bank_release BEFORE INSERT ON fyniq.journal_entry FOR EACH ROW WHEN (((new.source_type = ANY (ARRAY['bank_out_release'::text, 'bank_in_release'::text])) AND (new.reverses_entry_id IS NULL))) EXECUTE FUNCTION journal_entry_bank_release()
@@ -9457,6 +9871,8 @@ CREATE TRIGGER people_link_inbox_no_truncate BEFORE TRUNCATE ON fyniq.people_lin
 CREATE TRIGGER people_link_key_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_key FOR EACH ROW EXECUTE FUNCTION people_link_key_guard()
 CREATE TRIGGER people_link_key_no_truncate BEFORE TRUNCATE ON fyniq.people_link_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER people_link_no_truncate BEFORE TRUNCATE ON fyniq.people_link FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_link_replay_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_replay FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER people_link_replay_no_truncate BEFORE TRUNCATE ON fyniq.people_link_replay FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER people_link_secret_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_secret FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER people_link_secret_no_truncate BEFORE TRUNCATE ON fyniq.people_link_secret FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER people_source_guard BEFORE DELETE OR UPDATE ON fyniq.people_source FOR EACH ROW EXECUTE FUNCTION notification_append_only()
@@ -9482,6 +9898,10 @@ CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pol
 CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER portal_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.portal_link FOR EACH ROW EXECUTE FUNCTION portal_link_guard()
+CREATE TRIGGER portal_link_no_truncate BEFORE TRUNCATE ON fyniq.portal_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER portal_link_token_guard BEFORE DELETE OR UPDATE ON fyniq.portal_link_token FOR EACH ROW EXECUTE FUNCTION portal_link_token_guard()
+CREATE TRIGGER portal_link_token_no_truncate BEFORE TRUNCATE ON fyniq.portal_link_token FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
 CREATE TRIGGER project_billing_follows_invoice AFTER UPDATE OF status ON fyniq.document FOR EACH ROW WHEN (((new.type = 'invoice'::text) AND (old.status IS DISTINCT FROM new.status) AND (new.status = ANY (ARRAY['posted'::text, 'reversed'::text])))) EXECUTE FUNCTION project_billing_follows_invoice()
 CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
@@ -9490,14 +9910,22 @@ CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyni
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
 CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_charge_invoice_guard BEFORE DELETE OR UPDATE ON fyniq.psp_charge_invoice FOR EACH ROW EXECUTE FUNCTION psp_charge_invoice_guard()
+CREATE TRIGGER psp_charge_invoice_no_truncate BEFORE TRUNCATE ON fyniq.psp_charge_invoice FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_customer_no_truncate BEFORE TRUNCATE ON fyniq.psp_customer FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_credit_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_credit FOR EACH ROW EXECUTE FUNCTION psp_dispute_credit_guard()
 CREATE TRIGGER psp_dispute_credit_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_credit FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_dispute_loss_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_loss FOR EACH ROW EXECUTE FUNCTION psp_dispute_loss_guard()
 CREATE TRIGGER psp_dispute_loss_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_loss FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_event_guard BEFORE DELETE OR UPDATE ON fyniq.psp_event FOR EACH ROW EXECUTE FUNCTION psp_event_guard()
 CREATE TRIGGER psp_event_no_truncate BEFORE TRUNCATE ON fyniq.psp_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_invoice_no_truncate BEFORE TRUNCATE ON fyniq.psp_invoice FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_customer FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_invoice FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
+CREATE TRIGGER psp_mirror_guard BEFORE DELETE OR UPDATE ON fyniq.psp_subscription FOR EACH ROW EXECUTE FUNCTION psp_mirror_guard()
 CREATE TRIGGER psp_payout_guard BEFORE DELETE OR UPDATE ON fyniq.psp_payout FOR EACH ROW EXECUTE FUNCTION psp_payout_guard()
 CREATE TRIGGER psp_payout_no_truncate BEFORE TRUNCATE ON fyniq.psp_payout FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_subscription_no_truncate BEFORE TRUNCATE ON fyniq.psp_subscription FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER psp_txn_guard BEFORE DELETE OR UPDATE ON fyniq.psp_txn FOR EACH ROW EXECUTE FUNCTION psp_txn_guard()
 CREATE TRIGGER psp_txn_no_truncate BEFORE TRUNCATE ON fyniq.psp_txn FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
@@ -9702,6 +10130,12 @@ inbound_file | tenant_isolation | * | (organisation_id = current_org()) | (organ
 inbound_message | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 investor_update_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoice_dispute | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_contingency | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_exclusion | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_inbound | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+invoicenow_submission | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9768,6 +10202,7 @@ people_link_access | tenant_isolation | * | (organisation_id = current_org()) | 
 people_link_ask_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_inbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_link_replay | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_link_secret | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 people_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9781,6 +10216,7 @@ person_projection | tenant_isolation | * | (organisation_id = current_org()) | (
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+portal_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_billed_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9788,10 +10224,14 @@ project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_charge_invoice | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_customer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_credit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_dispute_loss | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_invoice | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_payout | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_subscription | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 psp_txn | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9967,6 +10407,12 @@ installation_connector_secret | disabled | not forced
 investor_update | enabled | forced
 investor_update_read | enabled | forced
 invitation_code | disabled | not forced
+invoice_dispute | enabled | forced
+invoicenow_contingency | enabled | forced
+invoicenow_event | enabled | forced
+invoicenow_exclusion | enabled | forced
+invoicenow_inbound | enabled | forced
+invoicenow_submission | enabled | forced
 ip_rate_window | disabled | not forced
 item | enabled | forced
 item_price | enabled | forced
@@ -10040,6 +10486,7 @@ people_link_access | enabled | forced
 people_link_ask_key | enabled | forced
 people_link_inbox | enabled | forced
 people_link_key | enabled | forced
+people_link_replay | enabled | forced
 people_link_secret | enabled | forced
 people_source | enabled | forced
 period | enabled | forced
@@ -10053,6 +10500,8 @@ person_projection | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
+portal_link | enabled | forced
+portal_link_token | disabled | not forced
 practice_organisation | disabled | not forced
 private_endpoint | disabled | not forced
 project | enabled | forced
@@ -10062,10 +10511,14 @@ project_milestone | enabled | forced
 project_task | enabled | forced
 psp_account | enabled | forced
 psp_balance | enabled | forced
+psp_charge_invoice | enabled | forced
+psp_customer | enabled | forced
 psp_dispute_credit | enabled | forced
 psp_dispute_loss | enabled | forced
 psp_event | enabled | forced
+psp_invoice | enabled | forced
 psp_payout | enabled | forced
+psp_subscription | enabled | forced
 psp_txn | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
@@ -10248,6 +10701,7 @@ corporate_register_guard() → trigger | security invoker | v | search_path=pg_c
 count_ip_request(p_client text, p_kind text, p_window timestamp with time zone) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8575f61e43912f7761275d614681a8b1
 count_super_admins() → integer | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c51240844e3a2e9633d6e96de4827bd0
 create_practice_organisation(p_user uuid, p_source uuid, p_name text, p_currency text, p_at timestamp with time zone, OUT organisation_id uuid, OUT membership_id uuid, OUT assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3bd3533cac5bdd714b774c72f3b3018b
+create_provider_invoice_draft(p_connector uuid, p_provider_invoice text) → TABLE(document_id uuid, contact_id uuid, contact_made boolean) | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a3c9b9fb23ce7e6bb4814cca73f1b62a
 create_scheduled_bill_draft(p_recurring_bill uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 034ac02e0e0c8386e09e6dfb54a6f8fa
 create_scheduled_draft(p_recurring_journal uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b23a8c0aa6277cadb7bd3f6aae5f5661
 create_scheduled_invoice_draft(p_recurring_invoice uuid, p_on date) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 2965fc4edb05408641ee8a47909a2109
@@ -10257,7 +10711,7 @@ dashboard_layout_guard() → trigger | security invoker | v | search_path=pg_cat
 data_inventory_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1dc593065673ca2a9bed7ad2e347d0a5
 decide_installation_change(p_by uuid, p_id uuid, p_hash bytea, p_approve boolean, p_mfa_at timestamp with time zone, p_reason text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 338fe991475e9f427093a25bef17d1d0
 decide_join_request(p_by uuid, p_id uuid, p_approve boolean, p_now timestamp with time zone, OUT user_id uuid, OUT membership_id uuid, OUT role_assignment_id uuid) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7989699e7aeef23a35e52dbc46bc826a
-dept_scope() → uuid[] | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | c4b2cb171b6c9d9b53988f480eec737e
+dept_scope() → uuid[] | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 6058137c5720297a38eca1bb6480e37c
 destroyed_installation_connector_secret(p_ref text, p_at timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 87e77fee8faaf36987cfc16b94dc2d7c
 dimension_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 6222e01e146f6948cd2702cac2428d63
 dimension_set_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 646ba8ce3dffe9bcedfa0157c5b0a85f
@@ -10329,6 +10783,12 @@ investor_update_read_guard() → trigger | security invoker | v | search_path=pg
 invitation_code_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 25e66eda35f692c46e109756f9386ae1
 invitation_code_registered() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 493cbaf52e2913b053d4354c418ba404
 invite_super_admin(p_by uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a982d2e3cd5f5da8d5c1851b7fe08001
+invoice_dispute_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 13d9c2a472364d03e695d11beffcfe55
+invoicenow_contingency_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 138e294d1c10458554a35a3f3320cea9
+invoicenow_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d4982773ad655f19dec2dba77244a923
+invoicenow_exclusion_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7e3675d3ea2ff6349b15e6f7dfe65e1e
+invoicenow_inbound_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 027ede3d19c4c30aa956a6cd6bbb32c9
+invoicenow_submission_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 00d571f76ae28e8200f30472da101241
 is_owner(p_org uuid, p_membership uuid, p_now timestamp with time zone) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 97b45f40b83ee4da8c083c1ed8bd9b3b
 is_super_admin(p_user uuid) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 74b765a558e7f7fc6d37b5f2a3be3c11
 issue_deployment_recovery(p_user uuid, p_hash bytea, p_operators text, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 1c6a399b76934acce5ae3a3dc9d8d7e8
@@ -10429,7 +10889,7 @@ pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
-people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ab986c64b5fc11ef7075491920dff708
+people_link_access_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | cb7c1862cac32e3b301d2e2b8eb18df4
 people_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ec37301f4fcf16ab03af14e16925399
 people_link_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 894d3d12ea6de23ec5bbc93b954b6124
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
@@ -10441,6 +10901,9 @@ person_projection_guard() → trigger | security invoker | v | search_path=pg_ca
 platform_heartbeats() → TABLE(name text, last_beat timestamp with time zone, detail text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c82582dd84a7a5a8e815aad623e9d8d7
 platform_outbox() → TABLE(pending bigint, dead bigint, oldest_pending timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02c3afdff78c9f7db854d1d98424b830
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
+portal_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81698cd796e371f685b22afce9a9767c
+portal_link_route(p_hash text) → TABLE(organisation_id uuid, link_id uuid) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b556b67237554010d64f299c8e30816
+portal_link_token_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3b184ecc8346504ec789d07b1f4020b1
 private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
@@ -10449,10 +10912,13 @@ project_billing_follows_invoice() → trigger | security definer | v | search_pa
 project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
+projection_department(p_user uuid) → uuid | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 9c59f4f8ec0087af12988bbdc1e6b189
 psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
+psp_charge_invoice_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b529b7a5d6214720ee0b83bca89111bd
 psp_dispute_credit_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 3ff52623e3d9977b1183a6afe837b287
 psp_dispute_loss_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0624664dfa2f00777a7eee9eb2377308
 psp_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 795487512cdc896caeba25ce58b8402a
+psp_mirror_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10fabdb01dd15110e497312ab9c878cd
 psp_payout_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c1040a9a3046d2137cdb49737f962685
 psp_txn_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6b484102bd0270d4a6b98d0ea3be9f7
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37

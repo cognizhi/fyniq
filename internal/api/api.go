@@ -51,16 +51,20 @@ import (
 // Deps are what the API needs.
 type Deps struct {
 	// Holds asks Nemura whether a person is held at the release of a payment (FR-PPL-13); nil asks no one.
-	Holds        HoldAuthority
+	Holds HoldAuthority
+	// LinkLog reads Nemura's event log by identity for the link's health and its repair; nil reads nothing (FR-PPL-08).
+	LinkLog      LinkLog
 	Store        storage.Store
 	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
 	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
 	KBCompiler   bool                 // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
 	Clock        ports.Clock
-	Auth         authn.Authenticator
-	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
-	Log          *slog.Logger
-	Version      string // the platform version: the document's info.version
+	// AccessPoint is the InvoiceNow access point (FR-AR-12); nil when none is connected: sending answers "not available here".
+	AccessPoint ports.AccessPoint
+	Auth        authn.Authenticator
+	SignIn      ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
+	Log         *slog.Logger
+	Version     string // the platform version: the document's info.version
 	// Build is the build's commit, time and flavour (REL-05): the platform version's endpoint answers them, and every
 	// exported report carries the commit beside the version.
 	Build PlatformBuild
@@ -451,6 +455,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCorporateReconciliation(a)
 	registerAcra(a)
 	registerGSTMonitor(a)
+	registerInvoiceNow(a)
+	registerTaxFilings(a)
 	registerCalendar(a)
 	registerForecasts(a)
 	registerBudgets(a)
@@ -533,6 +539,9 @@ func New(mux humago.Mux, d Deps) *API {
 	registerInvoices(a)
 	registerInvoiceDocuments(a)
 	registerPaymentLinks(a)
+	registerPortal(a)
+	registerInvoiceDisputes(a)
+	registerPaymentProviderInvoices(a)
 	registerDocumentSends(a)
 	registerSalesReminders(a)
 	registerStatements(a)
@@ -589,6 +598,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSession(a)
 	registerIntegrationClients(a)
 	registerPeopleLink(a)
+	registerPeopleLinkHealth(a)
 	registerPayrollRuns(a)
 	registerPayrollPayments(a)
 	registerSalaryBatches(a)
@@ -895,6 +905,11 @@ func (a *API) approverScope(ctx context.Context, p authn.Principal) authn.Depart
 			return err
 		}
 		out = approverScopeOf(assigned)
+		dept, err := u.PeopleLinks().ProjectionDepartment(ctx, p.UserID) // the projection only narrows (design D23)
+		if err != nil {
+			return err
+		}
+		out = narrowedByProjection(out, dept)
 		return nil
 	})
 	if err != nil {
@@ -927,6 +942,19 @@ func approverScopeOf(assigned []storage.RoleAssignment) authn.DepartmentScope {
 		return authn.DepartmentScope{}
 	}
 	return out
+}
+
+// narrowedByProjection applies the people projection's word on an Approver's department scope (design D23), and only ever narrows: a scope that has values, for a user mapped to a person of the active link whose
+// department is one of them, becomes that department, and for one whose department is not among them, nothing. No scope, no department and no mapping (the zero department) leave it as it is; it never adds a
+// department. The database's dept_scope() does the same.
+func narrowedByProjection(s authn.DepartmentScope, dept uuid.UUID) authn.DepartmentScope {
+	if dept == uuid.Nil || !s.Narrowed || len(s.Values) == 0 {
+		return s
+	}
+	if slices.Contains(s.Values, dept) {
+		return authn.DepartmentScope{Narrowed: true, Values: []uuid.UUID{dept}}
+	}
+	return authn.DepartmentScope{Narrowed: true}
 }
 
 func requestID(ctx context.Context) string {

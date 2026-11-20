@@ -247,10 +247,15 @@ func TestEventsAreKnownHandledOrUnknown(t *testing.T) {
 	if err != nil || e.ID != "evt_1" || !e.Known || !e.Handled || e.Kind != ports.ProviderPayout || e.ObjectID != "po_1" || e.APIVersion != "2025-09-30.clover" {
 		t.Fatalf("%+v, %v", e, err)
 	}
-	// Model B's invoice events are known and post nothing until the mirror is built.
-	inv, _ := ParseEvent(nil, []byte(`{"id":"evt_9","type":"invoice.paid","data":{"object":{"id":"in_1"}}}`))
-	if !inv.Known || inv.Handled {
-		t.Errorf("invoice.paid: %+v", inv)
+	// Model B's invoice, customer and subscription events name the object the mirror fetches (FR-PSP-03); a credit note's is known and mirrored by no one yet.
+	for typ, kind := range map[string]ports.ProviderKind{"invoice.paid": ports.ProviderInvoice, "customer.updated": ports.ProviderCustomer, "customer.subscription.updated": ports.ProviderSubscription} {
+		e, _ := ParseEvent(nil, []byte(`{"id":"evt_9","type":"`+typ+`","data":{"object":{"id":"x_1"}}}`))
+		if !e.Known || !e.Handled || e.Kind != kind || e.ObjectID != "x_1" {
+			t.Errorf("%s: %+v", typ, e)
+		}
+	}
+	if cn, _ := ParseEvent(nil, []byte(`{"id":"evt_8","type":"credit_note.created","data":{"object":{"id":"cn_1"}}}`)); !cn.Known || cn.Handled {
+		t.Errorf("credit_note.created: %+v", cn)
 	}
 	info, _ := ParseEvent(nil, []byte(`{"id":"evt_2","type":"payment_intent.succeeded","data":{"object":{"id":"pi_1"}}}`))
 	if !info.Known || info.Handled {
@@ -319,5 +324,55 @@ func TestThePartnerContractNamesEveryOperationTheAdapterCalls(t *testing.T) {
 				t.Errorf("%s has a %s operation: the connector is read-only", p, method)
 			}
 		}
+	}
+}
+
+// A subscription invoice is mirrored as Stripe reports it (FR-PSP-03, FR-PSP-07): the customer, the subscription, the collection state, and each line with its
+// amount as an exact decimal and its service period; tax is counted in the total and not in a line. An invoice with a discount, a credit line, more
+// lines than a page, or lines and tax that do not add up is mirrored with why it is unsupported, so a person decides it. req: FR-PSP-03
+func TestAnInvoiceIsMirroredWithItsLinesPeriodsAndCollectionState(t *testing.T) {
+	raw, err := os.ReadFile("testdata/invoice_subscription.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc, err := decode(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o, err := object(ports.ProviderInvoice, doc, raw)
+	if err != nil || o.Invoice == nil {
+		t.Fatalf("%v %v", o, err)
+	}
+	i := o.Invoice
+	if o.Currency != "SGD" || o.Amount != "109.00" || i.Total != "109.00" || i.AmountPaid != "109.00" || i.CustomerID != "cus_NeZw" || i.CustomerName != "Lumen Health Pte Ltd" ||
+		i.SubscriptionID != "sub_1" || i.Number != "ACME-0001" || i.Status != "paid" || i.AttemptCount != 1 || i.NextAttempt != nil || i.Finalized == nil || i.Unsupported != "" {
+		t.Fatalf("the invoice: %+v", i)
+	}
+	if len(i.Lines) != 1 || i.Lines[0].Amount != "100.00" || i.Lines[0].PeriodStart.Format("2006-01-02") != "2026-11-01" || i.Lines[0].PeriodEnd.Format("2006-01-02") != "2026-12-01" {
+		t.Errorf("the lines: %+v", i.Lines)
+	}
+	for name, change := range map[string]func(string) string{
+		"a discount": func(s string) string {
+			return strings.Replace(s, `"total_discount_amounts":[]`, `"total_discount_amounts":[{"amount":100}]`, 1)
+		},
+		"a credit line":                    func(s string) string { return strings.Replace(s, `"amount":10000`, `"amount":-10000`, 1) },
+		"more lines than one page":         func(s string) string { return strings.Replace(s, `"has_more":false`, `"has_more":true`, 1) },
+		"lines and tax that do not add up": func(s string) string { return strings.Replace(s, `"total":10900`, `"total":11000`, 1) },
+	} {
+		d, _ := decode([]byte(change(string(raw))))
+		x, err := object(ports.ProviderInvoice, d, raw)
+		if err != nil || x.Invoice == nil || !strings.Contains(x.Invoice.Unsupported, name[strings.Index(name, " ")+1:]) {
+			t.Errorf("%s: %+v, %v", name, x.Invoice, err)
+		}
+	}
+	sub := `{"id":"sub_1","customer":"cus_NeZw","status":"active","currency":"sgd","cancel_at_period_end":false,"items":{"data":[
+	  {"quantity":2,"price":{"unit_amount":5000,"recurring":{"interval":"month","interval_count":1}},"current_period_start":1793491200,"current_period_end":1796083200},
+	  {"quantity":1,"price":{"unit_amount":120000,"recurring":{"interval":"year","interval_count":1}}},
+	  {"quantity":1,"price":{"unit_amount":null,"recurring":{"interval":"month","interval_count":1}}}]}}`
+	sd, _ := decode([]byte(sub))
+	so, err := object(ports.ProviderSubscription, sd, []byte(sub))
+	if err != nil || so.Subscription == nil || so.Subscription.Amount != "100.00" || so.Subscription.IntervalUnit != "month" || so.Subscription.Status != "active" ||
+		so.Subscription.PeriodEnd == nil {
+		t.Errorf("the subscription: %+v, %v", so.Subscription, err)
 	}
 }

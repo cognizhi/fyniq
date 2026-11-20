@@ -231,6 +231,20 @@ func (s Invoices) Check(ctx context.Context, org, id uuid.UUID, d *invoice.Draft
 // the document's change of status, in one transaction. An invoice the rules refuse posts nothing and answers every
 // problem.
 func (s Invoices) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, error) {
+	return s.post(ctx, org, id, nil)
+}
+
+// CodeProviderTotal is a provider's invoice whose AR document's total is not the provider's to the cent: it is parked, never posted
+// (FR-PSP-07).
+const CodeProviderTotal = "INVOICE-70"
+
+// PostProvided issues the draft made of a billing provider's invoice only when its total, GST included, is the provider's total to the cent:
+// the invoice rules and the provider must agree (FR-PSP-07), or nothing posts and the caller parks it.
+func (s Invoices) PostProvided(ctx context.Context, org, id uuid.UUID, providerTotal money.Money) (storage.Entry, error) {
+	return s.post(ctx, org, id, &providerTotal)
+}
+
+func (s Invoices) post(ctx context.Context, org, id uuid.UUID, providerTotal *money.Money) (storage.Entry, error) {
 	var out storage.Entry
 	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		doc, err := u.Documents().Lock(ctx, id) // ENG-47 step 1
@@ -261,6 +275,11 @@ func (s Invoices) Post(ctx context.Context, org, id uuid.UUID) (storage.Entry, e
 		}
 		if len(c.Problems) > 0 {
 			return c.Problems
+		}
+		if providerTotal != nil && !c.Prepared.Totals.Total.Equal(*providerTotal) {
+			return &invoice.Error{Code: CodeProviderTotal, Message: fmt.Sprintf("the invoice's total is %s %s and the provider's is %s %s",
+				c.Prepared.Totals.Total.String(), c.Prepared.Totals.Total.Currency().Code, providerTotal.String(), providerTotal.Currency().Code),
+				Fix: "A person looks at the provider's invoice: its GST or rounding differs from the invoice rules"}
 		}
 		if out, err = u.Ledger().Append(ctx, toStorage(c.Entry, nil)); err != nil {
 			return err

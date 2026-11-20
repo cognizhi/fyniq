@@ -46,6 +46,8 @@ type runWorld struct {
 	approverUser        uuid.UUID
 	code                map[uuid.UUID]string
 	accountant, payroll string
+	desk, phone         *browser // Mei Ling and Wei Jie, signed in through the sessions' server
+	origin, rpHost      string   // the sessions' server as the browsers see it, and its relying party's host
 }
 
 // payrollWorld is an organisation with its chart, periods, departments and mapping, linked to a Nemura organisation, whose approver (Wei Jie) has a
@@ -89,7 +91,7 @@ func payrollWorld(t *testing.T) *runWorld {
 		t.Fatal("member not found")
 		return peoplelink.Party{}, uuid.Nil
 	}
-	w := &runWorld{readonly: s.readonly, e: e, org: org, nemura: uuid.NewString(), code: map[uuid.UUID]string{}, pass: pass}
+	w := &runWorld{readonly: s.readonly, e: e, org: org, nemura: uuid.NewString(), code: map[uuid.UUID]string{}, pass: pass, desk: desk, phone: phone, origin: origin, rpHost: host.Hostname()}
 	var owner uuid.UUID
 	w.approver, w.approverUser = party(phone)
 	w.preparer, owner = party(desk)

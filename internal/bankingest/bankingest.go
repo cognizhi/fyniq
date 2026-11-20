@@ -20,6 +20,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
+	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -186,6 +187,9 @@ func (g Importer) Work() outbox.Work {
 				return err
 			}
 			err = g.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				if src.src.ReportFormat == storage.FormatMT942 { // the intraday report: pending signals, never statement lines (FR-BNK-16)
+					return Intraday(ctx, u, src.account, &m.ID, m.ReceivedAt, data)
+				}
 				_, err := banking.Import(ctx, u, banking.ImportRequest{Format: src.src.ReportFormat, Data: data, Account: &src.account.ID,
 					Mapping: src.mapping, Source: storage.MoneySourceEmail, FileRef: f.BlobKey, At: g.Clock.Now()})
 				return err
@@ -249,4 +253,51 @@ func (g Importer) read(ctx context.Context, key string) ([]byte, error) {
 	}
 	defer r.Close()
 	return io.ReadAll(io.LimitReader(r, int64(bankfile.DefaultLimits.MaxBytes)+1))
+}
+
+// Intraday records the credits of an MT942 report as pending signals on src's account, in u: money in, with the payer the line names and the
+// bank's reference. A signal the account has already (the same bank reference: the report is sent again through the day) is not recorded
+// twice, and the debits are left: an incoming-funds signal is only for money that came in. The daily MT940 closes them (FR-BNK-16).
+func Intraday(ctx context.Context, u storage.UnitOfWork, account storage.MoneyAccount, message *uuid.UUID, receivedAt time.Time, data []byte) error {
+	sts, err := bankfile.Parse(bankfile.FormatMT942, data, nil, money.Currency{}, bankfile.DefaultLimits)
+	if err != nil {
+		var be *bankfile.Error
+		if errors.As(err, &be) {
+			return &banking.Error{Code: banking.CodeFile, Message: be.Error(), Fix: be.Fix, Err: be}
+		}
+		return err
+	}
+	have, err := u.BankMatching().Signals(ctx)
+	if err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, s := range have {
+		if s.MoneyAccountID == account.ID {
+			seen[s.Reference] = true
+		}
+	}
+	for _, st := range sts {
+		for _, l := range st.Lines {
+			if l.Amount.Sign() <= 0 {
+				continue
+			}
+			payer := l.Counterparty
+			if payer == "" {
+				payer = l.Description
+			}
+			if payer == "" {
+				payer = "Unnamed payer"
+			}
+			a := banking.Alert{Amount: l.Amount.String(), Currency: st.Currency.Code, Payer: payer, Reference: l.Reference}
+			if l.Reference != "" && seen[l.Reference] {
+				continue
+			}
+			if _, err := banking.RecordAlert(ctx, u, account, a, message, receivedAt); err != nil {
+				return err
+			}
+			seen[l.Reference] = true
+		}
+	}
+	return nil
 }

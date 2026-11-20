@@ -1,0 +1,7 @@
+{"id":"in_1Q9","object":"invoice","currency":"sgd","customer":"cus_NeZw","customer_name":"Lumen Health Pte Ltd","customer_email":"ap@lumen.example","number":"ACME-0001",
+ "status":"paid","hosted_invoice_url":"https://invoice.stripe.com/i/acct/test_1","attempt_count":1,"next_payment_attempt":null,"due_date":null,
+ "total":10900,"amount_paid":10900,"total_discount_amounts":[],"total_taxes":[{"amount":900}],
+ "status_transitions":{"finalized_at":1796000000,"paid_at":1796000100},
+ "parent":{"type":"subscription_details","subscription_details":{"subscription":"sub_1"}},
+ "lines":{"object":"list","has_more":false,"data":[
+  {"id":"il_1","description":"Analytics, Nov 2026","amount":10000,"period":{"start":1793491200,"end":1796083200},"discount_amounts":[]}]}}

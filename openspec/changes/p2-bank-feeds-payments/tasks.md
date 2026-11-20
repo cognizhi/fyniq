@@ -15,7 +15,7 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 - [x] 1.3 The worker's `payment_request` handler (fetch by GET, mirror the payments) and the auto-reconcile exact case.
   - Tests: a completed request reconciles once; a replay, a second payment, a wrong amount and a void invoice post
     nothing and park with a warning; a locked period leaves the line. `// req: FR-PSP-02`
-- [x] 1.4 The invoice page's payment-link card, the link on the sent email and the PDF, help keys, guide page, kb page, design fragment.
+- [x] 1.4 The invoice page's payment-link card, help keys, guide page, kb page, design fragment. **Left:** the link on the sent email and the PDF, and a setting that adds a link when an invoice is sent.
 - [x] 1.5 Threat model update, PRD rev 0.510, spec scenarios, stamp.
 - Built (rev 0.511): `ports.PaymentLinks`, `internal/adapters/hitpay/links.go` (a client that refuses any method or path but the one POST), the capability `payment-link` (`connector.PaymentLink`, `Runtime.PaymentLinks`, `connector.LinkRequest`), migration 001050, `internal/domain/paymentlink`, `internal/api/payment_links.go`, the worker's mirror (`psp.recordLinkPayment`: the charge names its payment request through `payment_request_id`) and `banking.linkPlan` (`LeftLink` otherwise), `PaymentLinkCard` on the invoice page, the guide section and kb page `sales.invoices`, the design fragment, threat model T15 to T18, the partner contract's POST. Decisions recorded in design.md D1 to D3. No posting rule changed, so no oracle half. Needs-human-review: the new connector write and the worker's grant on `payment_link_payment`.
 - **Left, `[live-verify]`:** HitPay's field for a payment's charge ID, the sandbox run, a dynamic PayNow QR image per invoice
@@ -23,8 +23,9 @@ Decisions are in design.md. Cloud and real-account checks are tagged `[live-veri
 
 ## 2. Host-to-host files (FR-BNK-17, FR-BNK-15)
 
-- [ ] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source.
-- [ ] 2.2 An MT942 reader (`internal/bankfile`) whose lines are signals; closing a signal by the MT940 line.
+- [ ] 2.1 `ports.FileDrop`, the local directory adapter, the sync of drop folders as a bank-data source. **Left** (MT942 reports arrive by the existing email source meanwhile).
+- [x] 2.2 An MT942 reader (`internal/bankfile`) whose lines are signals; closing a signal by the MT940 line.
+  - Built (rev 0.522): `mt942` as a money account's report format (migrations 001074, 001075), `bankfile` reads it (no balances, the floor limit's currency), `bankingest.Intraday` records each credit as a pending signal once per bank reference; the existing signal machinery closes it when its statement line is matched to the invoice, or expires it (`TestAnIncomingFundsAlertSpeedsUpMatching` proves the closing for alerts; an intraday signal is the same record). `TestAnIntradayMT942ReportHasLinesAndNoBalances`, `TestAnIntradayReportMakesSignalsAndNoStatementLines`. Not built as a manual import format: an intraday report arrives as a report on the account's source.
   - Tests: an intraday file creates signals and no statement line; the daily file closes them. `// req: FR-BNK-16`
 - **Left:** the SFTP adapter, PGP and the static egress IP `[live-verify]` (DBS onboarding); DBS RAPID and UOB API Services
   adapters: no public specification, so no code and no cassette `[verify]`.

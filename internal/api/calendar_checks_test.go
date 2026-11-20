@@ -106,6 +106,9 @@ func TestTheCalendarsChecksAndReminders(t *testing.T) {
 	if items := itemsOf(c); len(items) != 1 || items[0]["id"] != "cpf:2026-11-30" || !strings.Contains(items[0]["detail"].(string), "Due on 14 Dec 2026, in 14 day(s)") {
 		t.Errorf("C.2 #15 on 30 Nov: %s", c.Raw)
 	}
+	if c := e.checked("payroll.cpf-due"); c.Body["status"] != "due" || len(itemsOf(c)) != 1 || itemsOf(c)[0]["id"] != "cpf:2026-11-30" {
+		t.Errorf("C.2 #14 on 30 Nov: %s", c.Raw)
+	}
 	if n := remind(porttest.Day(11, 30).Add(time.Hour)); n != 1 {
 		t.Errorf("the reminders on 30 Nov: %d, want November's CPF in 14 days", n)
 	}

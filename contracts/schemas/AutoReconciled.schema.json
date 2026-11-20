@@ -7,7 +7,7 @@
         "format": "int64",
         "type": "integer"
       },
-      "description": "Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused.",
+      "description": "Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused, link_mismatch.",
       "examples": [
         {
           "line_cap": 2,

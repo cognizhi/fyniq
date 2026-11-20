@@ -188,6 +188,17 @@ func (a *API) notifySecondFactor(ctx context.Context, p authn.Principal, name st
 	}
 }
 
+// tellNemuraOfPasskeys tells a linked Nemura what the person's identities may enter now that their passkeys changed. Passkeys belong to the installation's trail, so the change is not in the person's organisation's
+// unit of work: this is its own, after the change (as the notice is); a failure is logged, since the change is done and the link's repair tells Nemura again.
+func (a *API) tellNemuraOfPasskeys(ctx context.Context, p authn.Principal) {
+	if p.Organisation == uuid.Nil {
+		return
+	}
+	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error { return a.tellNemuraAccess(ctx, u, p.UserID) }); err != nil {
+		a.deps.Log.Error("api.nemura.access_after_passkey", "error", err.Error(), "request_id", requestID(ctx))
+	}
+}
+
 // personName is the caller's name as their organisation knows it, for their authenticator's account list; read before
 // the installation's unit of work, since a unit of work holds one organisation.
 func (a *API) personName(ctx context.Context, p authn.Principal) (string, error) {
@@ -368,15 +379,13 @@ func registerPasskeys(a *API) {
 					CredentialID: r.CredentialID, PublicKey: r.PublicKey, SignCount: r.SignCount, AAGUID: r.AAGUID, Transports: r.Transports,
 					BackupEligible: r.BackupEligible, BackupState: r.BackupState, Name: label, Now: now})
 				out.Body = passkeyOf(k)
-				if err != nil {
-					return err
-				}
-				return a.tellNemuraAccess(ctx, u, p.UserID) // a linked Nemura learns a passkey is enrolled: what a pay run's approval is signed with
+				return err
 			})
 			if err != nil {
 				return nil, err
 			}
 			a.notifySecondFactor(ctx, p, label, true)
+			a.tellNemuraOfPasskeys(ctx, p) // a linked Nemura learns a passkey is enrolled: what a pay run's approval is signed with
 			return &out, nil
 		})
 
@@ -413,15 +422,13 @@ func registerPasskeys(a *API) {
 						out.Body = passkeyOf(k)
 					}
 				}
-				if err != nil {
-					return err
-				}
-				return a.tellNemuraAccess(ctx, u, p.UserID)
+				return err
 			})
 			if err != nil {
 				return nil, err
 			}
 			a.notifySecondFactor(ctx, p, out.Body.Name, false)
+			a.tellNemuraOfPasskeys(ctx, p) // and that one was revoked
 			return &out, nil
 		})
 

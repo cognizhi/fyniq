@@ -125,7 +125,7 @@ func linkPlan(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, 
 	}
 	p, err := u.PaymentLinks().PaymentByCharge(ctx, a.ConnectorID, line.Reference)
 	if errors.Is(err, ports.ErrNotFound) {
-		return nil, false, nil
+		return providerInvoicePlan(ctx, u, line, amount, a)
 	}
 	if err != nil {
 		return nil, false, err
@@ -155,4 +155,48 @@ func linkPlan(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, 
 	open := b.Open
 	return &Suggestion{Found: FoundPaymentLink, Kind: storage.MatchReceipt, DocumentID: link.InvoiceID, Number: b.Invoice.Number, ContactID: b.Customer,
 		Contact: name, Open: &open}, false, nil
+}
+
+// providerInvoicePlan is the receipt a charge's statement line makes on the AR document of the provider invoice the charge paid (Model B, FR-PSP-07): the
+// line's balance transaction is of a charge the worker recorded as paying a mirrored invoice whose document was issued, in the invoice's currency, and the
+// charge equals what the invoice has open. nil, false when the line is not such a charge; nil, true when it is one that does not settle its invoice exactly.
+func providerInvoicePlan(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, amount money.Money, a storage.PSPAccount) (*Suggestion, bool, error) {
+	txn, err := u.PSP().Txn(ctx, a.ConnectorID, line.Reference)
+	if errors.Is(err, ports.ErrNotFound) || (err == nil && (txn.SourceKind != "charge" || txn.SourceID == "")) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	providerInvoice, err := u.PSPMirror().InvoiceOfCharge(ctx, a.ConnectorID, txn.SourceID)
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	inv, err := u.PSPMirror().Invoice(ctx, a.ConnectorID, providerInvoice)
+	if errors.Is(err, ports.ErrNotFound) || (err == nil && (inv.State != storage.PSPInvoicePosted || inv.DocumentID == nil)) {
+		return nil, true, nil // the invoice is not issued yet: the line waits for it
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	b, err := paymentlink.OpenInvoice(ctx, u, *inv.DocumentID, line.BookingDate.AddDate(0, 0, SuggestWindow))
+	var refused *paymentlink.Error
+	if errors.As(err, &refused) {
+		return nil, true, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	if !b.Open.Equal(amount) || b.Open.Currency().Code != line.Currency {
+		return nil, true, nil
+	}
+	name := ""
+	if c, err := u.Contacts().Get(ctx, b.Customer); err == nil {
+		name = c.LegalName
+	}
+	open := b.Open
+	return &Suggestion{Found: FoundPaymentLink, Kind: storage.MatchReceipt, DocumentID: *inv.DocumentID, Number: b.Invoice.Number, ContactID: b.Customer, Contact: name, Open: &open}, false, nil
 }

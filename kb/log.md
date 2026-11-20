@@ -820,6 +820,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | payroll-records.md, my-pay.md -> kb (part month in working days)
 
+## [2026-11-20] compile | settings.organisation: InvoiceNow settings (p2-invoicenow)
+
 ## [2026-11-20] compile | settings-people.md, nemura/sign-in.md, nemura/payroll-approval.md -> kb (one sign-in: the switch rule, the provider, the passkey reminder and warning)
 
 ## [2026-11-20] compile | sales.invoices: a payment link on an invoice (FR-AR-13, FR-PSP-02)
@@ -827,6 +829,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | ai.proposals: contact change (ct.update_contact) and undo sections
 
 ## [2026-11-20] compile | ai.proposals: recurring journal and budget draft sections
+
+## [2026-11-20] compile | nemura.payroll-approval: the CPF EZPay file (p2-payroll-outputs)
+
+## [2026-11-20] compile | contacts.manage and sales.invoices: the customer portal (FR-AR-14)
 
 ## [2026-11-20] compile | ai.proposals: bank rule section
 
@@ -837,3 +843,25 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | reports.dashboards: the configurable dashboard and spend alerts guide compiled
 
 ## [2026-11-20] compile | ai-proposals: approval quality now says edited and undone approvals, per task type and approver (AI-33)
+
+## [2026-11-20] compile | nemura/sign-in.md -> kb (a Nemura sign-out or removal ends the mapped person's Fyniq sessions)
+
+## [2026-11-20] compile | settings-people.md -> kb (link health and its repair)
+
+## [2026-11-20] compile | settings-people.md -> kb (a repair asked for, not missing; the oldest part of a long log)
+
+## [2026-11-20] compile | sales.invoices: a disputed invoice or a promise to pay (FR-AR-08)
+
+## [2026-11-20] compile | sales.invoices: a disputed invoice or a promise to pay (FR-AR-08)
+
+## [2026-11-20] compile | banking pages: the MT942 intraday report makes signals only (FR-BNK-17)
+
+## [2026-11-20] compile | sales.invoices: the payment link's statuses and the per-line limit (FR-AR-13)
+
+## [2026-11-20] compile | compliance.invoicenow: InvoiceNow page (p2-invoicenow)
+
+## [2026-11-20] compile | compliance.filing-packs, sales.bad-debts: the tax working paper and the bad debt relief queue (p2-tax-filings)
+
+## [2026-11-20] compile | sales.invoices: subscriptions a provider bills (FR-PSP-03, FR-PSP-07)
+
+## [2026-11-20] compile | nemura/fyniq-link.md -> kb (alerts for events stuck for an hour near pay day and for 24 hours)

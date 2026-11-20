@@ -471,6 +471,11 @@ func registerAdvances(a *API) {
 				fields = append(fields, FieldProblem{Code: CodeInvalid, Field: "body.person_id", Message: "is not an ID", Fix: "Send the member's user ID"})
 			}
 			x.PersonID = id
+			if err == nil { // FR-PPL-13: a member Nemura holds for tax clearance is advanced nothing
+				if herr := heldPeople(ctx, u, a.deps.Holds, id); herr != nil {
+					return CashAdvance{}, herr
+				}
+			}
 			if len(fields) > 0 {
 				return CashAdvance{}, invalid(fields)
 			}

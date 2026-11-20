@@ -6,16 +6,20 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/linksend"
+	"github.com/cognizhi/fyniq/internal/passkey/passkeytest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -174,6 +178,15 @@ func TestAnIdentitysAccessIsToldToNemuraWhenARoleOrAPasskeyOrMembershipChanges(t
 	if len(access()) != 0 {
 		t.Fatalf("nothing is queued before something changes: %v", access())
 	}
+	// Only a member mapped to a person of the link crosses (CrossOnlyMappedMembers): an unmapped member's word is not queued, and mapping them queues it.
+	if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error { return e.api.tellNemuraEveryone(ctx, u) }); err != nil || len(access()) != 0 {
+		t.Fatalf("an unmapped member crossed: %v %v", access(), err)
+	}
+	w.mapUser(w.approverUser, "Wei Jie Lim")
+	w.mapUser(mei, "Mei Ling Tan")
+	if len(access()) != 2 {
+		t.Fatalf("mapping two members told Nemura of their two identities: %v", access())
+	}
 	tell := func(user uuid.UUID) {
 		if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error { return e.api.tellNemuraAccess(ctx, u, user) }); err != nil {
 			t.Fatal(err)
@@ -244,5 +257,275 @@ func TestAnIdentitysAccessIsToldToNemuraWhenARoleOrAPasskeyOrMembershipChanges(t
 	}
 	if after := len(access()); after < before || access()[w.approver.Subject].Issuer != w.approver.Issuer {
 		t.Errorf("the link's approval tells Nemura of every member: %d then %d", before, after)
+	}
+}
+
+// Nemura ends sessions here, narrowly (PRD-001 FR-PPL-18; PRD-002 NM-INT-12; owner's decision of 21 Nov 2026: the one scope identity.sessions.write): a signed identity.session.revoked ends the sessions of the user
+// behind the identity when, and only when, that user is mapped to a person of the link; a user nobody mapped and an identity with no user here are left as they are and the answer is the same, so the call tells Nemura
+// nothing of who has an account; a role name, an email, any other field or a reason of a third kind is refused; no membership, role or passkey changes; the link's client without the scope, a person and a client of
+// another kind reach nothing; and the audit trail holds the reason and how many, never the identity.
+// part of FR-PPL-18 (Nemura's half is its own test)
+// asvs: V7.4.1, V8.2.1, V13.2.1, V4.2.1
+func TestNemuraEndsTheSessionsOfAMappedUserAndNoOneElse(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	ctx := context.Background()
+	mei, err := e.store.UserForIdentity(ctx, w.preparer.Issuer, w.preparer.Subject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Wei Jie is mapped to a person of the link; Mei Ling is not.
+	person := uuid.NewString()
+	now := e.clock.Now().UTC().Format(time.RFC3339)
+	raw, _ := json.Marshal(map[string]any{"person_id": person, "display_name": "Wei Jie Lim", "work_email": "weijie@example.com", "status": "active", "deleted": false})
+	pe, err := peoplelink.Sign(w.linkKey, peoplelink.Header{EventID: uuid.NewString(), Type: peoplelink.TypePersonUpserted, SchemaVersion: 1, SourceSystem: "nemura", SourceOrganisation: w.nemura,
+		TargetOrganisation: w.org.String(), Epoch: 1, Sequence: 1, ObjectType: "person", ObjectID: person, ObjectVersion: 1, EffectiveAt: now, RecordedAt: now, SignedAt: now, CorrelationID: uuid.NewString()}, raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pb, _ := json.Marshal(pe)
+	var body map[string]any
+	_ = json.Unmarshal(pb, &body)
+	if r := e.call(http.MethodPost, "/v1/people-link/projection-events", w.tok, body); r.Status != http.StatusOK {
+		t.Fatalf("the person: %d %s", r.Status, r.Raw)
+	}
+	admin := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	if r := e.call(http.MethodPost, "/v1/people-link/people/"+person+"/user", admin, map[string]any{"user_id": wei(w).String()}); r.Status != http.StatusOK {
+		t.Fatalf("mapping: %d %s", r.Status, r.Raw)
+	}
+	revoke := func(who peoplelink.Party, reason string) response {
+		return w.sessionEvent(map[string]any{"issuer": who.Issuer, "subject": who.Subject, "reason": reason}, w.tok)
+	}
+	signedIn := func(b *browser) bool {
+		return b.call(http.MethodGet, "/v1/session", "same-origin", nil).Status == http.StatusOK
+	}
+	if !signedIn(w.phone) || !signedIn(w.desk) {
+		t.Fatal("both people are signed in to begin with")
+	}
+	// An unmapped user, an identity with no user here and a mapped user all get the same answer; only the mapped user's sessions end.
+	for what, who := range map[string]peoplelink.Party{"an unmapped user": w.preparer, "an identity with no user": {Issuer: "https://idp.example.test", Subject: "nobody"}} {
+		if r := revoke(who, "signed_out"); r.Status != http.StatusOK || r.str("outcome") != "applied" {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	if !signedIn(w.desk) || !signedIn(w.phone) {
+		t.Fatal("a session ended for a user nobody mapped, or for an identity with no user")
+	}
+	// Refused: a reason of a third kind, an email, any other field, no identity; none ends anything.
+	for what, b := range map[string]map[string]any{
+		"a third reason": {"issuer": w.approver.Issuer, "subject": w.approver.Subject, "reason": "because"},
+		"an email":       {"issuer": w.approver.Issuer, "subject": w.approver.Subject, "reason": "removed", "email": "weijie@example.com"},
+		"no identity":    {"issuer": "", "subject": "", "reason": "removed"},
+	} {
+		if r := w.sessionEvent(b, w.tok); r.Status != http.StatusUnprocessableEntity && r.Status != http.StatusBadRequest {
+			t.Errorf("%s: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	if !signedIn(w.phone) {
+		t.Fatal("a refused event ended a session")
+	}
+	if r := revoke(w.approver, "removed"); r.Status != http.StatusOK || r.str("outcome") != "applied" {
+		t.Fatalf("the mapped user: %d %s", r.Status, r.Raw)
+	}
+	if signedIn(w.phone) {
+		t.Error("the mapped user is still signed in")
+	}
+	if !signedIn(w.desk) {
+		t.Error("another user was signed out")
+	}
+	// Nothing but sessions ends: the member's roles and passkey stay (a pay run's approval still verifies), and the same event again does nothing.
+	if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		ks, err := u.Passkeys().List(ctx, wei(w), false)
+		if err != nil || len(ks) == 0 {
+			t.Errorf("the mapped user's passkey after the revocation: %d %v", len(ks), err)
+		}
+		all, err := u.Members().List(ctx, e.clock.Now())
+		if err != nil {
+			return err
+		}
+		for _, m := range all {
+			if m.UserID == wei(w) && len(m.Roles) == 0 {
+				t.Error("the mapped user lost their roles")
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// Who may call: the link's client without the scope, a person and an ordinary integration client reach nothing.
+	noScope := e.principal(authn.Principal{Client: "link-without-scope", Class: authn.ClassIntegration, Organisation: w.org, Scoped: true, Link: true, Scopes: slices.DeleteFunc(slices.Clone(apiclient.LinkScopes), func(s string) bool { return s == "identity.sessions.write" })})
+	if r := w.sessionEvent(map[string]any{"issuer": w.approver.Issuer, "subject": w.approver.Subject, "reason": "removed"}, noScope); r.Status != http.StatusForbidden {
+		t.Errorf("the link's client without the scope: %d %s", r.Status, r.Raw)
+	}
+	for who, tok := range map[string]string{"an Owner": admin, "an integration client": e.principal(authn.Principal{Client: "integration", Class: authn.ClassIntegration, Organisation: w.org, Scoped: true, Scopes: []string{"fyniq.write.accounting"}})} {
+		if r := w.sessionEvent(map[string]any{"issuer": w.approver.Issuer, "subject": w.approver.Subject, "reason": "removed"}, tok); r.Status != http.StatusForbidden {
+			t.Errorf("%s: %d %s", who, r.Status, r.Raw)
+		}
+	}
+	// The trail says how many and why, and never whose.
+	var recorded int
+	rows := w.auditBodies(t, "people_link.sessions_ended")
+	for _, b := range rows {
+		recorded++
+		if strings.Contains(b, w.approver.Subject) || strings.Contains(b, w.approver.Issuer) || !strings.Contains(b, "sessions_ended") {
+			t.Errorf("the audit event: %s", b)
+		}
+	}
+	if recorded != 1 {
+		t.Errorf("audit events of the sessions ended: %d", recorded)
+	}
+	_ = mei
+}
+
+// mapUser makes a person of the link and maps the user to them, as a person of the people team does (mapPersonToUser): the identity of a mapped user alone crosses to Nemura (CrossOnlyMappedMembers).
+func (w *runWorld) mapUser(user uuid.UUID, name string) {
+	w.e.t.Helper()
+	person := uuid.NewString()
+	if r := w.nemuraSays(peoplelink.TypePersonUpserted, "person", person, 1, map[string]any{"person_id": person, "display_name": name, "work_email": "x@example.com", "status": "active", "deleted": false}, nil); r.Status != http.StatusOK {
+		w.e.t.Fatalf("the person: %d %s", r.Status, r.Raw)
+	}
+	admin := w.e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	if r := w.e.call(http.MethodPost, "/v1/people-link/people/"+person+"/user", admin, map[string]any{"user_id": user.String()}); r.Status != http.StatusOK {
+		w.e.t.Fatalf("mapping: %d %s", r.Status, r.Raw)
+	}
+}
+
+func (w *runWorld) preparerUser(t *testing.T) uuid.UUID {
+	t.Helper()
+	u, err := w.e.store.UserForIdentity(context.Background(), w.preparer.Issuer, w.preparer.Subject)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u
+}
+
+func wei(w *runWorld) uuid.UUID { return w.approverUser }
+
+// sessionEvent sends an identity.session.revoked from Nemura, signed with the link key, as the token's client.
+func (w *runWorld) sessionEvent(payload map[string]any, tok string) response {
+	w.e.t.Helper()
+	raw, _ := json.Marshal(payload)
+	now := w.e.clock.Now().UTC().Format(time.RFC3339)
+	env, err := peoplelink.Sign(w.linkKey, peoplelink.Header{EventID: uuid.NewString(), Type: peoplelink.TypeSessionRevoked, SchemaVersion: 1, SourceSystem: "nemura", SourceOrganisation: w.nemura,
+		TargetOrganisation: w.org.String(), Epoch: 1, Sequence: 77, ObjectType: "identity", ObjectID: uuid.NewString(), ObjectVersion: 1, EffectiveAt: now, RecordedAt: now, SignedAt: now, CorrelationID: uuid.NewString()}, raw)
+	if err != nil {
+		w.e.t.Fatal(err)
+	}
+	b, _ := json.Marshal(env)
+	var body map[string]any
+	_ = json.Unmarshal(b, &body)
+	return w.e.call(http.MethodPost, "/v1/people-link/session-events", tok, body)
+}
+
+// auditBodies are the audit events of an action in the world's organisation, as stored.
+func (w *runWorld) auditBodies(t *testing.T, action string) []string {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, w.readonly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	tx, err := c.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, "SELECT set_config('app.org_id', $1, true)", w.org.String()); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := tx.Query(ctx, `SELECT body FROM fyniq.audit_event WHERE body LIKE '%' || $1 || '%'`, action)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var b string
+		if err := rows.Scan(&b); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, b)
+	}
+	return out
+}
+
+// An answer of an ended link decides nothing for the link that follows it (design D16, D17): a sequence starts again at 1 with each link, so Nemura's word is kept with its epoch and the newest (epoch, version)
+// wins; an answer of an earlier epoch is ignored when it arrives late and decides no switch and no reminder for the live link.
+// part of FR-PPL-02
+// asvs: V8.2.1, V4.2.1
+func TestAnAnswerOfAnEndedLinkDecidesNothingForTheLinkThatFollowsInFyniq(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	ctx := context.Background()
+	save := func(epoch int, version int64, access bool) bool {
+		t.Helper()
+		var saved bool
+		if err := e.store.Do(ctx, w.org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			saved, err = u.PeopleLinks().SaveAccess(ctx, storage.PeopleAccess{Issuer: w.approver.Issuer, Subject: w.approver.Subject, PeopleAccess: access, PayrollApprover: true, Version: version, Epoch: epoch, ReceivedAt: e.clock.Now()})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	session := func() map[string]any {
+		return e.call(http.MethodGet, "/v1/session", w.person(w.approver, w.approverUser, "zoho", authz.Owner), nil).Body
+	}
+	if !save(1, 700, true) || session()["workspace"] == nil {
+		t.Fatal("the live link's answer shows the switch")
+	}
+	// The link is made again later at epoch 2 (the world's link is epoch 1: what epoch 2 says is what a later link will have said).
+	if !save(2, 1, true) {
+		t.Error("the next link's first answer (version 1) did not replace an old one with version 700")
+	}
+	if session()["workspace"] != nil || session()["nemura_passkey_needed"] != nil {
+		t.Errorf("an answer of another epoch decides the live link's switch: %v", session())
+	}
+	if save(1, 900, true) {
+		t.Error("an answer of the earlier epoch, arriving late, replaced the newer epoch's")
+	}
+	if save(2, 1, false) {
+		t.Error("the same epoch and version again replaced it")
+	}
+}
+
+// A passkey enrolled or revoked through the API reaches a linked Nemura (design D16): the change belongs to the installation's trail, so the word to Nemura is queued in the person's organisation's own unit of work
+// after it, and says whether the person's identity now has a passkey (what a pay run's approval is signed with), by issuer and subject.
+// part of FR-PPL-02
+// asvs: V8.2.1, V13.2.1
+func TestEnrollingOrRevokingAPasskeyIsToldToALinkedNemura(t *testing.T) {
+	w := payrollWorld(t)
+	passkeyOf := func() (seen bool, passkey bool) {
+		for _, q := range w.queued(t) {
+			var p linksend.IdentityAccess
+			if q.Type == linksend.TypeIdentityAccess && json.Unmarshal(q.Payload, &p) == nil && p.Subject == w.preparer.Subject {
+				seen, passkey = true, p.Passkey // the last word about Mei Ling
+			}
+		}
+		return
+	}
+	if seen, _ := passkeyOf(); seen {
+		t.Fatal("nothing is queued about Mei Ling before she is mapped")
+	}
+	w.mapUser(w.preparerUser(t), "Mei Ling Tan")
+	if seen, passkey := passkeyOf(); !seen || passkey {
+		t.Fatalf("mapping Mei Ling told Nemura she has no passkey: %v %v", seen, passkey)
+	}
+	authenticator := passkeytest.New(t, w.rpHost, w.origin)
+	r := w.desk.call(http.MethodPost, "/v1/session/passkeys/challenge", "same-origin", nil)
+	reg := w.desk.call(http.MethodPost, "/v1/session/passkeys", "same-origin", map[string]any{"challenge_id": r.str("challenge_id"), "name": "Desk key",
+		"credential": credential(t, authenticator.Create(passkeytest.Challenge(t, options(t, r))))})
+	if reg.Status != http.StatusCreated {
+		t.Fatalf("enrolling: %d %s", reg.Status, reg.Raw)
+	}
+	if seen, passkey := passkeyOf(); !seen || !passkey {
+		t.Errorf("enrolling a passkey told Nemura: seen %v, passkey %v", seen, passkey)
+	}
+	if del := w.desk.call(http.MethodDelete, "/v1/session/passkeys/"+reg.str("id"), "same-origin", nil); del.Status != http.StatusOK {
+		t.Fatalf("revoking: %d %s", del.Status, del.Raw)
+	}
+	if seen, passkey := passkeyOf(); !seen || passkey {
+		t.Errorf("revoking the passkey told Nemura: seen %v, passkey %v", seen, passkey)
 	}
 }

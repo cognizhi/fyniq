@@ -110,6 +110,7 @@ type PeopleAccess struct {
 	Issuer, Subject               string
 	PeopleAccess, PayrollApprover bool
 	Version                       int64 // the sending event's sequence: a newer one replaces an older
+	Epoch                         int   // the link's epoch it came in: a sequence starts again with each link, so only the live link's epoch counts
 	ReceivedAt                    time.Time
 }
 
@@ -128,6 +129,15 @@ type PeopleLinks interface {
 	Sources(ctx context.Context) ([]PeopleSource, error)
 	// Receive records an event in the inbox: false when its ID is there already, so a repeat does nothing.
 	Receive(ctx context.Context, e InboxEntry) (bool, error)
+	// InboxSequences are the sequence numbers of Nemura's events the inbox holds between two numbers, in order: what a gap is found against (FR-PPL-08, FR-PPL-15).
+	InboxSequences(ctx context.Context, link uuid.UUID, from, to int64) ([]int64, error)
+	// RecordReplay keeps that Fyniq asked Nemura to send a run of sequence numbers again, audited as people_link_replay.asked (the run, never a payload).
+	RecordReplay(ctx context.Context, link uuid.UUID, from, to int64, at time.Time) error
+	// ReplaysSince are the runs Fyniq asked for after a moment: what the link's health calls asked for and not missing.
+	ReplaysSince(ctx context.Context, link uuid.UUID, since time.Time) ([][2]int64, error)
+	// ProjectionDepartment is the department value of the person the user was mapped to while the link is active and the person is not removed, or uuid.Nil: the one word the projection has on an Approver's
+	// department scope, read by the same database function the scope itself reads (design D23).
+	ProjectionDepartment(ctx context.Context, user uuid.UUID) (uuid.UUID, error)
 	// InboxCounts says how many events of each outcome the link received (FR-PPL-08).
 	InboxCounts(ctx context.Context, link uuid.UUID) ([]InboxCount, error)
 	// Person is a person of the projection, locked for the change that follows; the zero Person, not Known, when unknown.

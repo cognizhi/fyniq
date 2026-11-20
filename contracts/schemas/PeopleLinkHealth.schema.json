@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_at": {
+      "description": "When this was worked out.",
+      "examples": [
+        "2026-11-21T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "failing": {
+      "description": "Events Nemura tried and could not deliver: it tries again.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "missing": {
+      "description": "The runs of sequence numbers Nemura says it delivered and Fyniq's inbox never received, and Fyniq has not asked Nemura to send again in the last day: a gap. Ask Nemura to send them again with repairPeopleLink.",
+      "items": {
+        "$ref": "SequenceRange.schema.json"
+      },
+      "type": "array"
+    },
+    "nemura_highest_sequence": {
+      "description": "The highest sequence Nemura has queued for Fyniq (0 when it could not be read).",
+      "examples": [
+        57
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "note": {
+      "description": "Why Nemura's log could not be read, in plain words.",
+      "examples": [
+        "Nemura did not answer: try again in a minute."
+      ],
+      "type": "string"
+    },
+    "reachable": {
+      "description": "True when Nemura's event log was read just now. False with a note when the link is not active, this deployment does not know where Nemura is, the link was made before the log could be read (it is approved again to hold link.sync.read), or Nemura did not answer: the other numbers are then Fyniq's own.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "received_highest_sequence": {
+      "description": "The highest of Nemura's sequence numbers Fyniq's inbox holds.",
+      "examples": [
+        55
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "refused": {
+      "description": "Events Fyniq refused for good, with the code on Nemura's page.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "requested": {
+      "description": "The runs of that kind Fyniq asked Nemura to send again in the last day. Nemura answers with the current state at new sequence numbers, so these numbers never arrive: they are asked for, not missing, and show as missing again after a day.",
+      "items": {
+        "$ref": "SequenceRange.schema.json"
+      },
+      "type": "array"
+    },
+    "state": {
+      "description": "The link's state.",
+      "enum": [
+        "none",
+        "active",
+        "suspended",
+        "unlinking",
+        "unlinked"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "truncated": {
+      "description": "True when Nemura's log is longer than one look reads; the oldest part was left out.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "waiting": {
+      "description": "Events Nemura queued and has not delivered yet: not a gap, they are on their way.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "state",
+    "reachable",
+    "checked_at",
+    "nemura_highest_sequence",
+    "received_highest_sequence",
+    "waiting",
+    "failing",
+    "refused",
+    "missing",
+    "requested"
+  ],
+  "title": "PeopleLinkHealth",
+  "type": "object"
+}

@@ -362,3 +362,30 @@ func FuzzCSV(f *testing.F) {
 func FuzzXLSX(f *testing.F) {
 	fuzzFormat(f, bankfile.FormatXLSX, &xlsxMapping, workbook(f, xlsxRows))
 }
+
+// MT942, the bank's intraday report (FR-BNK-15, FR-BNK-17): the same lines and details as MT940, with no balances; its currency is the
+// floor limit's (:34F:). A report with no currency is refused in words. [verify: the layout is SWIFT's; a redacted DBS IDEAL report to confirm]
+// req: FR-BNK-17
+func TestAnIntradayMT942ReportHasLinesAndNoBalances(t *testing.T) {
+	got, err := bankfile.Parse(bankfile.FormatMT942, fixture(t, "intraday.mt942"), nil, money.Currency{}, bankfile.DefaultLimits)
+	if err != nil || len(got) != 1 {
+		t.Fatalf("the report: %v %v", got, err)
+	}
+	s := got[0]
+	if s.Currency.Code != "SGD" || s.Account != "0721234567" || len(s.Lines) != 2 || s.Opening != nil || s.Closing != nil {
+		t.Fatalf("the statement: %+v", s)
+	}
+	if l := s.Lines[0]; l.Amount.String() != "5450.00" || l.Reference != "BR25101501" || !strings.Contains(l.Description, "ACME ROBOTICS") {
+		t.Errorf("the first line: %+v", l)
+	}
+	if l := s.Lines[1]; l.Amount.String() != "-20.00" {
+		t.Errorf("the debit: %+v", l)
+	}
+	noLimit := strings.Replace(string(fixture(t, "intraday.mt942")), ":34F:SGD0,\n", "", 1)
+	if _, err := bankfile.Parse(bankfile.FormatMT942, []byte(noLimit), nil, money.Currency{}, bankfile.DefaultLimits); err == nil {
+		t.Errorf("a report with no floor limit: %v", err)
+	}
+	if _, err := bankfile.Parse(bankfile.FormatMT940, []byte(strings.Replace(string(fixture(t, "intraday.mt942")), "I942", "I940", 1)), nil, money.Currency{}, bankfile.DefaultLimits); err == nil {
+		t.Error("an MT942 report was read as a statement with balances")
+	}
+}

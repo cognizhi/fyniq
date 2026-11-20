@@ -80,6 +80,11 @@ func (i *Introspector) Ask(ctx context.Context, authorization string) (Caller, e
 	return i.Authenticate(ctx, authorization, apiclient.AskScope)
 }
 
+// Sync is Ask for the read of the link's event log by identity (apiclient.SyncScope): the same read-only client, a scope of its own.
+func (i *Introspector) Sync(ctx context.Context, authorization string) (Caller, error) {
+	return i.Authenticate(ctx, authorization, apiclient.SyncScope)
+}
+
 // Authenticate reads an Authorization header value for one scope.
 func (i *Introspector) Authenticate(ctx context.Context, authorization, scope string) (Caller, error) {
 	token, ok := strings.CutPrefix(authorization, "Bearer ")
@@ -137,7 +142,7 @@ func (i *Introspector) caller(ctx context.Context, in ports.Introspection, now t
 	if err != nil {
 		return Caller{}, err
 	}
-	if (scope == apiclient.LinkScope) != (r.Purpose == "events") || (scope == apiclient.AskScope) != (r.Purpose == "ask") {
+	if (scope == apiclient.LinkScope) != (r.Purpose == "events") || (scope == apiclient.AskScope || scope == apiclient.SyncScope) != (r.Purpose == "ask") {
 		return Caller{}, ErrNotLink // the events' client may not ask, and the asking client may not send
 	}
 	if r.State != "active" {

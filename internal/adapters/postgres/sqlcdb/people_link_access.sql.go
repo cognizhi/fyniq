@@ -13,7 +13,7 @@ import (
 )
 
 const peopleLinkAccess = `-- name: PeopleLinkAccess :one
-SELECT id, issuer, subject, people_access, payroll_approver, version, received_at FROM fyniq.people_link_access
+SELECT id, issuer, subject, people_access, payroll_approver, version, epoch, received_at FROM fyniq.people_link_access
 WHERE issuer = $1 AND subject = $2
 `
 
@@ -29,6 +29,7 @@ type PeopleLinkAccessRow struct {
 	PeopleAccess    bool
 	PayrollApprover bool
 	Version         int64
+	Epoch           int32
 	ReceivedAt      time.Time
 }
 
@@ -42,13 +43,14 @@ func (q *Queries) PeopleLinkAccess(ctx context.Context, arg PeopleLinkAccessPara
 		&i.PeopleAccess,
 		&i.PayrollApprover,
 		&i.Version,
+		&i.Epoch,
 		&i.ReceivedAt,
 	)
 	return i, err
 }
 
 const peopleLinkAccessList = `-- name: PeopleLinkAccessList :many
-SELECT id, issuer, subject, people_access, payroll_approver, version, received_at FROM fyniq.people_link_access ORDER BY received_at, id
+SELECT id, issuer, subject, people_access, payroll_approver, version, epoch, received_at FROM fyniq.people_link_access ORDER BY received_at, id
 `
 
 type PeopleLinkAccessListRow struct {
@@ -58,6 +60,7 @@ type PeopleLinkAccessListRow struct {
 	PeopleAccess    bool
 	PayrollApprover bool
 	Version         int64
+	Epoch           int32
 	ReceivedAt      time.Time
 }
 
@@ -77,6 +80,7 @@ func (q *Queries) PeopleLinkAccessList(ctx context.Context) ([]PeopleLinkAccessL
 			&i.PeopleAccess,
 			&i.PayrollApprover,
 			&i.Version,
+			&i.Epoch,
 			&i.ReceivedAt,
 		); err != nil {
 			return nil, err
@@ -90,11 +94,11 @@ func (q *Queries) PeopleLinkAccessList(ctx context.Context) ([]PeopleLinkAccessL
 }
 
 const savePeopleLinkAccess = `-- name: SavePeopleLinkAccess :one
-INSERT INTO fyniq.people_link_access (issuer, subject, people_access, payroll_approver, version, received_at)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO fyniq.people_link_access (issuer, subject, people_access, payroll_approver, version, epoch, received_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (organisation_id, issuer, subject) DO UPDATE
-SET people_access = EXCLUDED.people_access, payroll_approver = EXCLUDED.payroll_approver, version = EXCLUDED.version, received_at = EXCLUDED.received_at
-WHERE fyniq.people_link_access.version < EXCLUDED.version
+SET people_access = EXCLUDED.people_access, payroll_approver = EXCLUDED.payroll_approver, version = EXCLUDED.version, epoch = EXCLUDED.epoch, received_at = EXCLUDED.received_at
+WHERE (fyniq.people_link_access.epoch, fyniq.people_link_access.version) < (EXCLUDED.epoch, EXCLUDED.version)
 RETURNING id
 `
 
@@ -104,6 +108,7 @@ type SavePeopleLinkAccessParams struct {
 	PeopleAccess    bool
 	PayrollApprover bool
 	Version         int64
+	Epoch           int32
 	ReceivedAt      time.Time
 }
 
@@ -114,6 +119,7 @@ func (q *Queries) SavePeopleLinkAccess(ctx context.Context, arg SavePeopleLinkAc
 		arg.PeopleAccess,
 		arg.PayrollApprover,
 		arg.Version,
+		arg.Epoch,
 		arg.ReceivedAt,
 	)
 	var id uuid.UUID

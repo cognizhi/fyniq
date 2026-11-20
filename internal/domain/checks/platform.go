@@ -51,6 +51,7 @@ var ScheduledJobs = map[string]string{
 	"fx.reversals":             "Revaluation reversals",
 	"notify.bills_due":         "Bills-due reminders",
 	"notify.deadlines":         "Statutory deadline reminders",
+	"invoicenow.dispatch":      "InvoiceNow submissions sent",
 	"notify.cash_buffer":       "Cash buffer alerts",
 	"notify.timesheets":        "Missing-time reminders on Fridays",
 	"kb.lint":                  "The knowledge base's weekly lint",

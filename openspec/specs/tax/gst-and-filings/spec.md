@@ -225,7 +225,12 @@ Source: PRD-001 §8.11 · Priority M before GST registration; else S · Phase As
 #### Scenario: The gate and the contingency (rev 0.480)
 - **WHEN** a document of the period has neither an acknowledgement ID nor an exclusion
 - **THEN** the gate is blocked and lists it
-- **AND** only a contingency requested by one person and approved by another, with the outage evidence, lets the return be filed
+- **AND** only a contingency requested by one person and approved by another (with the create and the approve right of the GST return), with the outage evidence, lets the return be filed
+
+#### Scenario: The F5 filing is held to the gate (rev 0.547)
+- **GIVEN** a document of the return's period with no acknowledgement ID and no exclusion
+- **WHEN** the GST F5 is recorded as filed
+- **THEN** it is refused until the document is acknowledged or left out, or a contingency approved by someone else covers the period
 
 ### Requirement: FR-TAX-12 GST corrections from the first filed return
 From the first filed return, the system SHALL post GST corrections to filed periods in the open ledger period and place them in an adjustment queue with the original tax period and the amount per box; the tax agent decides how each is filed.
@@ -289,6 +294,11 @@ Source: PRD-001 §8.11 · Priority S · Phase P2
 #### Scenario: The form by revenue (rev 0.513)
 - **WHEN** a company's annual revenue is S$200,000, S$200,000.01 and S$5,000,000.01
 - **THEN** it may file Form C-S (Lite) or Form C-S, then Form C-S, then Form C
+
+#### Scenario: The paper is worked from the ledger (rev 0.546)
+- **GIVEN** S$1,000.00 of profit and revenue in a financial year
+- **WHEN** the working paper is asked for under the partial exemption
+- **THEN** 750.00 is exempt, 250.00 is taxed at 17% for 42.50 and the form is C-S (Lite)
 
 ### Requirement: FR-TAX-07 Statutory calendar
 The system SHALL keep a statutory calendar of the organisation's obligations, with dates derived from its FY and GST periods, reminders and Inbox tasks.

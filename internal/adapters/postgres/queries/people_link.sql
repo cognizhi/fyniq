@@ -63,3 +63,9 @@ ON CONFLICT (organisation_id, person_id) DO UPDATE SET version = EXCLUDED.versio
   left_on = EXCLUDED.left_on, status = EXCLUDED.status, line_manager_person_id = EXCLUDED.line_manager_person_id, removed = EXCLUDED.removed,
   hold_version = EXCLUDED.hold_version, hold_id = EXCLUDED.hold_id, held = EXCLUDED.held, hold_from = EXCLUDED.hold_from,
   bank_version = EXCLUDED.bank_version, bank_record_id = EXCLUDED.bank_record_id, user_id = EXCLUDED.user_id, updated_at = EXCLUDED.updated_at;
+
+-- name: PeopleInboxSequences :many
+SELECT DISTINCT sequence FROM fyniq.people_link_inbox WHERE link_id = sqlc.arg(link_id) AND sequence BETWEEN sqlc.arg(from_sequence)::bigint AND sqlc.arg(to_sequence)::bigint ORDER BY sequence;
+
+-- name: ProjectionDepartmentOfUser :one
+SELECT coalesce(fyniq.projection_department(sqlc.arg(user_id)::uuid), '00000000-0000-0000-0000-000000000000'::uuid)::uuid AS department;

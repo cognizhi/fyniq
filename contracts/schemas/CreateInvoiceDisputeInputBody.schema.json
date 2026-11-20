@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "A dispute's: the part of the invoice in dispute, at most what is open.",
+      "examples": [
+        "40.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "kind": {
+      "description": "dispute or promise.",
+      "enum": [
+        "dispute",
+        "promise"
+      ],
+      "examples": [
+        "dispute"
+      ],
+      "type": "string"
+    },
+    "promised_on": {
+      "description": "A promise's: the day, from today to 90 days away.",
+      "examples": [
+        "2026-12-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reason": {
+      "description": "A dispute's: why the customer disputes it.",
+      "examples": [
+        "The training was not delivered"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "title": "CreateInvoiceDisputeInputBody",
+  "type": "object"
+}

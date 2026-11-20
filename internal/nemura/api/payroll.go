@@ -386,7 +386,8 @@ type ExportSkipped struct {
 // ExportFile is a hand-off file with its manifest.
 type ExportFile struct {
 	ID            string          `json:"id" format:"uuid" doc:"The manifest's ID." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70"`
-	Kind          string          `json:"kind" enum:"journal,payments" doc:"The journal file or the bank payment file." example:"payments"`
+	Kind          string          `json:"kind" enum:"journal,payments,cpf" doc:"The journal file, the bank payment file or the CPF EZPay file." example:"payments"`
+	FileName      string          `json:"file_name,omitempty" doc:"The CPF file's name, which the Board's EZPay expects: <CSN><month paid><advice code>.DTL." example:"202312345KPTE01JUN202601.DTL"`
 	Version       int             `json:"version" minimum:"1" doc:"The approved version it was made from." example:"2"`
 	Month         string          `json:"wage_month" format:"date" doc:"The wage month." example:"2026-06-01"`
 	Lines         int             `json:"lines" doc:"How many lines the file has." example:"12"`
@@ -401,7 +402,11 @@ type ExportFile struct {
 // ExportInput asks for a file.
 type ExportInput struct {
 	Version int    `json:"version" minimum:"1" doc:"The approved version to make the file from." example:"2"`
-	Kind    string `json:"kind" enum:"journal,payments" doc:"The journal file or the bank payment file." example:"payments"`
+	Kind    string `json:"kind" enum:"journal,payments,cpf" doc:"The journal file, the bank payment file or the CPF EZPay file." example:"payments"`
+	// For the CPF file: the employer's own CPF Submission Number parts and advice code (never guessed).
+	PaymentType string `json:"payment_type,omitempty" pattern:"^[A-Za-z0-9]{3}$" doc:"The payment type of the employer's CPF Submission Number, as its CPF EZPay account holds it; needed for the CPF file." example:"PTE"`
+	Serial      string `json:"serial,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The serial number of the CPF Submission Number, 01 to 99; needed for the CPF file." example:"01"`
+	AdviceCode  string `json:"advice_code,omitempty" pattern:"^(0[1-9]|[1-9][0-9])$" doc:"The advice code, 01 to 99: records with the same code print on the same record of payment; needed for the CPF file." example:"01"`
 }
 
 // Payroll is pay records behind the API.
@@ -1024,14 +1029,14 @@ func (a *API) registerPayRuns() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "exportPayRunFile", Method: "POST", Path: "/v1/payroll/runs/{id}/exports", Tags: []string{"Payroll"}, Summary: "Make a hand-off file for an approved version",
-		Description: "Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.", Errors: []int{401, 403, 404, 409, 422, 503}, DefaultStatus: 201,
+		Description: "Makes the standalone journal file (the run's balanced entry, one line for each account), the CPF EZPay file (the CPF Board's own layout, effective 16 January 2025; it needs the payment type, serial number and advice code, and holds NRICs, so it needs a fresh passkey) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.", Errors: []int{401, 403, 404, 409, 422, 503}, DefaultStatus: 201,
 	}, func(ctx context.Context, in *exportInput) (*exportOutput, error) {
 		s, err := payroller(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
-		if in.Body.Kind == "payments" && !s.Fresh(a.d.Clock.Now()) {
-			return nil, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: the payment file holds bank account numbers.")
+		if (in.Body.Kind == "payments" || in.Body.Kind == "cpf") && !s.Fresh(a.d.Clock.Now()) {
+			return nil, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: the file holds bank account numbers or NRICs.")
 		}
 		id, err := uuid.Parse(in.ID)
 		if err != nil {

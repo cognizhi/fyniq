@@ -106,6 +106,12 @@ type UnitOfWork interface {
 	PSP() PSPLedger
 	// PaymentLinks are the payment links on invoices and the payments made under them (FR-AR-13, FR-PSP-02).
 	PaymentLinks() PaymentLinks
+	// PSPMirror is the Model B mirror of a billing provider: its customers, subscriptions and invoices (FR-PSP-03, FR-PSP-07).
+	PSPMirror() PSPMirror
+	// PortalLinks are the customer portal's links, one customer each (FR-AR-14).
+	PortalLinks() PortalLinks
+	// InvoiceDisputes are the disputes and promises to pay beside invoices (FR-AR-08).
+	InvoiceDisputes() InvoiceDisputes
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
@@ -129,6 +135,8 @@ type UnitOfWork interface {
 	MCPCalls() MCPCalls
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
+	// InvoiceNow is the InvoiceNow submissions, exclusions and contingencies (FR-TAX-10, FR-TAX-11).
+	InvoiceNow() InvoiceNow
 	Outbox() Outbox
 	Sweeping() Sweeping
 	RecurringJournals() RecurringJournals
@@ -1121,6 +1129,9 @@ const (
 	// CodeStatutoryFiling: a filing record keeps its own keys, an item's key and its outcome's fields; a withdrawal names
 	// a reversed record of its item, once; an item has at most one live record (FY299).
 	CodeStatutoryFiling = "STORAGE-CALENDAR-01"
+	// CodeInvoiceNow: a submission moved off its legal path or changed after it was acknowledged, a second live exclusion of
+	// a document, or a contingency approved by the person who requested it (FYI01 to FYI04; FR-TAX-10, FR-TAX-11).
+	CodeInvoiceNow = "STORAGE-INVOICENOW-01"
 	// CodeForecast: a forecast keeps its own keys, a name, a horizon of 12 to 60 months, decimal strings, scenarios and
 	// rows within their limits (FY300).
 	CodeForecast = "STORAGE-PLAN-01"

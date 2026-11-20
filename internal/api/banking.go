@@ -68,7 +68,7 @@ type MoneySource struct {
 	Kind         string         `json:"kind" enum:"file,email,connector" doc:"file: statements a person uploads; email: reports the bank emails to the bank-ingest address; connector: an organisation connector's sync (FR-BNK-15)." example:"email"`
 	FromDate     string         `json:"from_date" format:"date" doc:"The first day it is the source." example:"2026-11-01"`
 	Senders      []EmailAddress `json:"senders" nullable:"false" doc:"email: the bank's registered addresses, the only senders accepted for it."`
-	ReportFormat string         `json:"report_format,omitempty" enum:"csv,xlsx,ofx,camt053,mt940,mt940_sap" doc:"file and email: the format its statements come in." example:"csv"`
+	ReportFormat string         `json:"report_format,omitempty" enum:"csv,xlsx,ofx,camt053,mt940,mt940_sap,mt942" doc:"file and email: the format its statements come in; mt942 is the bank's intraday report, whose lines become pending signals, never statement lines (FR-BNK-16)." example:"csv"`
 	MappingID    string         `json:"mapping_id,omitempty" format:"uuid" doc:"A CSV or XLSX format's saved column mapping." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30"`
 	ConnectorID  string         `json:"connector_id,omitempty" format:"uuid" doc:"connector: the organisation connector that syncs it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"`
 	SetBy        string         `json:"set_by,omitempty" doc:"Who set it." example:"user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"`
@@ -169,7 +169,7 @@ type MoneySourceDraft struct {
 	Kind         string         `json:"kind" enum:"file,email,connector" doc:"file, email or connector." example:"email"`
 	FromDate     string         `json:"from_date" format:"date" doc:"The first day it is the source: after the current one's, so no day has two." example:"2026-11-01"`
 	Senders      []EmailAddress `json:"senders,omitempty" maxItems:"5" doc:"email: the bank's registered addresses (DMARC must pass for each, FR-INT-22)."`
-	ReportFormat string         `json:"report_format,omitempty" enum:"csv,xlsx,ofx,camt053,mt940,mt940_sap" doc:"file and email: the statements' format." example:"csv"`
+	ReportFormat string         `json:"report_format,omitempty" enum:"csv,xlsx,ofx,camt053,mt940,mt940_sap,mt942" doc:"file and email: the statements' format; mt942 is the bank's intraday report, whose lines become pending signals (FR-BNK-16)." example:"csv"`
 	MappingID    string         `json:"mapping_id,omitempty" format:"uuid" doc:"CSV and XLSX: the saved column mapping." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b30"`
 	ConnectorID  string         `json:"connector_id,omitempty" format:"uuid" doc:"connector: the organisation connector that syncs it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"`
 }
@@ -262,7 +262,7 @@ type ImportedLine struct {
 // AutoReconciled is what a run of auto-reconcile did.
 type AutoReconciled struct {
 	Reconciled int            `json:"reconciled" doc:"Lines reconciled by the system." example:"12"`
-	Left       map[string]int `json:"left" doc:"Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused." example:"{\"no_match\":20,\"line_cap\":2}"`
+	Left       map[string]int `json:"left" doc:"Lines left for a person, by why: no_match, ambiguous, line_cap, rule_cap, no_rate, refused, link_mismatch." example:"{\"no_match\":20,\"line_cap\":2}"`
 }
 
 // EmailAddress, DateLayout and ColumnName are the items of a source's senders and a mapping's date layouts and

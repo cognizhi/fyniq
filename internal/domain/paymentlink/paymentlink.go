@@ -147,7 +147,7 @@ func Check(ctx context.Context, u storage.UnitOfWork, connector, invoiceID uuid.
 		return Basis{}, ports.PaymentRequest{}, err
 	}
 	for _, e := range existing {
-		if e.Status == storage.LinkLive {
+		if e.Status == storage.LinkLive && !Expired(e, now) {
 			return Basis{}, ports.PaymentRequest{}, &Error{CodeLive, "The invoice has a payment link already.", "Cancel it first if the customer needs a new one"}
 		}
 	}
@@ -162,6 +162,11 @@ func Check(ctx context.Context, u storage.UnitOfWork, connector, invoiceID uuid.
 	return b, Request(b, now), nil
 }
 
+// Expired says whether a link past its date still shows as live in the database: it works no more, and a new one may be made.
+func Expired(l storage.PaymentLink, now time.Time) bool {
+	return l.Status == storage.LinkLive && l.ExpiresAt != nil && !now.Before(*l.ExpiresAt)
+}
+
 // Create asks the provider for the invoice's payment request and records the link, in u. One live link per invoice: the
 // database refuses a second, and Check says so in words first. The provider is called last, after every refusal, so a refused
 // link leaves nothing at the provider.
@@ -173,6 +178,18 @@ func Create(ctx context.Context, u storage.UnitOfWork, links ports.PaymentLinks,
 	made, err := links.CreatePaymentRequest(ctx, req)
 	if err != nil {
 		return storage.PaymentLink{}, err
+	}
+	// A link past its date is closed as expired, so the invoice has one live link again (one live link per invoice, in the database).
+	old, err := u.PaymentLinks().OfInvoice(ctx, invoiceID)
+	if err != nil {
+		return storage.PaymentLink{}, err
+	}
+	for _, e := range old {
+		if Expired(e, now) {
+			if _, err := u.PaymentLinks().Close(ctx, e.ID, storage.LinkExpired, "It ran past its date", now, e.Version); err != nil {
+				return storage.PaymentLink{}, err
+			}
+		}
 	}
 	return u.PaymentLinks().Create(ctx, storage.NewPaymentLink{ConnectorID: connector, InvoiceID: invoiceID, ProviderRequestID: made.ID, URL: made.URL,
 		Reference: req.Reference, Currency: req.Currency, Amount: storage.Decimal(req.Amount), ExpiresAt: made.ExpiresAt, At: now})

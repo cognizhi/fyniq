@@ -1,0 +1,13 @@
+code,direction,scope,gst_cat,reason,description,source
+SR,supply,submit,SR,,Standard-rated supply: submitted with the category SR,iras-etax-scope
+ZR,supply,submit,ZR,,Zero-rated supply: submitted with the category ZR,iras-etax-scope
+ES,supply,choose,,,Exempt supply: the e-Tax Guide names ES33 (regulation 33) and ESN33; exempt financial services are excluded from scope; the tax agent chooses (the accountant confirms),iras-etax-scope iras-etax-excluded
+OS,supply,not_reported,,out_of_scope,Out-of-scope supply: not in the return and so not submitted,iras-etax-excluded
+TX,purchase,submit,TX,,Standard-rated purchase whose GST can be claimed: submitted as a solution-extracted purchase,iras-etax-scope
+IM,purchase,exclude,,import_permit,Import of goods: the import permit is excluded,iras-etax-excluded
+ZP,purchase,submit,ZP,,Zero-rated purchase from a GST-registered supplier: submitted as a solution-extracted purchase,iras-etax-scope
+BL,purchase,not_reported,,blocked_input_tax,Purchase whose input tax is blocked: not in the return,iras-etax-excluded
+NR,purchase,not_reported,,unregistered_supplier,Purchase from a supplier not registered for GST: not in the return,iras-etax-excluded
+EP,purchase,not_reported,,out_of_scope,Exempt purchase: not in the return,iras-etax-excluded
+OP,purchase,not_reported,,out_of_scope,Out-of-scope purchase: not in the return,iras-etax-excluded
+NA,none,none,,,Not a supply or a purchase for GST,iras-etax-scope

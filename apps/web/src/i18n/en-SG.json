@@ -1167,6 +1167,14 @@
       "label": "People and HR",
       "tooltip": "Where people records, payroll, leave and letters live (Nemura, an external system, or none), the link's state and how the month's statutory payroll outputs are met."
     },
+    "people.passkey-reminder": {
+      "label": "Add a passkey to approve pay runs in Nemura",
+      "tooltip": "Nemura signs a pay run's approval with a passkey enrolled here. This reminder goes when you add one, and it gives you no role in Fyniq."
+    },
+    "people.health": {
+      "label": "Link health",
+      "tooltip": "How the link to Nemura stands: events waiting, failing or refused, and any run of events Nemura says it delivered that Fyniq never received, which it can send again."
+    },
     "people.arrange": {
       "label": "Record the arrangement",
       "tooltip": "Records, as evidence, how one item is met from this month. A pay run is not approved for payment while an item has none."
@@ -2139,6 +2147,22 @@
       "label": "Issue",
       "tooltip": "Number it and post it to the ledger on its date: it adds its total to what the customer owes."
     },
+    "sales.subscriptions": {
+      "label": "Subscriptions",
+      "tooltip": "What your billing provider, such as Stripe, bills your customers, mirrored read-only: each subscription, and each invoice with the provider's attempts and the invoice Fyniq made of it. Fyniq never retries or charges."
+    },
+    "psp.post-invoices": {
+      "label": "Issue the drafts",
+      "tooltip": "Issue the invoices Fyniq drafted from your provider's, each only when its total, GST included, is the provider's to the cent. Any other waits for a person."
+    },
+    "invoice.dispute": {
+      "label": "Record it",
+      "tooltip": "Note that the customer disputes part of this invoice, or promises to pay it on a day. Its reminders pause until the dispute is resolved or the promised day has passed."
+    },
+    "invoice.dispute-resolve": {
+      "label": "Resolve",
+      "tooltip": "End the dispute or promise with how it ended. The invoice's reminders then follow the customer's schedule again."
+    },
     "invoice.payment-link": {
       "label": "Add a payment link",
       "tooltip": "Ask your payment provider for a page where the customer pays what is open on this invoice. When they pay, Fyniq matches the provider's line to the invoice by itself."
@@ -2330,6 +2354,26 @@
     "public.document": {
       "label": "Your document",
       "tooltip": "A quote or invoice sent to you, opened through its secure link: no sign-in needed."
+    },
+    "contact.portal-link": {
+      "label": "Make a portal link",
+      "tooltip": "Make a private link where this customer sees what they owe, pays where a payment link exists, and downloads invoices and statements. It is shown once."
+    },
+    "contact.portal-revoke": {
+      "label": "Revoke",
+      "tooltip": "Stop this link working at once. Anyone who holds it then sees nothing."
+    },
+    "public.portal": {
+      "label": "Your account",
+      "tooltip": "What you owe this company: the invoices still due, each as a PDF, and your statement of account, opened through the private link it sent you. No sign-in needed."
+    },
+    "public.portal-pay": {
+      "label": "Pay now",
+      "tooltip": "Open the payment page of the company's payment provider for this invoice. The company records the payment when it arrives."
+    },
+    "public.portal-statement": {
+      "label": "Statement of account",
+      "tooltip": "Everything between you and this company over a period you choose: invoices, credit notes and payments, with what you owed before and what you owe after."
     },
     "public.download": {
       "label": "Download the PDF",
@@ -2738,6 +2782,34 @@
     "compliance.secretary-run-now": {
       "label": "Run now",
       "tooltip": "Queues a run at once, while the assistant is on. It checks first, and asks the model only if something changed."
+    },
+    "compliance.invoicenow": {
+      "label": "InvoiceNow",
+      "tooltip": "The invoices behind the GST return, sent to IRAS through InvoiceNow, and the invoices suppliers sent to you."
+    },
+    "invoicenow.gate": {
+      "label": "Filing gate",
+      "tooltip": "The documents of a return period that have neither IRAS's acknowledgement ID nor a reason to be left out: the GST return waits for them."
+    },
+    "invoicenow.contingency": {
+      "label": "File with the gap",
+      "tooltip": "When the access point or IRAS was down, one person asks and another approves, with the evidence, before the return is filed with documents still unsent."
+    },
+    "invoicenow.receive": {
+      "label": "Receive now",
+      "tooltip": "Reads the invoices suppliers sent through InvoiceNow and makes a draft bill of each whose supplier you have; a draft posts nothing."
+    },
+    "compliance.filing-packs": {
+      "label": "Year-end tax working paper",
+      "tooltip": "The tax-adjusted profit of a financial year for the tax agent, with the exemption, the rebate and the form the revenue calls for."
+    },
+    "compliance.pack-updates": {
+      "label": "Statutory updates waiting",
+      "tooltip": "A newer version of a statutory pack you have activated, with the rows it would add, remove or change; accepting it re-posts nothing."
+    },
+    "sales.bad-debts": {
+      "label": "Bad debts and GST relief",
+      "tooltip": "Invoices written off as a bad debt that bore GST, with when the GST may be claimed back and until when."
     },
     "compliance.gst": {
       "label": "GST",

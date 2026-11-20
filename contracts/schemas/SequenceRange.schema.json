@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The first sequence number missing.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "to": {
+      "description": "The last sequence number missing of this run.",
+      "examples": [
+        14
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "from",
+    "to"
+  ],
+  "title": "SequenceRange",
+  "type": "object"
+}
