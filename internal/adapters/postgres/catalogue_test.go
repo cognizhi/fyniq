@@ -48,7 +48,7 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // a client is registered before anyone is signed in; written and read only through SECURITY DEFINER functions.
 var globalTables = []string{"currency", "tenant_directory", "practice_organisation", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
-	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
+	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "portal_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
 	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue",
 	"ai_agent", "api_client_route", "mcp_client", "kb_platform_release", "kb_platform_page", "kb_platform_page_source", "kb_platform_source"}

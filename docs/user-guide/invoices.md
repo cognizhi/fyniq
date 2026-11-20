@@ -132,6 +132,14 @@ still valid, the customer accepts it with their name, or declines it, with a com
 the decision. The link shows nothing else, works until it ends or is revoked, and the first time it is
 opened the invoice shows **Viewed**.
 
+## The customer portal
+
+The customer's side of the portal, opened through the private link their supplier sent them (see **Contacts**, "The customer
+portal"), is a page with no sign-in: **Your account** lists the invoices still due with a **Pay now** button where the supplier
+made a payment link, a **PDF** for each, and a **Statement of account** over a period you choose (30 days by default, never
+ending after today). It shows only that customer's invoices, is never cached or indexed, and the link ends on its date or when the
+supplier withdraws it. Where there is no Pay button, pay as the invoice says: the supplier records it when it arrives.
+
 ## Invoices above the self-approval threshold
 
 An invoice whose total is above the self-approval threshold is not issued by the person issuing it.

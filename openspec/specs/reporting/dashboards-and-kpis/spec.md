@@ -115,6 +115,12 @@ Source: PRD-001 §8.13 · Priority S · Phase P2
 - **WHEN** a SaaS KPI needs a customer count
 - **THEN** the count comes from the subscription schedules (FR-AR-15) or a CRM/billing integration, not from manual input
 
+#### Scenario: Which source answered (rev 0.540)
+- **WHEN** subscription schedules do not exist yet
+- **THEN** the count is of customers with an active recurring invoice template at the month end
+- **AND** the KPI says which source answered
+
+
 ### Requirement: FR-KPI-05 Custom dashboards
 The system SHALL support custom dashboards per role and per user (FR-VIZ-09).
 
@@ -162,6 +168,12 @@ Source: PRD-001 §8.13 · Priority S · Phase P2
 #### Scenario: AI explains a gap
 - **WHEN** a user asks the AI about a gap to a benchmark
 - **THEN** the AI may explain it in the read lane
+
+#### Scenario: No figure without a source (rev 0.540)
+- **WHEN** no benchmark pack has a band for the organisation's code and size
+- **THEN** no comparison is shown
+- **AND** a comparison that is shown names its source, year and sample, and a fixture is marked synthetic
+
 
 ### Requirement: FR-KPI-08 Peer benchmarks
 The system SHALL offer opt-in, anonymised peer benchmarks across organisations on the platform (SaaS, P3), under a PDPA assessment and the data inventory, publishing only cells that pass the disclosure-control rules.

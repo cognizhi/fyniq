@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact_id": {
+      "description": "The customer it opens.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "created_at": {
+      "description": "When it was made.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "expires_at": {
+      "description": "When it stops working.",
+      "examples": [
+        "2026-12-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "first_opened_at": {
+      "description": "When the customer first opened it; never their address.",
+      "examples": [
+        "2026-11-21T02:10:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The link's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "label": {
+      "description": "A note for the staff, such as who it was sent to.",
+      "examples": [
+        "Sent to ap@acme.example"
+      ],
+      "type": "string"
+    },
+    "revoked_at": {
+      "description": "When it was revoked.",
+      "examples": [
+        "2026-11-22T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "description": "live; revoked by a person; or expired.",
+      "enum": [
+        "live",
+        "revoked",
+        "expired"
+      ],
+      "examples": [
+        "live"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "contact_id",
+    "status",
+    "created_at",
+    "expires_at"
+  ],
+  "title": "PortalLinkOut",
+  "type": "object"
+}

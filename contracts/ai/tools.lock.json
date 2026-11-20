@@ -32,8 +32,8 @@
     "sha256": "0f174aba7e27013675378d11543de9a4717bfd1eb73f26451d2def695fb35c0c"
   },
   "packs.get": {
-    "version": 3,
-    "sha256": "ad18db7b95d7823c585995c3a243eba50a7106a8baef33e2c39927ebf9801c79"
+    "version": 4,
+    "sha256": "66a9a374a5055cd6500a779790bb9b06cb7513fe2155612619f38653d603050c"
   },
   "records.get": {
     "version": 1,

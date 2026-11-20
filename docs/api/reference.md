@@ -6245,6 +6245,53 @@ Asks for another person's approval to void a refund on the date given, with a re
 
 Invoices to customers: drafted, approved, issued and voided; posted history never changes (FR-AR-03, FR-GL-12).
 
+### `GET /v1/contacts/{contact_id}/portal-links`
+
+**Read a customer's portal links** (`getContactPortalLinks`)
+
+The customer's portal links, newest first: when each was made, when it expires, when the customer first opened it, and whether it was revoked. Never a token. Read-only.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+- **Responses:**
+  - `200` OK [`ContactPortalLinksOutputBody`](../../contracts/schemas/ContactPortalLinksOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/contacts/{contact_id}/portal-links`
+
+**Make a customer's portal link** (`createPortalLink`)
+
+Makes a link that opens one customer's portal: their invoices still due, where to pay, their invoice PDFs and statements (FR-AR-14). The answer carries the token once and Fyniq keeps only its hash, so it cannot be shown again; a link works 30 days by default and at most 90, and is withdrawn with revokePortalLink. The contact must be an active customer. A person's alone: the AI and MCP have no tool for it. Side effects: the link and its audit event.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `contact_id` (path, required): The contact's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CreatePortalLinkInputBody`](../../contracts/schemas/CreatePortalLinkInputBody.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PortalLinkMade`](../../contracts/schemas/PortalLinkMade.schema.json)
+  - `201` Created [`PortalLinkMade`](../../contracts/schemas/PortalLinkMade.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `STORAGE-INPUT-01` The request is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-INPUT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/contacts/{contact_id}/statement`
 
 **Work out a customer's statement** (`getCustomerStatement`)
@@ -7178,6 +7225,29 @@ Asks for another person's approval to void an issued invoice with a reversing en
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `DIM-05`, `DIM-06`, `FX-01`, `FX-08`, `INVOICE-01`, `INVOICE-02`, `INVOICE-03`, `INVOICE-04`, `INVOICE-05`, `INVOICE-06`, `INVOICE-07`, `INVOICE-08`, `INVOICE-09`, `INVOICE-13`, `INVOICE-15`, `INVOICE-16`, `LEDGER-01`, `LEDGER-02`, `LEDGER-03`, `LEDGER-04`, `LEDGER-05`, `LEDGER-06`, `LEDGER-07`, `LEDGER-08`, `LEDGER-09`, `LEDGER-10`, `LEDGER-11`, `LEDGER-12`, `LEDGER-13`, `LEDGER-14`, `LEDGER-15`, `LEDGER-16`, `LEDGER-17`, `LEDGER-22`, `LEDGER-23`, `LEDGER-24`, `LEDGER-28`, `LEDGER-31`, `LEDGER-32`, `LEDGER-33`, `LEDGER-49`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `POST /v1/portal-links/{link_id}/revoke`
+
+**Revoke a customer's portal link** (`revokePortalLink`)
+
+Stops a portal link working at once (FR-AR-14): whoever holds it then gets PORTAL-01. A link is revoked once; to give the customer the portal again, make a new link. Side effects: the revocation and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview revokes nothing.
+
+- **Permission:** Post on Invoices, credit notes
+- **Parameters:**
+  - `link_id` (path, required): The link's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PortalLinkOut`](../../contracts/schemas/PortalLinkOut.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LINK-01` A link changes only in its first view and its revocation, once each; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LINK-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/public/document`
 
 **Open a quote or invoice through its link** (`getPublicDocument`)
@@ -7263,6 +7333,73 @@ Public: no session. The PDF of the quote or invoice a link's token opens (FR-AR-
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `LINK-01`, `SALESDOC-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
+
+### `GET /v1/public/portal`
+
+**Open a customer's portal through its link** (`getPortal`)
+
+Public: no session. What a portal link's token (in the Fyniq-Portal header, from the link's fragment) opens first (FR-AR-14): the company, the customer, the customer's invoices still due with where each can be paid, and the currencies of their statements. Only that customer's: another customer's or organisation's data is never read, and an unknown, expired or revoked token answers one 404 (PORTAL-01). The first opening of a link is recorded. At most 60 a minute per link. Never cached or indexed.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Portal` (header, required): The portal link's token, from the fragment of the link (after #/portal/#). Never put it in a URL.
+- **Responses:**
+  - `200` OK [`PortalSummary`](../../contracts/schemas/PortalSummary.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `PORTAL-01` This link does not open anything.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `STATEMENT-01` The statement's period is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PORTAL-01`, `STATEMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/public/portal/invoices/{invoice_id}/pdf`
+
+**Get the PDF of one of the customer's invoices through the portal** (`getPortalInvoicePDF`)
+
+Public: no session. The PDF of an issued invoice of the customer the portal link opens (FR-AR-14), rendered as emailing it renders it. An invoice that is a draft, voided, a credit note, another customer's or does not exist answers the same 404 (PORTAL-01). At most 60 a minute per link. Never cached or indexed.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Portal` (header, required): The portal link's token, from the fragment of the link (after #/portal/#). Never put it in a URL.
+  - `invoice_id` (path, required): The invoice's ID, from the portal's list.
+- **Responses:**
+  - `200` OK [`PublicPDF`](../../contracts/schemas/PublicPDF.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `PORTAL-01` This link does not open anything.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `STATEMENT-01` The statement's period is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again; `TPL-17` The document could not be rendered now.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PORTAL-01`, `STATEMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `TPL-17`
+
+### `GET /v1/public/portal/statement`
+
+**Get the customer's statement of account through the portal** (`getPortalStatement`)
+
+Public: no session. The statement of account of the customer the portal link opens, in one currency over a period of at most two years ending today or earlier (FR-AR-14, FR-AR-08): what they owed before it, each invoice, credit note and payment, and what they owe at its end. Only that customer's. At most 60 a minute per link. Never cached or indexed.
+
+- **Permission:** View on Invoices, credit notes
+- **Parameters:**
+  - `Fyniq-Portal` (header, required): The portal link's token, from the fragment of the link (after #/portal/#). Never put it in a URL.
+  - `currency` (query): The statement's currency; the company's base currency when left out.
+  - `from` (query): The first day; 30 days before today when left out.
+  - `to` (query): The last day; today when left out.
+- **Responses:**
+  - `200` OK [`PortalStatement`](../../contracts/schemas/PortalStatement.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `PORTAL-01` This link does not open anything.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `STATEMENT-01` The statement's period is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PORTAL-01`, `STATEMENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ### `GET /v1/quotes`
 

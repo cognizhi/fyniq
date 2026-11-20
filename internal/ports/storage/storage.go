@@ -106,6 +106,8 @@ type UnitOfWork interface {
 	PSP() PSPLedger
 	// PaymentLinks are the payment links on invoices and the payments made under them (FR-AR-13, FR-PSP-02).
 	PaymentLinks() PaymentLinks
+	// PortalLinks are the customer portal's links, one customer each (FR-AR-14).
+	PortalLinks() PortalLinks
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates

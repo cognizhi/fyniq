@@ -31,7 +31,8 @@ func init() { run = evaluate }
 // Report is a run of the suites: CTL-AI-05's evidence. Assistant is the run of the assistant's own suites
 // (evals/<suite>/assistant.json), which the API's TestTheAssistantSuites makes through the real orchestrator just
 // before (scripts/evals.sh) and writes beside this report; Agents the scheduled agents' (evals/<suite>/agent.json,
-// QA-AI-07), which TestTheAgentSuites makes through the worker, the API and the AI service.
+// QA-AI-07), which TestTheAgentSuites makes through the worker, the API and the AI service; Capture the document capture's
+// (evals/<suite>/capture.json, QA-AI-02), which TestTheCaptureSuites makes through the capture inbox's reading path.
 type Report struct {
 	Mode      string          `json:"mode"`
 	RanAt     time.Time       `json:"ran_at"`
@@ -40,6 +41,7 @@ type Report struct {
 	Suites    []SuiteReport   `json:"suites"`
 	Assistant json.RawMessage `json:"assistant,omitempty"`
 	Agents    json.RawMessage `json:"agents,omitempty"`
+	Capture   json.RawMessage `json:"capture,omitempty"`
 }
 
 // Versions are the AI contracts the run checked (§12.10, "AI catalogue, prompt and tool versions"; CMP-AI-03): each
@@ -160,7 +162,7 @@ func evaluate(ctx context.Context, o Options) error {
 		}
 		rep.Suites = append(rep.Suites, sr)
 	}
-	for name, into := range map[string]*json.RawMessage{"assistant.json": &rep.Assistant, "agent.json": &rep.Agents} {
+	for name, into := range map[string]*json.RawMessage{"assistant.json": &rep.Assistant, "agent.json": &rep.Agents, "capture.json": &rep.Capture} {
 		if raw, err := os.ReadFile(filepath.Join(o.Out, name)); err == nil { // #nosec G304 -- the report directory this run writes
 			*into = raw
 		} else if !errors.Is(err, os.ErrNotExist) {

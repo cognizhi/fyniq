@@ -3025,6 +3025,26 @@ type FyniqPolicyVersion struct {
 	PublishedAt    time.Time
 }
 
+type FyniqPortalLink struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ContactID      uuid.UUID
+	Label          *string
+	TokenHash      string
+	ExpiresAt      time.Time
+	CreatedBy      string
+	CreatedAt      time.Time
+	FirstOpenedAt  *time.Time
+	RevokedAt      *time.Time
+	RevokedBy      *string
+}
+
+type FyniqPortalLinkToken struct {
+	TokenHash string
+	Owner     uuid.UUID
+	LinkID    uuid.UUID
+}
+
 type FyniqPracticeOrganisation struct {
 	OrganisationID       uuid.UUID
 	CreatedBy            uuid.UUID

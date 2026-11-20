@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "customer": {
+      "description": "The customer this portal is for.",
+      "examples": [
+        "Acme Trading Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "invoices": {
+      "description": "The invoices still due, earliest due date first.",
+      "items": {
+        "$ref": "PortalInvoice.schema.json"
+      },
+      "type": "array"
+    },
+    "link_expires_at": {
+      "description": "When the link stops working at the latest.",
+      "examples": [
+        "2026-12-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "logo": {
+      "contentEncoding": "base64",
+      "description": "The company's logo as its documents show it: a PNG, base64. Absent when it has none.",
+      "examples": [
+        "iVBORw0KGgo="
+      ],
+      "type": "string"
+    },
+    "statement_currencies": {
+      "description": "The currencies the customer has a statement in.",
+      "items": {
+        "$ref": "PortalCurrency.schema.json"
+      },
+      "maxItems": 50,
+      "type": "array"
+    },
+    "supplier": {
+      "description": "The company that issued the invoices.",
+      "examples": [
+        "Northwind Analytics Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "today": {
+      "description": "The company's date today.",
+      "examples": [
+        "2026-11-20"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "supplier",
+    "customer",
+    "invoices",
+    "statement_currencies",
+    "today",
+    "link_expires_at"
+  ],
+  "title": "PortalSummary",
+  "type": "object"
+}
