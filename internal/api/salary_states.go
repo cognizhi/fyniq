@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -37,6 +38,7 @@ type (
 	salaryMatchInput struct {
 		SalaryBatchPath
 		KeyHeader
+		IfMatchHeader
 		PreferHeader
 		Body SalaryBankMatch
 	}
@@ -184,8 +186,8 @@ func registerSalaryStates(a *API) {
 		Description: "Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its " +
 			"amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted " +
 			"to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the " +
-			"bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
-	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid, CodeSessionRequired, CodeStepUpRequired, salarybatch.CodeState, salarybatch.CodeLine,
+			"bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.",
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid, CodeSessionRequired, CodeStepUpRequired, salarybatch.CodeState, salarybatch.CodeLine,
 		salarybatch.CodeSeparation, salarybatch.CodeAccount, storage.CodeSalaryBatch}, append(locks, postingCodes()...)...), func(ctx context.Context, in *salaryMatchInput) (*salaryWriteOutput, error) {
 		id, err := parseID("batch_id", in.BatchID)
 		if err != nil {
@@ -208,6 +210,9 @@ func registerSalaryStates(a *API) {
 			seen[r] = true
 			refs = append(refs, r)
 		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
 		p, err := a.steppedUpPerson(ctx, "Matching a salary payment to its bank line")
 		if err != nil {
 			return nil, err
@@ -215,6 +220,9 @@ func registerSalaryStates(a *API) {
 		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (SalaryBatch, error) {
 			b, err := a.salaryBatch(ctx, u, id, true)
 			if err != nil {
+				return SalaryBatch{}, err
+			}
+			if err := checkIfMatch(in.IfMatch, salaryETag(b)); err != nil {
 				return SalaryBatch{}, err
 			}
 			if err := a.notRunParty(ctx, u, id, p.UserID); err != nil {

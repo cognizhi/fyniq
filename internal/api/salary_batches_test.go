@@ -629,22 +629,25 @@ func TestAPaymentIsPaidOnlyFromTheBankFeedOrAPersonsEvidenceAndEveryStateGoesBac
 	}
 
 	// Cai's debit: the bank feed pays her line, exactly.
+	cur := func() string {
+		return e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil).Header.Get("ETag")
+	}
 	debit := w.statementLine(t, "7000.33", 15)
 	for what, input := range map[string]map[string]any{
 		"another amount":  {"bank_line_id": w.statementLine(t, "7000.32", 14), "line_ids": []string{refs["cai"].String()}},
 		"a line not paid": {"bank_line_id": debit, "line_ids": []string{refs["ana"].String()}},
 	} {
-		if r := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, input); r.Status == 200 {
+		if r := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, input, "If-Match", e.call(http.MethodGet, "/v1/salary-batches/"+id, w.payroll, nil).Header.Get("ETag")); r.Status == 200 {
 			t.Errorf("%s was matched: %s", what, r.Raw)
 		}
 	}
-	e.problemIs(e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.as(mei.String(), authz.PayrollAdmin), map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}),
+	e.problemIs(e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.as(mei.String(), authz.PayrollAdmin), map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}, "If-Match", cur()),
 		"matchSalaryBankLine", 403, salarybatch.CodeSeparation)
-	match := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}})
+	match := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}, "If-Match", cur())
 	if match.Status != 200 || match.Body["paid"] != float64(1) {
 		t.Fatalf("matching the debit: %d %s", match.Status, match.Raw)
 	}
-	if again := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}); again.Status == 200 {
+	if again := e.call(http.MethodPost, "/v1/salary-batches/"+id+"/bank-match", w.payroll, map[string]any{"bank_line_id": debit, "line_ids": []string{refs["cai"].String()}}, "If-Match", cur()); again.Status == 200 {
 		t.Errorf("the debit matched twice: %s", again.Raw)
 	}
 	for _, l := range match.Body["lines"].([]any) {
@@ -710,6 +713,6 @@ var matrixSalaryStates = map[string]func(e *env, tok string) (response, func() b
 		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/lines/"+uuid.NewString()+"/state", steppedUp(e, tok), map[string]any{"state": "paid", "evidence_id": uuid.NewString(), "on": "2026-10-15"}), nil
 	},
 	"matchSalaryBankLine": func(e *env, tok string) (response, func() bool) {
-		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/bank-match", steppedUp(e, tok), map[string]any{"bank_line_id": uuid.NewString(), "line_ids": []string{uuid.NewString()}}), nil
+		return e.call(http.MethodPost, "/v1/salary-batches/"+uuid.NewString()+"/bank-match", steppedUp(e, tok), map[string]any{"bank_line_id": uuid.NewString(), "line_ids": []string{uuid.NewString()}}, "If-Match", `"1-open"`), nil
 	},
 }

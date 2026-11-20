@@ -16192,7 +16192,7 @@ export interface paths {
         put?: never;
         /**
          * Match the bank debit of a salary release and mark its lines paid
-         * @description Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         * @description Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
          */
         post: operations["matchSalaryBankLine"];
         delete?: never;
@@ -181934,6 +181934,8 @@ export interface operations {
             header?: {
                 /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
                 "Idempotency-Key"?: string;
+                /** @description The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it). */
+                "If-Match"?: string;
                 /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
                 Prefer?: string;
             };

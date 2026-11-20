@@ -1126,12 +1126,13 @@ Asks for another person's approval of a prepared salary batch at the version rea
 
 **Match the bank debit of a salary release and mark its lines paid** (`matchSalaryBankLine`)
 
-Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+Matches one statement line of the batch's own bank account, a debit waiting in the Categorise queue, to the released lines it paid, and marks them paid from the bank feed (FR-PPL-12). Its amount must be exactly the sum of the lines named (a bulk debit of a release, or one line's own debit), in SGD, and each line must be released and not yet paid, rejected or returned. The line is posted to 2100 Salaries payable (Dr 2100, Cr the bank account) as categorising it does, with no person on a line (FR-PAY-13), and each paid line goes back to Nemura as payroll.payments.status with the bank line's date. Not for whoever prepared or approved the run in Nemura (SOD-4). Needs a person who passed step-up, and If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
 
 - **Permission:** Create on Pay runs, employee data. A person stepped up in the last 5 minutes; never who prepared or approved the pay run in Nemura (SOD-4). Posts the bank line to 2100.
 - **Parameters:**
   - `batch_id` (path, required): The salary batch's ID.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
 - **Request body:** [`SalaryBankMatch`](../../contracts/schemas/SalaryBankMatch.schema.json)
 - **Responses:**
