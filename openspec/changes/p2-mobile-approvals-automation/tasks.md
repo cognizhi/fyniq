@@ -13,8 +13,10 @@
   (Built, rev 0.618: the email half, a link with no token and no action; a test that the approval email's link opens the request is part of the notification fan-out. **Left:** the installable PWA half, with 4.1.)
 
 ## 3. Automation
-- [ ] 3.1 Workflow rules without code (D5). `// req: FR-AUT-03`
-- [ ] 3.2 Outbound webhooks: satisfied by FR-INT-12. `// req: FR-AUT-04`
+- [x] 3.1 Workflow rules without code (D5). `// req: FR-AUT-03`
+  (Built, rev 0.619, `[owner to confirm]`: migration 001202, `domain/automation`, `notify.fireRules` in the posting's unit of work, the setting `features.automation_rules` (off, dual control), three operations with matrix rows, the screen Workflow rules at `/settings/workflow-rules`, the guide and knowledge page, the design fragment and the grants for review; `TestAWorkflowRuleTellsMembersWhenABillOverItsAmountIsPosted`, `TestAttackAWorkflowRuleHasOnlyTheTriggersAndActionsTheDatabaseAllows`. **Left:** the action raise a task, triggers other than a posting.)
+- [x] 3.2 Outbound webhooks: satisfied by FR-INT-12. `// req: FR-AUT-04`
+  (Built by `p2-api-third-parties` (rev 0.602): signed, retried, logged webhooks with a dead-letter list; nothing more here. The spec row is covered by that change's tests.)
 
 ## 4. The PWA
 - [ ] 4.1 Manifest, service worker, installability (D4). `// req: FR-UX-16`
