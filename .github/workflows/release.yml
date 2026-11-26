@@ -65,7 +65,7 @@ jobs:
         with:
           persist-credentials: false
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28)
-      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785
         with:
           cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
       - run: pnpm install --frozen-lockfile
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785
         with:
           cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
       # The AI evals as a release needs them (QA-AI-01, QA-AI-03, CTL-AI-05; p1-ai-assistant design D13): every case of the
@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785
         with:
           cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
